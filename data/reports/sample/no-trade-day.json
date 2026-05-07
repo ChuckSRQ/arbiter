@@ -1,0 +1,68 @@
+{
+  "reportDate": "2026-05-06",
+  "generatedAt": "May 6, 2026 · 8:30 PM ET",
+  "reportLabel": "No trade day",
+  "thesis": "Arbiter is an edge filter, not a broad market screener.",
+  "summary": "Nothing cleared the evidence bar after spread, confidence, and portfolio review.",
+  "noTradePolicy": "No trade today is a valid report when none of the current Kalshi prices clear the evidence bar.",
+  "opportunities": [],
+  "portfolio": {
+    "grossExposure": 7800,
+    "unrealizedPnl": 140,
+    "cashAvailable": 6200,
+    "riskPosture": "Capital stays patient while existing macro exposure remains manageable.",
+    "positions": [
+      {
+        "title": "Fed holds through June",
+        "market": {
+          "ticker": "FEDHOLD-JUN",
+          "title": "Fed holds through June",
+          "category": "Macro",
+          "yesBidCents": 58,
+          "yesAskCents": 60,
+          "lastTradeCents": 59,
+          "expiresAt": "2026-06-17T14:00:00Z"
+        },
+        "action": "Hold",
+        "exposure": 2800,
+        "pnl": 140,
+        "note": "The thesis is intact, but nothing else deserves fresh capital today.",
+        "evidenceLinks": [
+          {
+            "label": "BLS CPI release calendar",
+            "href": "https://www.bls.gov/schedule/news_release/cpi.htm",
+            "source": "Official data",
+            "note": "Keeps the thesis review anchored to the next inflation print."
+          }
+        ]
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "label": "BLS CPI release calendar",
+      "href": "https://www.bls.gov/schedule/news_release/cpi.htm",
+      "source": "Official data",
+      "note": "Event timing anchor for macro review windows."
+    }
+  ],
+  "archive": [
+    {
+      "date": "2026-05-05",
+      "headline": "Archived brief · Macro over motorsport",
+      "summary": "One rate-cut setup qualified. F1 stayed on watch after weak long-run pace.",
+      "verdict": "1 trade idea, 2 passes"
+    },
+    {
+      "date": "2026-05-04",
+      "headline": "Archived brief · No trade today",
+      "summary": "Nothing cleared the confidence threshold after spread and evidence review.",
+      "verdict": "No trade today"
+    }
+  ],
+  "watchlist": [
+    "Pass thin-liquidity weather contracts until a model exists.",
+    "Keep political markets on watch until fresh polling is available.",
+    "Do not force a new idea when the report should stay flat."
+  ]
+}

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { getTopOpportunities, mockDashboardReport } from "./dashboard-data";
+import { getTopOpportunities, mockDashboardReport, sampleReports } from "./dashboard-data";
 import Home from "./page";
 
 test("renders the edge-filter shell with required report sections", () => {
@@ -35,5 +35,21 @@ test("keeps the today list focused on the top 3-5 opportunities", () => {
 
   assert.ok(topOpportunities.length >= 3);
   assert.ok(topOpportunities.length <= 5);
-  assert.equal(topOpportunities[0]?.ticker, "FEDCUT-SEP26");
+  assert.equal(topOpportunities[0]?.market.ticker, "HOUSE-DEM-2026");
+});
+
+test("renders a no-trade report without opportunity cards", () => {
+  const markup = renderToStaticMarkup(<Home report={sampleReports.noTradeDay} />);
+
+  assert.match(markup, /No trade today/i);
+  assert.match(markup, /0 qualified ideas/i);
+  assert.match(markup, /No new opportunities cleared the evidence bar today/i);
+});
+
+test("renders missing evidence and portfolio exit actions gracefully", () => {
+  const markup = renderToStaticMarkup(<Home report={sampleReports.portfolioExitDay} />);
+
+  assert.match(markup, /No linked evidence yet/i);
+  assert.match(markup, /Reduce/i);
+  assert.match(markup, /Exit/i);
 });

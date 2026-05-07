@@ -1,0 +1,277 @@
+{
+  "reportDate": "2026-05-06",
+  "generatedAt": "May 6, 2026 · 8:30 PM ET",
+  "reportLabel": "Political edge brief",
+  "thesis": "Arbiter is an edge filter, not a broad market screener.",
+  "summary": "Polling-backed political setups lead the board, with only five ideas clearing the bar.",
+  "noTradePolicy": "No trade today is a valid report when none of the current Kalshi prices clear the evidence bar.",
+  "opportunities": [
+    {
+      "title": "Democrats win the House in 2026",
+      "market": {
+        "ticker": "HOUSE-DEM-2026",
+        "title": "Democrats win the House in 2026",
+        "category": "Politics",
+        "yesBidCents": 46,
+        "yesAskCents": 47,
+        "lastTradeCents": 47,
+        "expiresAt": "2026-11-03T05:00:00Z"
+      },
+      "action": "Buy YES",
+      "marcusFairValue": 56,
+      "edge": 9,
+      "confidence": "High",
+      "reason": "The generic ballot and district retirements still support a modest Democratic path.",
+      "evidenceLinks": [
+        {
+          "label": "RCP generic ballot average",
+          "href": "https://www.realclearpolling.com/",
+          "source": "Polling",
+          "note": "Primary signal for the House control view."
+        },
+        {
+          "label": "Cook battleground retirement tracker",
+          "href": "https://www.cookpolitical.com/",
+          "source": "District context",
+          "note": "Tracks seat-level churn that supports the House setup."
+        }
+      ],
+      "whatWouldChange": "A Republican rebound in suburban district polling would neutralize the edge."
+    },
+    {
+      "title": "Democrats win the Senate in 2026",
+      "market": {
+        "ticker": "SENATE-DEM-2026",
+        "title": "Democrats win the Senate in 2026",
+        "category": "Politics",
+        "yesBidCents": 43,
+        "yesAskCents": 44,
+        "lastTradeCents": 44,
+        "expiresAt": "2026-11-03T05:00:00Z"
+      },
+      "action": "Buy YES",
+      "marcusFairValue": 52,
+      "edge": 8,
+      "confidence": "Medium",
+      "reason": "The seat map is still live if the polling floor holds in the two toughest races.",
+      "evidenceLinks": [
+        {
+          "label": "RCP Senate race averages",
+          "href": "https://www.realclearpolling.com/",
+          "source": "Polling",
+          "note": "Confirms that the hardest races remain competitive."
+        }
+      ],
+      "whatWouldChange": "A durable GOP lead in both tipping-point Senate races would move this back to pass."
+    },
+    {
+      "title": "Fed cuts rates by the September 2026 meeting",
+      "market": {
+        "ticker": "FEDCUT-SEP26",
+        "title": "Fed cuts rates by the September 2026 meeting",
+        "category": "Macro",
+        "yesBidCents": 41,
+        "yesAskCents": 42,
+        "lastTradeCents": 42,
+        "expiresAt": "2026-09-16T18:00:00Z"
+      },
+      "action": "Buy YES",
+      "marcusFairValue": 49,
+      "edge": 7,
+      "confidence": "High",
+      "reason": "Cooling inflation and softer labor data still point to a cheaper cut path than Kalshi implies.",
+      "evidenceLinks": [
+        {
+          "label": "CME FedWatch path",
+          "href": "https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html",
+          "source": "Rates",
+          "note": "Cross-checks the market-implied path against the report's fair value."
+        }
+      ],
+      "whatWouldChange": "A re-acceleration in core CPI would compress the edge quickly."
+    },
+    {
+      "title": "Charles Leclerc podium at Monaco Grand Prix",
+      "market": {
+        "ticker": "F1-MONACO-LEC",
+        "title": "Charles Leclerc podium at Monaco Grand Prix",
+        "category": "F1",
+        "yesBidCents": 57,
+        "yesAskCents": 58,
+        "lastTradeCents": 58,
+        "expiresAt": "2026-05-24T13:00:00Z"
+      },
+      "action": "Watch",
+      "marcusFairValue": 64,
+      "edge": 6,
+      "confidence": "Medium",
+      "reason": "Single-lap pace fits Monaco, but qualifying variance keeps this just below a stronger buy.",
+      "evidenceLinks": [
+        {
+          "label": "F1ReplayTiming Monaco pace notes",
+          "href": "https://f1replaytiming.com/",
+          "source": "F1 pace",
+          "note": "Provides single-lap and long-run pace context before qualifying."
+        }
+      ],
+      "whatWouldChange": "A grid penalty or practice fade would drop this below the watch bar."
+    },
+    {
+      "title": "July CPI comes in below consensus",
+      "market": {
+        "ticker": "CPI-LOWER-JUL",
+        "title": "July CPI comes in below consensus",
+        "category": "Macro",
+        "yesBidCents": 38,
+        "yesAskCents": 39,
+        "lastTradeCents": 39,
+        "expiresAt": "2026-07-15T12:30:00Z"
+      },
+      "action": "Buy YES",
+      "marcusFairValue": 44,
+      "edge": 5,
+      "confidence": "Low",
+      "reason": "Shelter rollover is supportive, but the edge is still data-sensitive.",
+      "evidenceLinks": [
+        {
+          "label": "BLS CPI release calendar",
+          "href": "https://www.bls.gov/schedule/news_release/cpi.htm",
+          "source": "Official data",
+          "note": "Anchors the catalyst timing for the CPI setup."
+        }
+      ],
+      "whatWouldChange": "A commodity rebound or sticky services prints would move this back to pass."
+    }
+  ],
+  "portfolio": {
+    "grossExposure": 12450,
+    "unrealizedPnl": 860,
+    "cashAvailable": 4780,
+    "riskPosture": "Concentrated in macro and election timing; avoid adding correlated rate exposure.",
+    "positions": [
+      {
+        "title": "Fed holds through June",
+        "market": {
+          "ticker": "FEDHOLD-JUN",
+          "title": "Fed holds through June",
+          "category": "Macro",
+          "yesBidCents": 58,
+          "yesAskCents": 60,
+          "lastTradeCents": 59,
+          "expiresAt": "2026-06-17T14:00:00Z"
+        },
+        "action": "Hold",
+        "exposure": 3200,
+        "pnl": 240,
+        "note": "Still aligned with the base case; thesis review stays after the next CPI print.",
+        "evidenceLinks": [
+          {
+            "label": "BLS CPI release calendar",
+            "href": "https://www.bls.gov/schedule/news_release/cpi.htm",
+            "source": "Official data",
+            "note": "Keeps the review window tied to the next inflation print."
+          }
+        ]
+      },
+      {
+        "title": "WTI settles above $85 this month",
+        "market": {
+          "ticker": "OIL-ABOVE-85",
+          "title": "WTI settles above $85 this month",
+          "category": "Macro",
+          "yesBidCents": 49,
+          "yesAskCents": 51,
+          "lastTradeCents": 50,
+          "expiresAt": "2026-05-31T20:00:00Z"
+        },
+        "action": "Reduce",
+        "exposure": 2650,
+        "pnl": 110,
+        "note": "Crowded positioning and softer demand data argue for trimming before inventory numbers.",
+        "evidenceLinks": [
+          {
+            "label": "EIA weekly petroleum status report",
+            "href": "https://www.eia.gov/petroleum/supply/weekly/",
+            "source": "Official data",
+            "note": "Keeps the trim call tied to inventory risk."
+          }
+        ]
+      },
+      {
+        "title": "Verstappen wins next race",
+        "market": {
+          "ticker": "F1-VER-WIN",
+          "title": "Verstappen wins next race",
+          "category": "F1",
+          "yesBidCents": 62,
+          "yesAskCents": 64,
+          "lastTradeCents": 63,
+          "expiresAt": "2026-05-24T13:00:00Z"
+        },
+        "action": "Exit",
+        "exposure": 1400,
+        "pnl": -190,
+        "note": "Track-specific pace no longer supports the price; freeing capital is better than hoping for variance.",
+        "evidenceLinks": [
+          {
+            "label": "F1ReplayTiming Monaco pace notes",
+            "href": "https://f1replaytiming.com/",
+            "source": "F1 pace",
+            "note": "Shows the pace deterioration behind the exit call."
+          }
+        ]
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "label": "RCP generic ballot average",
+      "href": "https://www.realclearpolling.com/",
+      "source": "Polling",
+      "note": "Primary input for the House 2026 market."
+    },
+    {
+      "label": "RCP Senate race averages",
+      "href": "https://www.realclearpolling.com/",
+      "source": "Polling",
+      "note": "Primary input for the Senate control view."
+    },
+    {
+      "label": "CME FedWatch path",
+      "href": "https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html",
+      "source": "Rates",
+      "note": "Cross-checks the market-implied path before assigning fair value."
+    },
+    {
+      "label": "F1ReplayTiming Monaco pace notes",
+      "href": "https://f1replaytiming.com/",
+      "source": "F1 pace",
+      "note": "Used for single-lap and long-run pace context before qualifying-sensitive trades."
+    }
+  ],
+  "archive": [
+    {
+      "date": "2026-05-05",
+      "headline": "Archived brief · Macro over motorsport",
+      "summary": "One rate-cut setup qualified. F1 stayed on watch after weak long-run pace.",
+      "verdict": "1 trade idea, 2 passes"
+    },
+    {
+      "date": "2026-05-04",
+      "headline": "Archived brief · No trade today",
+      "summary": "Nothing cleared the confidence threshold after spread and evidence review.",
+      "verdict": "No trade today"
+    },
+    {
+      "date": "2026-05-03",
+      "headline": "Archived brief · Portfolio cleanup",
+      "summary": "Focus shifted to an exit and one reduce call instead of new exposure.",
+      "verdict": "0 new trades, 2 position actions"
+    }
+  ],
+  "watchlist": [
+    "Pass thin-liquidity weather contracts until a model exists.",
+    "Wait on commodity-linked inflation markets until energy trend confirms.",
+    "Do not force a sixth idea if only five opportunities clear the bar."
+  ]
+}

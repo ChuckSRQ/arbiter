@@ -1,4 +1,5 @@
 import { getTopOpportunities, mockDashboardReport } from "./dashboard-data";
+import type { DailyReport } from "./report-schema";
 
 const sectionLinks = [
   { href: "#today", label: "Today" },
@@ -18,8 +19,17 @@ const actionStyles = {
   Pass: "border-[#3B82C4]/30 bg-[#121739] text-[#D7EAFE]",
 } as const;
 
-export default function Home() {
-  const report = mockDashboardReport;
+function formatSignedCurrency(value: number): string {
+  const sign = value >= 0 ? "+" : "-";
+
+  return `${sign}$${Math.abs(value).toLocaleString()}`;
+}
+
+type HomeProps = {
+  report?: DailyReport;
+};
+
+export default function Home({ report = mockDashboardReport }: HomeProps) {
   const topOpportunities = getTopOpportunities(report);
 
   return (
@@ -61,9 +71,9 @@ export default function Home() {
                     className="rounded-2xl border border-[#3B82C4]/25 bg-[#11163D]/95 p-4"
                   >
                     <p className="text-xs uppercase tracking-[0.22em] text-[#9ED4FF]">{label}</p>
-                    <p className="mt-2 text-sm leading-6 text-[#F7F1E6]">{value}</p>
-                  </div>
-                ))}
+                  <p className="mt-2 text-sm leading-6 text-[#F7F1E6]">{value}</p>
+                </div>
+              ))}
               </div>
             </div>
 
@@ -111,85 +121,109 @@ export default function Home() {
             </div>
 
             <div className="mt-6 grid gap-4 xl:grid-cols-2">
-              {topOpportunities.map((opportunity) => (
-                <article
-                  key={opportunity.ticker}
-                  className="rounded-[24px] border border-[#3B82C4]/22 bg-[#111741]/88 p-5"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.22em] text-[#8FC5F4]">
-                        {opportunity.ticker}
-                      </p>
-                      <h3 className="mt-2 text-xl font-semibold text-white">{opportunity.title}</h3>
+              {topOpportunities.length > 0 ? (
+                topOpportunities.map((opportunity) => (
+                  <article
+                    key={opportunity.market.ticker}
+                    className="rounded-[24px] border border-[#3B82C4]/22 bg-[#111741]/88 p-5"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.22em] text-[#8FC5F4]">
+                          {opportunity.market.ticker}
+                        </p>
+                        <h3 className="mt-2 text-xl font-semibold text-white">{opportunity.title}</h3>
+                      </div>
+                      <span
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
+                          actionStyles[opportunity.action]
+                        }`}
+                      >
+                        {opportunity.action}
+                      </span>
                     </div>
-                    <span
-                      className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
-                        actionStyles[opportunity.action]
-                      }`}
-                    >
-                      {opportunity.action}
-                    </span>
-                  </div>
 
-                  <div className="mt-5 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-                    <div className="rounded-2xl bg-[#0A0F2E] p-3">
-                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
-                        Kalshi price
-                      </p>
-                      <p className="mt-2 text-lg font-semibold text-[#F7F1E6]">
-                        {opportunity.kalshiPrice}c
-                      </p>
+                    <div className="mt-5 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                      <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
+                          Kalshi price
+                        </p>
+                        <p className="mt-2 text-lg font-semibold text-[#F7F1E6]">
+                          {opportunity.market.yesAskCents}c
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
+                          Marcus fair value
+                        </p>
+                        <p className="mt-2 text-lg font-semibold text-[#F7F1E6]">
+                          {opportunity.marcusFairValue}c
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">Edge</p>
+                        <p className="mt-2 text-lg font-semibold text-[#6EE7B7]">
+                          +{opportunity.edge} pts
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
+                          Confidence
+                        </p>
+                        <p className="mt-2 text-lg font-semibold text-[#F7F1E6]">
+                          {opportunity.confidence}
+                        </p>
+                      </div>
                     </div>
-                    <div className="rounded-2xl bg-[#0A0F2E] p-3">
-                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
-                        Marcus fair value
-                      </p>
-                      <p className="mt-2 text-lg font-semibold text-[#F7F1E6]">
-                        {opportunity.marcusFairValue}c
-                      </p>
-                    </div>
-                    <div className="rounded-2xl bg-[#0A0F2E] p-3">
-                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">Edge</p>
-                      <p className="mt-2 text-lg font-semibold text-[#6EE7B7]">
-                        +{opportunity.edge} pts
-                      </p>
-                    </div>
-                    <div className="rounded-2xl bg-[#0A0F2E] p-3">
-                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
-                        Confidence
-                      </p>
-                      <p className="mt-2 text-lg font-semibold text-[#F7F1E6]">
-                        {opportunity.confidence}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="mt-5 grid gap-4 md:grid-cols-[1fr_auto]">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">Reason</p>
-                      <p className="mt-2 text-sm leading-6 text-[#EADFCB]">{opportunity.reason}</p>
+                    <div className="mt-5 grid gap-4 md:grid-cols-[1fr_auto]">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">Reason</p>
+                        <p className="mt-2 text-sm leading-6 text-[#EADFCB]">{opportunity.reason}</p>
+                      </div>
+                      <div className="rounded-2xl border border-[#3B82C4]/20 bg-[#0A0F2E] px-4 py-3 text-right">
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
+                          Evidence count
+                        </p>
+                        <p className="mt-2 text-2xl font-semibold text-white">
+                          {opportunity.evidenceLinks.length}
+                        </p>
+                      </div>
                     </div>
-                    <div className="rounded-2xl border border-[#3B82C4]/20 bg-[#0A0F2E] px-4 py-3 text-right">
-                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
-                        Evidence count
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold text-white">
-                        {opportunity.evidenceCount}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="mt-4 rounded-2xl border border-[#F6C76B]/25 bg-[#3A2A10]/20 p-4">
-                    <p className="text-xs uppercase tracking-[0.16em] text-[#F6C76B]">
-                      What would change the view
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-[#F3E5C0]">
-                      {opportunity.whatWouldChange}
-                    </p>
-                  </div>
+                    <div className="mt-4 rounded-2xl border border-[#3B82C4]/20 bg-[#0A0F2E] p-4">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
+                        Linked evidence
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-[#DDEFFF]">
+                        {opportunity.evidenceLinks.length > 0
+                          ? opportunity.evidenceLinks.map((entry) => entry.source).join(" · ")
+                          : "No linked evidence yet."}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 rounded-2xl border border-[#F6C76B]/25 bg-[#3A2A10]/20 p-4">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[#F6C76B]">
+                        What would change the view
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-[#F3E5C0]">
+                        {opportunity.whatWouldChange}
+                      </p>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <article className="rounded-[24px] border border-[#6EE7B7]/25 bg-[#101947]/90 p-6 xl:col-span-2">
+                  <p className="text-xs uppercase tracking-[0.22em] text-[#9ED4FF]">No trade today</p>
+                  <h3 className="mt-3 text-2xl font-semibold text-white">
+                    No new opportunities cleared the evidence bar today.
+                  </h3>
+                  <p className="mt-4 max-w-3xl text-sm leading-7 text-[#EADFCB]">
+                    {report.summary} Keep capital flexible and spend the session on thesis review,
+                    evidence refresh, and portfolio discipline instead of forcing exposure.
+                  </p>
                 </article>
-              ))}
+              )}
             </div>
           </div>
 
@@ -238,8 +272,8 @@ export default function Home() {
             <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
               {[
                 ["Gross exposure", `$${report.portfolio.grossExposure.toLocaleString()}`],
-                ["Unrealized P&L", `+$${report.portfolio.unrealizedPnl.toLocaleString()}`],
-                ["Cash available", `$${report.portfolio.cashAvailable.toLocaleString()}`],
+                 ["Unrealized P&L", formatSignedCurrency(report.portfolio.unrealizedPnl)],
+                 ["Cash available", `$${report.portfolio.cashAvailable.toLocaleString()}`],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-[#3B82C4]/20 bg-[#101947]/90 p-4">
                   <p className="text-xs uppercase tracking-[0.2em] text-[#8FC5F4]">{label}</p>
@@ -255,13 +289,13 @@ export default function Home() {
             <div className="grid gap-4 xl:grid-cols-3">
               {report.portfolio.positions.map((position) => (
                 <article
-                  key={position.ticker}
+                  key={position.market.ticker}
                   className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">
-                        {position.ticker}
+                        {position.market.ticker}
                       </p>
                       <h3 className="mt-2 text-lg font-semibold text-white">{position.title}</h3>
                     </div>
@@ -313,20 +347,31 @@ export default function Home() {
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {report.evidence.map((entry) => (
-              <a
-                key={entry.label}
-                href={entry.href}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5 transition hover:border-[#3B82C4] hover:bg-[#132055]"
-              >
-                <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">{entry.source}</p>
-                <h3 className="mt-3 text-lg font-semibold text-white">{entry.label}</h3>
-                <p className="mt-4 text-sm leading-6 text-[#EADFCB]">{entry.note}</p>
-                <p className="mt-4 text-xs uppercase tracking-[0.18em] text-[#9ED4FF]">Open source link</p>
-              </a>
-            ))}
+            {report.evidence.length > 0 ? (
+              report.evidence.map((entry) => (
+                <a
+                  key={entry.label}
+                  href={entry.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5 transition hover:border-[#3B82C4] hover:bg-[#132055]"
+                >
+                  <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">{entry.source}</p>
+                  <h3 className="mt-3 text-lg font-semibold text-white">{entry.label}</h3>
+                  <p className="mt-4 text-sm leading-6 text-[#EADFCB]">{entry.note}</p>
+                  <p className="mt-4 text-xs uppercase tracking-[0.18em] text-[#9ED4FF]">
+                    Open source link
+                  </p>
+                </a>
+              ))
+            ) : (
+              <article className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5 md:col-span-2 xl:col-span-4">
+                <p className="text-lg font-semibold text-white">Evidence refresh pending</p>
+                <p className="mt-3 text-sm leading-6 text-[#EADFCB]">
+                  This report is still usable, but the shared evidence shelf has not been populated yet.
+                </p>
+              </article>
+            )}
           </div>
         </section>
 
