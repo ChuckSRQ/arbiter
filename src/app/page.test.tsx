@@ -129,3 +129,10 @@ test("renders polling evidence summaries and source links from the report", () =
   assert.match(markup, /Brown \+3/i);
   assert.match(markup, /realclearpolling/i);
 });
+
+test("renders archive status when no prior reports are archived yet", () => {
+  const markup = renderToStaticMarkup(<Home report={{ ...sampleReports.noTradeDay, archive: [] }} />);
+
+  assert.match(markup, /Archive pending/i);
+  assert.match(markup, /The latest daily report is ready, but there are no prior archived briefs yet/i);
+});

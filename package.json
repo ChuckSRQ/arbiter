@@ -12,7 +12,8 @@
     "test:python": "python3 -m unittest discover -s tests -p 'test_*.py'",
     "collect:kalshi-public": "python3 scripts/collect_kalshi_public_snapshot.py",
     "collect:kalshi-portfolio": "python3 scripts/collect_kalshi_portfolio.py",
-    "generate:report": "node --import tsx scripts/generate_daily_report.ts"
+    "generate:report": "node --import tsx scripts/generate_daily_report.ts",
+    "run:daily-report": "node --import tsx scripts/run_daily_report.ts"
   },
   "dependencies": {
     "next": "16.2.5",

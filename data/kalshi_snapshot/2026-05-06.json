@@ -1,5 +1,5 @@
 {
-  "collected_at": "2026-05-07T00:50:56.991742Z",
+  "collected_at": "2026-05-07T01:28:44.181542Z",
   "source": {
     "base_url": "https://api.elections.kalshi.com/trade-api/v2",
     "endpoint": "/markets"
@@ -7,7 +7,7 @@
   "filters": {
     "window_days": 30,
     "status": "open",
-    "max_pages": 2
+    "max_pages": 5
   },
   "markets": [
     {

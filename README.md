@@ -150,6 +150,53 @@ node --import tsx scripts/generate_daily_report.ts --market-snapshot data/kalshi
 node --import tsx scripts/generate_daily_report.ts --output data/reports/generated/manual.json --report-date 2026-05-06
 ```
 
+## Daily runner + archive
+
+The daily runner orchestrates the public snapshot, safe portfolio snapshot, optional polling
+evidence, JSON report generation, markdown rendering, the latest dashboard pointer, and the local
+archive. If portfolio credentials are missing, the run still completes with a clean
+`available: false` portfolio snapshot instead of crashing.
+
+```bash
+npm run run:daily-report
+```
+
+Useful offline/manual verification command:
+
+```bash
+npm run run:daily-report -- --public-fixture tests/fixtures/kalshi_public_markets_pages.json --polling-evidence data/polling_evidence/sample.json --report-date 2026-05-06
+```
+
+Optional inputs:
+
+```bash
+npm run run:daily-report -- --public-fixture tests/fixtures/kalshi_public_markets_pages.json --portfolio-fixture tests/fixtures/kalshi_portfolio_fixture.json
+npm run run:daily-report -- --polling-evidence data/polling_evidence/sample.json
+```
+
+Files written by the runner:
+
+- `data/kalshi_snapshot/YYYY-MM-DD.json`
+- `data/portfolio/YYYY-MM-DD.json`
+- `data/reports/generated/YYYY-MM-DD.json`
+- `data/reports/generated/YYYY-MM-DD.md`
+- `data/reports/generated/latest.json`
+- `data/reports/generated/latest.md`
+- `reports/YYYY-MM-DD.json`
+- `reports/YYYY-MM-DD.md`
+
+The dashboard now prefers `data/reports/generated/latest.json` and uses `reports/*.json` to
+populate the Archive tab with real archived report cards when they exist.
+
+Suggested Hermes handoff after manual verification only:
+
+```text
+Prompt Hermes to schedule a weekday morning job that runs: cd /Users/carlosmac/users/carlosmac/arbiter && npm run run:daily-report
+```
+
+Do not schedule the cron job until Carlos/Marcus confirm that one manual run produced the expected
+JSON, markdown, and archive files.
+
 ---
 
 ## Roadmap — 7 Sessions

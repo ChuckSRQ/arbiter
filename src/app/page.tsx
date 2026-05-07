@@ -510,19 +510,29 @@ export default function Home({
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {report.archive.map((entry) => (
-              <article
-                key={entry.date}
-                className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5"
-              >
-                <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">{entry.date}</p>
-                <h3 className="mt-3 text-xl font-semibold text-white">{entry.headline}</h3>
-                <p className="mt-4 text-sm leading-6 text-[#EADFCB]">{entry.summary}</p>
-                <p className="mt-5 rounded-2xl border border-[#3B82C4]/20 bg-[#0A0F2E] px-4 py-3 text-sm text-[#DDEFFF]">
-                  {entry.verdict}
+            {report.archive.length > 0 ? (
+              report.archive.map((entry) => (
+                <article
+                  key={entry.date}
+                  className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5"
+                >
+                  <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">{entry.date}</p>
+                  <h3 className="mt-3 text-xl font-semibold text-white">{entry.headline}</h3>
+                  <p className="mt-4 text-sm leading-6 text-[#EADFCB]">{entry.summary}</p>
+                  <p className="mt-5 rounded-2xl border border-[#3B82C4]/20 bg-[#0A0F2E] px-4 py-3 text-sm text-[#DDEFFF]">
+                    {entry.verdict}
+                  </p>
+                </article>
+              ))
+            ) : (
+              <article className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5 md:col-span-3">
+                <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">Archive pending</p>
+                <h3 className="mt-3 text-xl font-semibold text-white">The latest daily report is ready</h3>
+                <p className="mt-4 text-sm leading-6 text-[#EADFCB]">
+                  The latest daily report is ready, but there are no prior archived briefs yet.
                 </p>
               </article>
-            ))}
+            )}
           </div>
         </section>
       </div>
