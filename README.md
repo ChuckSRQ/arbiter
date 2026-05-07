@@ -78,6 +78,24 @@ http://localhost:3000
 npm run dev      # local dev server
 npm run build    # production build check
 npm run lint     # ESLint
+npm test         # TypeScript + Python tests
+```
+
+---
+
+## Public Kalshi Scanner
+
+The Session 3 scanner is public-only. It calls `GET /markets` with `status=open`, never uses credentials, filters to markets closing within the next 30 days by default, and writes a normalized snapshot to `data/kalshi_snapshot/YYYY-MM-DD.json`.
+
+```bash
+npm run collect:kalshi-public
+```
+
+Useful options:
+
+```bash
+python3 scripts/collect_kalshi_public_snapshot.py --window-days 14 --max-pages 2
+python3 scripts/collect_kalshi_public_snapshot.py --fixture tests/fixtures/kalshi_public_markets_pages.json --output data/kalshi_snapshot/fixture.json
 ```
 
 ---

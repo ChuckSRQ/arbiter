@@ -1,0 +1,33 @@
+{
+  "collected_at": "2026-05-07T00:50:56.991742Z",
+  "source": {
+    "base_url": "https://api.elections.kalshi.com/trade-api/v2",
+    "endpoint": "/markets"
+  },
+  "filters": {
+    "window_days": 30,
+    "status": "open",
+    "max_pages": 2
+  },
+  "markets": [
+    {
+      "ticker": "PRES-DEM-2028",
+      "title": "Will the Democratic nominee win the 2028 presidential election?",
+      "event_ticker": "PRES-2028",
+      "series_ticker": "PRES",
+      "category": "Politics",
+      "close_time": "2026-05-20T12:00:00Z",
+      "expiration_time": "2026-05-20T12:00:00Z",
+      "yes_bid_cents": 41,
+      "yes_ask_cents": 43,
+      "no_bid_cents": 57,
+      "no_ask_cents": 59,
+      "yes_midpoint_cents": 42,
+      "no_midpoint_cents": 58,
+      "volume": 12345,
+      "open_interest": 6789,
+      "liquidity": 1500,
+      "rules_text": "Resolved to YES if the Democratic nominee wins the general election."
+    }
+  ]
+}
