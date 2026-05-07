@@ -1,0 +1,41 @@
+{
+  "reportDate": "2026-05-06",
+  "generatedAt": "May 6, 2026, 9:28 PM ET",
+  "reportLabel": "No trade day",
+  "thesis": "Arbiter is an edge filter, not a broad market screener.",
+  "summary": "No trade today. Nothing cleared the evidence bar after executable prices and confidence thresholds.",
+  "noTradePolicy": "No trade today is a valid report when none of the current Kalshi prices clear the evidence bar.",
+  "opportunities": [],
+  "portfolio": {
+    "grossExposure": 0,
+    "unrealizedPnl": 0,
+    "cashAvailable": 0,
+    "riskPosture": "Stay patient; most markets should stay passed until a reliable model appears.",
+    "positions": []
+  },
+  "evidence": [],
+  "archive": [],
+  "watchlist": [
+    "Most markets should stay passed until a reliable model exists.",
+    "No trade today remains the default output.",
+    "Use executable prices, not midpoints, when deciding whether an edge is real."
+  ],
+  "passes": [
+    {
+      "title": "Will the Democratic nominee win the 2028 presidential election?",
+      "market": {
+        "ticker": "PRES-DEM-2028",
+        "title": "Will the Democratic nominee win the 2028 presidential election?",
+        "category": "Politics",
+        "yesBidCents": 41,
+        "yesAskCents": 43,
+        "lastTradeCents": 42,
+        "expiresAt": "2026-05-20T12:00:00Z"
+      },
+      "marketClass": "politics",
+      "reasonCode": "missing-or-stale-polling",
+      "reason": "Pass: missing-or-stale-polling.",
+      "executablePrice": 43
+    }
+  ]
+}

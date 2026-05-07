@@ -1,0 +1,50 @@
+[
+  {
+    "markets": [
+      {
+        "ticker": "PRES-DEM-2028",
+        "title": "Will the Democratic nominee win the 2028 presidential election?",
+        "event_ticker": "PRES-2028",
+        "series_ticker": "PRES",
+        "category": "Politics",
+        "status": "open",
+        "close_time": "2026-05-20T12:00:00Z",
+        "expiration_time": "2026-05-20T12:00:00Z",
+        "yes_bid": "0.4100",
+        "yes_ask": "0.4300",
+        "no_bid": "0.5700",
+        "no_ask": "0.5900",
+        "volume": 12345,
+        "open_interest": 6789,
+        "liquidity": 1500,
+        "rules_primary": "Resolved to YES if the Democratic nominee wins the general election.",
+        "subtitle": "Public fixture market in window."
+      }
+    ],
+    "cursor": "next-page"
+  },
+  {
+    "markets": [
+      {
+        "ticker": "GDP-Q3-HIGH",
+        "title": "Will Q3 GDP exceed 4.0%?",
+        "event_ticker": "GDP-Q3",
+        "series_ticker": "GDP",
+        "category": "Economics",
+        "status": "open",
+        "close_time": "2026-07-20T12:00:00Z",
+        "expiration_time": "2026-07-20T12:00:00Z",
+        "yes_bid": "0.2200",
+        "yes_ask": "0.2600",
+        "no_bid": "0.7400",
+        "no_ask": "0.7800",
+        "volume": 500,
+        "open_interest": 220,
+        "liquidity": 300,
+        "rules_primary": "Resolved to YES if the Bureau of Economic Analysis reports GDP above 4.0%.",
+        "subtitle": "Public fixture market outside default window."
+      }
+    ],
+    "cursor": ""
+  }
+]

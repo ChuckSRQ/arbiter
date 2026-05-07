@@ -1,0 +1,28 @@
+# Arbiter Daily Report
+
+- **Report date:** 2026-05-06
+- **Generated:** May 6, 2026, 9:28 PM ET
+- **Label:** No trade day
+
+## Executive summary
+
+No trade today. Nothing cleared the evidence bar after executable prices and confidence thresholds.
+
+## Top opportunities
+
+No trade today.
+
+No trade today. Nothing cleared the evidence bar after executable prices and confidence thresholds.
+
+## Portfolio actions
+
+- No live positions were available for review.
+
+## Evidence links
+
+- Evidence refresh pending.
+
+## Caveats
+
+- No trade today is a valid report when none of the current Kalshi prices clear the evidence bar.
+- No automatic trading. Use this brief for manual review only.

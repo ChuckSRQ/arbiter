@@ -6,7 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "npm run test:js && npm run test:python",
+    "test:js": "node --import tsx --test src/app/*.test.ts src/app/*.test.tsx",
+    "test:python": "python3 -m unittest discover -s tests -p 'test_*.py'",
+    "collect:kalshi-public": "python3 scripts/collect_kalshi_public_snapshot.py",
+    "collect:kalshi-portfolio": "python3 scripts/collect_kalshi_portfolio.py",
+    "generate:report": "node --import tsx scripts/generate_daily_report.ts",
+    "run:daily-report": "node --import tsx scripts/run_daily_report.ts"
   },
   "dependencies": {
     "next": "16.2.5",
@@ -21,6 +28,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.5",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

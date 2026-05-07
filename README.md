@@ -78,7 +78,124 @@ http://localhost:3000
 npm run dev      # local dev server
 npm run build    # production build check
 npm run lint     # ESLint
+npm test         # TypeScript + Python tests
 ```
+
+---
+
+## Public Kalshi Scanner
+
+The Session 3 scanner is public-only. It calls `GET /markets` with `status=open`, never uses credentials, filters to markets closing within the next 30 days by default, and writes a normalized snapshot to `data/kalshi_snapshot/YYYY-MM-DD.json`.
+
+```bash
+npm run collect:kalshi-public
+```
+
+Useful options:
+
+```bash
+python3 scripts/collect_kalshi_public_snapshot.py --window-days 14 --max-pages 2
+python3 scripts/collect_kalshi_public_snapshot.py --fixture tests/fixtures/kalshi_public_markets_pages.json --output data/kalshi_snapshot/fixture.json
+```
+
+---
+
+## Portfolio Reader
+
+The Session 4 portfolio collector is read-only. It only calls `GET /portfolio/balance` and
+`GET /portfolio/positions`, signs requests with RSA-PSS using the full `/trade-api/v2/...` path,
+never prints credentials or private key contents, and falls back to clean JSON when local
+credentials are missing.
+
+```bash
+npm run collect:kalshi-portfolio
+```
+
+Useful options:
+
+```bash
+python3 scripts/collect_kalshi_portfolio.py --fixture tests/fixtures/kalshi_portfolio_fixture.json --output data/portfolio/fixture.json
+python3 scripts/collect_kalshi_portfolio.py --output data/portfolio/$(date +%F).json
+```
+
+Local-only environment variables:
+
+```bash
+KALSHI_BASE_URL=https://api.elections.kalshi.com/trade-api/v2
+KALSHI_API_KEY_ID=
+KALSHI_PRIVATE_KEY_PATH=
+```
+
+If `KALSHI_API_KEY_ID` or `KALSHI_PRIVATE_KEY_PATH` is missing, the collector still exits cleanly
+with `available: false`, an empty positions list, and warnings the dashboard can render safely.
+
+---
+
+## Daily report generator
+
+The analysis engine reads the saved public market snapshot plus optional portfolio and polling
+evidence inputs, applies conservative pass-first ranking rules, and writes a schema-valid daily
+report to `data/reports/generated/YYYY-MM-DD.json`. Political markets are polling-first: if
+matching RCP-style evidence is missing or stale, Arbiter passes them instead of inventing a view.
+
+```bash
+npm run generate:report
+```
+
+Useful options:
+
+```bash
+node --import tsx scripts/generate_daily_report.ts --market-snapshot data/kalshi_snapshot/2026-05-06.json --portfolio-snapshot data/portfolio/2026-05-06.json
+node --import tsx scripts/generate_daily_report.ts --market-snapshot data/kalshi_snapshot/2026-05-06.json --portfolio-snapshot data/portfolio/2026-05-06.json --polling-evidence data/polling_evidence/sample.json
+node --import tsx scripts/generate_daily_report.ts --output data/reports/generated/manual.json --report-date 2026-05-06
+```
+
+## Daily runner + archive
+
+The daily runner orchestrates the public snapshot, safe portfolio snapshot, optional polling
+evidence, JSON report generation, markdown rendering, the latest dashboard pointer, and the local
+archive. If portfolio credentials are missing, the run still completes with a clean
+`available: false` portfolio snapshot instead of crashing.
+
+```bash
+npm run run:daily-report
+```
+
+Useful offline/manual verification command:
+
+```bash
+npm run run:daily-report -- --public-fixture tests/fixtures/kalshi_public_markets_pages.json --polling-evidence data/polling_evidence/sample.json --report-date 2026-05-06
+```
+
+Optional inputs:
+
+```bash
+npm run run:daily-report -- --public-fixture tests/fixtures/kalshi_public_markets_pages.json --portfolio-fixture tests/fixtures/kalshi_portfolio_fixture.json
+npm run run:daily-report -- --polling-evidence data/polling_evidence/sample.json
+```
+
+Files written by the runner:
+
+- `data/kalshi_snapshot/YYYY-MM-DD.json`
+- `data/portfolio/YYYY-MM-DD.json`
+- `data/reports/generated/YYYY-MM-DD.json`
+- `data/reports/generated/YYYY-MM-DD.md`
+- `data/reports/generated/latest.json`
+- `data/reports/generated/latest.md`
+- `reports/YYYY-MM-DD.json`
+- `reports/YYYY-MM-DD.md`
+
+The dashboard now prefers `data/reports/generated/latest.json` and uses `reports/*.json` to
+populate the Archive tab with real archived report cards when they exist.
+
+Suggested Hermes handoff after manual verification only:
+
+```text
+Prompt Hermes to schedule a weekday morning job that runs: cd /Users/carlosmac/users/carlosmac/arbiter && npm run run:daily-report
+```
+
+Do not schedule the cron job until Carlos/Marcus confirm that one manual run produced the expected
+JSON, markdown, and archive files.
 
 ---
 

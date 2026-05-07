@@ -1,0 +1,144 @@
+{
+  "reportDate": "2026-05-06",
+  "generatedAt": "May 6, 2026 · 8:30 PM ET",
+  "reportLabel": "Portfolio cleanup brief",
+  "thesis": "Arbiter is an edge filter, not a broad market screener.",
+  "summary": "The best use of capital today is cleaning up stale risk instead of forcing new trades.",
+  "noTradePolicy": "No trade today is a valid report when none of the current Kalshi prices clear the evidence bar.",
+  "opportunities": [
+    {
+      "title": "September core CPI surprises to the downside",
+      "market": {
+        "ticker": "CORECPI-SEP-LOW",
+        "title": "September core CPI surprises to the downside",
+        "category": "Macro",
+        "yesBidCents": 34,
+        "yesAskCents": 35,
+        "lastTradeCents": 35,
+        "expiresAt": "2026-09-12T12:30:00Z"
+      },
+      "action": "Watch",
+      "marcusFairValue": 40,
+      "edge": 5,
+      "confidence": "Low",
+      "reason": "The numbers are moving the right way, but the evidence set is still incomplete.",
+      "evidenceLinks": [],
+      "whatWouldChange": "Fresh shelter and wage data would decide whether this graduates from watch to trade."
+    },
+    {
+      "title": "Democrats win the House in 2026",
+      "market": {
+        "ticker": "HOUSE-DEM-2026",
+        "title": "Democrats win the House in 2026",
+        "category": "Politics",
+        "yesBidCents": 46,
+        "yesAskCents": 47,
+        "lastTradeCents": 47,
+        "expiresAt": "2026-11-03T05:00:00Z"
+      },
+      "action": "Buy YES",
+      "marcusFairValue": 53,
+      "edge": 6,
+      "confidence": "Medium",
+      "reason": "Polling still supports a modest edge, but portfolio cleanup comes first.",
+      "evidenceLinks": [
+        {
+          "label": "RCP generic ballot average",
+          "href": "https://www.realclearpolling.com/",
+          "source": "Polling",
+          "note": "Still the primary political signal."
+        }
+      ],
+      "whatWouldChange": "A Republican rebound in district polling would erase the edge."
+    }
+  ],
+  "portfolio": {
+    "grossExposure": 10200,
+    "unrealizedPnl": -120,
+    "cashAvailable": 5300,
+    "riskPosture": "Risk is too concentrated in stale event-specific positions; reduce first, then reassess.",
+    "positions": [
+      {
+        "title": "WTI settles above $85 this month",
+        "market": {
+          "ticker": "OIL-ABOVE-85",
+          "title": "WTI settles above $85 this month",
+          "category": "Macro",
+          "yesBidCents": 49,
+          "yesAskCents": 51,
+          "lastTradeCents": 50,
+          "expiresAt": "2026-05-31T20:00:00Z"
+        },
+        "action": "Reduce",
+        "exposure": 3100,
+        "pnl": 90,
+        "note": "The risk-reward is less attractive after the last squeeze; trim and recycle capital later.",
+        "evidenceLinks": [
+          {
+            "label": "EIA weekly petroleum status report",
+            "href": "https://www.eia.gov/petroleum/supply/weekly/",
+            "source": "Official data",
+            "note": "Keeps the trim tied to upcoming inventory data."
+          }
+        ]
+      },
+      {
+        "title": "Verstappen wins next race",
+        "market": {
+          "ticker": "F1-VER-WIN",
+          "title": "Verstappen wins next race",
+          "category": "F1",
+          "yesBidCents": 62,
+          "yesAskCents": 64,
+          "lastTradeCents": 63,
+          "expiresAt": "2026-05-24T13:00:00Z"
+        },
+        "action": "Exit",
+        "exposure": 1800,
+        "pnl": -210,
+        "note": "The track profile and recent pace no longer support the current price.",
+        "evidenceLinks": [
+          {
+            "label": "F1ReplayTiming Monaco pace notes",
+            "href": "https://f1replaytiming.com/",
+            "source": "F1 pace",
+            "note": "Confirms the pace shortfall behind the exit."
+          }
+        ]
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "label": "RCP generic ballot average",
+      "href": "https://www.realclearpolling.com/",
+      "source": "Polling",
+      "note": "Primary political signal for the House market."
+    },
+    {
+      "label": "F1ReplayTiming Monaco pace notes",
+      "href": "https://f1replaytiming.com/",
+      "source": "F1 pace",
+      "note": "Supports the position exit review."
+    }
+  ],
+  "archive": [
+    {
+      "date": "2026-05-05",
+      "headline": "Archived brief · No trade today",
+      "summary": "No fresh idea beat the spread-adjusted threshold.",
+      "verdict": "No trade today"
+    },
+    {
+      "date": "2026-05-04",
+      "headline": "Archived brief · Portfolio cleanup",
+      "summary": "The report prioritized exits and trims over new exposure.",
+      "verdict": "0 new trades, 2 position actions"
+    }
+  ],
+  "watchlist": [
+    "Wait for fresh inflation detail before upgrading the CPI watch idea.",
+    "Keep political markets polling-first.",
+    "Do not add new correlated risk before portfolio cleanup is done."
+  ]
+}
