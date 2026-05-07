@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import type { DailyReport, RecommendationAction } from "./report-schema";
+import type { DailyReport, EvidenceLink, RecommendationAction } from "./report-schema";
 
 const DEFAULT_BASE_URL = "https://api.elections.kalshi.com/trade-api/v2";
 const PORTFOLIO_DIR = resolve(/* turbopackIgnore: true*/ process.cwd(), "data", "portfolio");
@@ -48,6 +48,8 @@ export interface PortfolioReviewCard {
   exposure: number;
   pnl: number;
   note: string;
+  evidenceLinks: EvidenceLink[];
+  sourceLabel: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -228,6 +230,8 @@ export function getPortfolioReviewCards(
       exposure: position.exposure,
       pnl: position.pnl,
       note: position.note,
+      evidenceLinks: position.evidenceLinks,
+      sourceLabel: "Report brief",
     }));
   }
 
@@ -238,5 +242,7 @@ export function getPortfolioReviewCards(
     exposure: position.exposure ?? 0,
     pnl: position.unrealizedPnl ?? 0,
     note: livePositionNote(position),
+    evidenceLinks: [],
+    sourceLabel: "Live snapshot",
   }));
 }

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
-import { loadLatestDashboardReport, sampleReports } from "./dashboard-data";
+import { loadDashboardPageData, loadLatestDashboardReport, sampleReports } from "./dashboard-data";
 
 test("run_daily_report works in fixture mode without credentials and writes latest pointers plus archive files", () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "arbiter-daily-runner-"));
@@ -102,6 +102,30 @@ test("loadLatestDashboardReport prefers the latest pointer and hydrates archive 
     assert.equal(report?.reportLabel, "No trade day");
     assert.equal(report?.archive[0]?.date, "2026-05-05");
     assert.match(report?.archive[0]?.headline ?? "", /Portfolio cleanup/i);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("loadDashboardPageData falls back to a safe sample when the latest report is invalid", () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "arbiter-report-fallback-"));
+
+  try {
+    const generatedDir = join(tempRoot, "data", "reports", "generated");
+    mkdirSync(generatedDir, { recursive: true });
+    writeFileSync(join(generatedDir, "latest.json"), "{not-valid-json", "utf8");
+
+    const pageData = loadDashboardPageData({
+      currentReportPath: join(generatedDir, "latest.json"),
+      reportDirectories: [generatedDir],
+      archiveDirectories: [],
+      fallbackReport: sampleReports.noTradeDay,
+    });
+
+    assert.equal(pageData.report.reportLabel, "No trade day");
+    assert.equal(pageData.reportStatus.state, "error");
+    assert.match(pageData.reportStatus.label, /needs review/i);
+    assert.match(pageData.reportStatus.sourceLabel, /Fallback after load error/i);
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }

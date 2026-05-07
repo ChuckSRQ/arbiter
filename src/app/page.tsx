@@ -1,4 +1,9 @@
-import { getTopOpportunities, mockDashboardReport } from "./dashboard-data";
+import {
+  getTopOpportunities,
+  mockDashboardReport,
+  mockDashboardReportStatus,
+  type DashboardReportStatus,
+} from "./dashboard-data";
 import type { DailyReport } from "./report-schema";
 import {
   defaultPortfolioSnapshot,
@@ -24,6 +29,29 @@ const actionStyles = {
   Pass: "border-[#3B82C4]/30 bg-[#121739] text-[#D7EAFE]",
 } as const;
 
+const reportStatusStyles = {
+  generated: {
+    shell: "border-[#6EE7B7]/28 bg-[linear-gradient(135deg,rgba(14,58,45,0.48),rgba(14,18,51,0.94))]",
+    kicker: "text-[#A7F3D0]",
+    badge: "border-[#6EE7B7]/30 bg-[#0A1E1A]/70 text-[#D8FFF0]",
+  },
+  archived: {
+    shell: "border-[#3B82C4]/28 bg-[linear-gradient(135deg,rgba(19,43,99,0.45),rgba(14,18,51,0.94))]",
+    kicker: "text-[#9ED4FF]",
+    badge: "border-[#3B82C4]/30 bg-[#0A1538]/70 text-[#D7EDFF]",
+  },
+  sample: {
+    shell: "border-[#F6C76B]/28 bg-[linear-gradient(135deg,rgba(75,53,18,0.48),rgba(14,18,51,0.94))]",
+    kicker: "text-[#FCE7A8]",
+    badge: "border-[#F6C76B]/30 bg-[#241806]/70 text-[#FCE7A8]",
+  },
+  error: {
+    shell: "border-[#FB7185]/28 bg-[linear-gradient(135deg,rgba(74,18,34,0.5),rgba(14,18,51,0.94))]",
+    kicker: "text-[#FFD0D8]",
+    badge: "border-[#FB7185]/30 bg-[#2B0C17]/70 text-[#FFE2E8]",
+  },
+} as const;
+
 function formatSignedCurrency(value: number): string {
   const sign = value >= 0 ? "+" : "-";
 
@@ -47,11 +75,13 @@ function formatPollingMarketType(value: string): string {
 
 type HomeProps = {
   report?: DailyReport;
+  reportStatus?: DashboardReportStatus;
   portfolioSnapshot?: PortfolioSnapshot;
 };
 
 export default function Home({
   report = mockDashboardReport,
+  reportStatus = mockDashboardReportStatus,
   portfolioSnapshot = defaultPortfolioSnapshot,
 }: HomeProps) {
   const topOpportunities = getTopOpportunities(report);
@@ -69,13 +99,15 @@ export default function Home({
   const riskPosture = portfolioSnapshot.available
     ? `Live portfolio snapshot${portfolioSnapshot.collectedAt ? ` · ${portfolioSnapshot.collectedAt}` : ""}`
     : report.portfolio.riskPosture;
+  const reportStatusStyle = reportStatusStyles[reportStatus.state];
+  const passCount = report.passes?.length ?? 0;
 
   return (
     <main className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,#1E245F_0%,#0A0D2A_55%,#070819_100%)] px-5 py-8 text-[#F7F1E6] md:px-10 md:py-10">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <header className="overflow-hidden rounded-[32px] border border-[#3B82C4]/30 bg-[#0E1233]/92 shadow-[0_30px_80px_rgba(3,6,24,0.5)]">
           <div className="flex flex-col gap-8 px-6 py-6 md:px-8">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
               <div className="max-w-3xl">
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#9ED4FF]">
                   Arbiter private terminal
@@ -98,20 +130,46 @@ export default function Home({
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3 lg:w-[26rem] lg:grid-cols-1">
-                {[
-                  ["Generated", report.generatedAt],
-                  ["Today list", `${topOpportunities.length} qualified ideas`],
-                  ["Portfolio feed", portfolioSnapshot.available ? "Live portfolio snapshot" : "Portfolio unavailable"],
-                ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="rounded-2xl border border-[#3B82C4]/25 bg-[#11163D]/95 p-4"
-                  >
-                    <p className="text-xs uppercase tracking-[0.22em] text-[#9ED4FF]">{label}</p>
-                  <p className="mt-2 text-sm leading-6 text-[#F7F1E6]">{value}</p>
+              <div className="flex w-full max-w-[32rem] flex-col gap-3">
+                <article className={`rounded-[26px] border p-5 ${reportStatusStyle.shell}`}>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="max-w-lg">
+                      <p
+                        className={`text-xs font-semibold uppercase tracking-[0.24em] ${reportStatusStyle.kicker}`}
+                      >
+                        Latest report status
+                      </p>
+                      <h2 className="mt-2 text-2xl font-semibold text-white">{reportStatus.label}</h2>
+                      <p className="mt-3 text-sm leading-6 text-[#F7F1E6]">{reportStatus.detail}</p>
+                    </div>
+                    <div className={`rounded-2xl border px-4 py-3 ${reportStatusStyle.badge}`}>
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-[#CFE7FF]">Source</p>
+                      <p className="mt-2 text-sm font-semibold text-white">{reportStatus.sourceLabel}</p>
+                      <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[#CFE7FF]">
+                        Report date {report.reportDate}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[
+                    ["Generated", report.generatedAt],
+                    ["Today list", `${topOpportunities.length} qualified ideas`],
+                    [
+                      "Portfolio feed",
+                      portfolioSnapshot.available ? "Live portfolio snapshot" : "Portfolio unavailable",
+                    ],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="rounded-2xl border border-[#3B82C4]/25 bg-[#11163D]/95 p-4"
+                    >
+                      <p className="text-xs uppercase tracking-[0.22em] text-[#9ED4FF]">{label}</p>
+                      <p className="mt-2 text-sm leading-6 text-[#F7F1E6]">{value}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
               </div>
             </div>
 
@@ -134,7 +192,10 @@ export default function Home({
             ["Focus", "Top 3-5 opportunities only"],
             ["Discipline", "No trade today remains a valid output"],
             ["Venue", "Kalshi first, outside sources only as evidence"],
-            ["Report feed", report.passes ? "Generated from saved snapshots" : "Sample fallback report"],
+            [
+              "Report feed",
+              reportStatus.state === "generated" ? "Generated brief live" : reportStatus.label,
+            ],
           ].map(([label, value]) => (
             <div key={label} className="rounded-2xl border border-[#3B82C4]/20 bg-[#10153A]/88 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[#9ED4FF]">{label}</p>
@@ -230,14 +291,41 @@ export default function Home({
                     </div>
 
                     <div className="mt-4 rounded-2xl border border-[#3B82C4]/20 bg-[#0A0F2E] p-4">
-                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
-                        Linked evidence
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-[#DDEFFF]">
-                        {opportunity.evidenceLinks.length > 0
-                          ? opportunity.evidenceLinks.map((entry) => entry.source).join(" · ")
-                          : "No linked evidence yet."}
-                      </p>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
+                          Linked evidence
+                        </p>
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#CFE7FF]">
+                          {opportunity.evidenceLinks.length} source
+                          {opportunity.evidenceLinks.length === 1 ? "" : "s"}
+                        </p>
+                      </div>
+
+                      {opportunity.evidenceLinks.length > 0 ? (
+                        <ul className="mt-3 space-y-3">
+                          {opportunity.evidenceLinks.map((entry) => (
+                            <li
+                              key={`${opportunity.market.ticker}-${entry.href}`}
+                              className="rounded-2xl border border-[#3B82C4]/15 bg-[#101947]/70 p-3"
+                            >
+                              <a
+                                href={entry.href}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-sm font-semibold text-[#D7EDFF] transition hover:text-white"
+                              >
+                                {entry.label}
+                              </a>
+                              <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
+                                {entry.source}
+                              </p>
+                              <p className="mt-2 text-sm leading-6 text-[#DDEFFF]">{entry.note}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-3 text-sm leading-6 text-[#DDEFFF]">No linked evidence yet.</p>
+                      )}
                     </div>
 
                     <div className="mt-4 rounded-2xl border border-[#F6C76B]/25 bg-[#3A2A10]/20 p-4">
@@ -251,15 +339,44 @@ export default function Home({
                   </article>
                 ))
               ) : (
-                <article className="rounded-[24px] border border-[#6EE7B7]/25 bg-[#101947]/90 p-6 xl:col-span-2">
-                  <p className="text-xs uppercase tracking-[0.22em] text-[#9ED4FF]">No trade today</p>
-                  <h3 className="mt-3 text-2xl font-semibold text-white">
-                    No new opportunities cleared the evidence bar today.
-                  </h3>
+                <article className="rounded-[28px] border border-[#6EE7B7]/30 bg-[linear-gradient(135deg,rgba(14,58,45,0.4),rgba(16,25,71,0.92))] p-6 xl:col-span-2">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-[#A7F3D0]">
+                        No trade today
+                      </p>
+                      <h3 className="mt-3 text-2xl font-semibold text-white">
+                        Nothing cleared the evidence bar today.
+                      </h3>
+                    </div>
+                    <p className="rounded-full border border-[#6EE7B7]/30 bg-[#0A1E1A]/80 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#BBF7D0]">
+                      {passCount > 0 ? `${passCount} markets passed` : "Capital preserved"}
+                    </p>
+                  </div>
                   <p className="mt-4 max-w-3xl text-sm leading-7 text-[#EADFCB]">
                     {report.summary} Keep capital flexible and spend the session on thesis review,
                     evidence refresh, and portfolio discipline instead of forcing exposure.
                   </p>
+                  <div className="mt-5 grid gap-3 md:grid-cols-3">
+                    {[
+                      ["Capital stays optional", "No forced positions just to fill the report."],
+                      [
+                        passCount > 0 ? "Pass log" : "Evidence first",
+                        passCount > 0
+                          ? `${passCount} market${passCount === 1 ? "" : "s"} failed the current bar after review.`
+                          : "Refresh the inputs before treating a weak setup as actionable.",
+                      ],
+                      ["Portfolio discipline", "Use the quiet session to clean up stale or crowded risk."],
+                    ].map(([label, value]) => (
+                      <div
+                        key={label}
+                        className="rounded-2xl border border-[#6EE7B7]/18 bg-[#0A1E1A]/55 p-4"
+                      >
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#A7F3D0]">{label}</p>
+                        <p className="mt-2 text-sm leading-6 text-[#E8FDF5]">{value}</p>
+                      </div>
+                    ))}
+                  </div>
                 </article>
               )}
             </div>
@@ -268,7 +385,7 @@ export default function Home({
           <aside className="grid gap-4">
             <section className="rounded-[28px] border border-[#6EE7B7]/25 bg-[#0E1233]/92 p-6">
               <p className="text-xs uppercase tracking-[0.24em] text-[#9ED4FF]">Report discipline</p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">No trade today</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-white">No-trade policy</h2>
               <p className="mt-4 text-sm leading-7 text-[#EADFCB]">{report.noTradePolicy}</p>
             </section>
 
@@ -278,16 +395,26 @@ export default function Home({
             >
               <p className="text-xs uppercase tracking-[0.24em] text-[#9ED4FF]">Opportunities</p>
               <h2 className="mt-2 text-2xl font-semibold text-white">What stays on watch</h2>
-              <ul className="mt-5 space-y-4">
-                {report.watchlist.map((item) => (
-                  <li
-                    key={item}
-                    className="rounded-2xl border border-[#3B82C4]/20 bg-[#101947]/90 px-4 py-3 text-sm leading-6 text-[#DDEFFF]"
-                  >
-                    {item}
-                  </li>
-                ))}
-              </ul>
+
+              {report.watchlist.length > 0 ? (
+                <ul className="mt-5 space-y-4">
+                  {report.watchlist.map((item) => (
+                    <li
+                      key={item}
+                      className="rounded-2xl border border-[#3B82C4]/20 bg-[#101947]/90 px-4 py-3 text-sm leading-6 text-[#DDEFFF]"
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <article className="mt-5 rounded-2xl border border-[#3B82C4]/20 bg-[#101947]/90 p-4">
+                  <p className="text-lg font-semibold text-white">Watchlist clear</p>
+                  <p className="mt-3 text-sm leading-6 text-[#EADFCB]">
+                    Nothing needs passive monitoring right now; the dashboard is cleanly in pass mode.
+                  </p>
+                </article>
+              )}
             </section>
           </aside>
         </section>
@@ -365,7 +492,8 @@ export default function Home({
                         {position.action}
                       </span>
                     </div>
-                    <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+
+                    <div className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
                       <div className="rounded-2xl bg-[#0A0F2E] p-3">
                         <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">Exposure</p>
                         <p className="mt-2 text-lg font-semibold text-[#F7F1E6]">
@@ -382,8 +510,50 @@ export default function Home({
                           {position.pnl >= 0 ? "+" : "-"}${Math.abs(position.pnl).toLocaleString()}
                         </p>
                       </div>
+                      <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
+                          Review source
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-[#F7F1E6]">
+                          {position.sourceLabel}
+                        </p>
+                      </div>
                     </div>
-                    <p className="mt-4 text-sm leading-6 text-[#EADFCB]">{position.note}</p>
+
+                    <div className="mt-4 rounded-2xl border border-[#3B82C4]/18 bg-[#0A0F2E] p-4">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">Review basis</p>
+                      <p className="mt-2 text-sm leading-6 text-[#EADFCB]">{position.note}</p>
+                    </div>
+
+                    <div className="mt-4 rounded-2xl border border-[#3B82C4]/18 bg-[#0D1438] p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
+                          Evidence links
+                        </p>
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#CFE7FF]">
+                          {position.evidenceLinks.length} source
+                          {position.evidenceLinks.length === 1 ? "" : "s"}
+                        </p>
+                      </div>
+
+                      {position.evidenceLinks.length > 0 ? (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {position.evidenceLinks.map((link) => (
+                            <a
+                              key={`${position.ticker}-${link.href}`}
+                              href={link.href}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-full border border-[#3B82C4]/28 bg-[#101947]/85 px-3 py-2 text-xs font-medium text-[#D7EDFF] transition hover:border-[#3B82C4] hover:text-white"
+                            >
+                              {link.label}
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-sm leading-6 text-[#DDEFFF]">No linked evidence yet.</p>
+                      )}
+                    </div>
                   </article>
                 ))
               ) : (
@@ -464,7 +634,16 @@ export default function Home({
                 </article>
               ))}
             </div>
-          ) : null}
+          ) : (
+            <article className="mt-6 rounded-[24px] border border-[#F6C76B]/25 bg-[#101947]/90 p-5">
+              <p className="text-xs uppercase tracking-[0.18em] text-[#F6C76B]">Polling refresh pending</p>
+              <h3 className="mt-3 text-xl font-semibold text-white">Political evidence shelf is quiet</h3>
+              <p className="mt-3 text-sm leading-6 text-[#F3E5C0]">
+                The dashboard can still render the brief, but no saved polling summaries were attached
+                to this report yet.
+              </p>
+            </article>
+          )}
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {report.evidence.length > 0 ? (
@@ -474,13 +653,18 @@ export default function Home({
                   href={entry.href}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5 transition hover:border-[#3B82C4] hover:bg-[#132055]"
+                  className="group rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5 transition hover:border-[#3B82C4] hover:bg-[#132055]"
                 >
-                  <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">{entry.source}</p>
+                  <div className="flex items-start justify-between gap-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">{entry.source}</p>
+                    <span className="rounded-full border border-[#3B82C4]/25 bg-[#0A0F2E]/85 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#CFE7FF]">
+                      Reference
+                    </span>
+                  </div>
                   <h3 className="mt-3 text-lg font-semibold text-white">{entry.label}</h3>
                   <p className="mt-4 text-sm leading-6 text-[#EADFCB]">{entry.note}</p>
                   <p className="mt-4 text-xs uppercase tracking-[0.18em] text-[#9ED4FF]">
-                    Open source link
+                    Open evidence shelf
                   </p>
                 </a>
               ))
@@ -514,14 +698,20 @@ export default function Home({
               report.archive.map((entry) => (
                 <article
                   key={entry.date}
-                  className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5"
+                  className="flex h-full flex-col rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5"
                 >
-                  <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">{entry.date}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">{entry.date}</p>
+                    <span className="rounded-full border border-[#3B82C4]/25 bg-[#0A0F2E]/85 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#CFE7FF]">
+                      Archive
+                    </span>
+                  </div>
                   <h3 className="mt-3 text-xl font-semibold text-white">{entry.headline}</h3>
-                  <p className="mt-4 text-sm leading-6 text-[#EADFCB]">{entry.summary}</p>
-                  <p className="mt-5 rounded-2xl border border-[#3B82C4]/20 bg-[#0A0F2E] px-4 py-3 text-sm text-[#DDEFFF]">
-                    {entry.verdict}
-                  </p>
+                  <p className="mt-4 flex-1 text-sm leading-6 text-[#EADFCB]">{entry.summary}</p>
+                  <div className="mt-5 rounded-2xl border border-[#3B82C4]/20 bg-[#0A0F2E] px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">Verdict</p>
+                    <p className="mt-2 text-sm leading-6 text-[#DDEFFF]">{entry.verdict}</p>
+                  </div>
                 </article>
               ))
             ) : (

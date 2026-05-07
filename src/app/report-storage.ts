@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, sep } from "node:path";
 
 import { type ArchiveEntry, type DailyReport, parseDailyReport } from "./report-schema";
 
@@ -14,6 +14,14 @@ export interface DashboardReportLoaderOptions {
   reportDirectories?: string[];
   archiveDirectories?: string[];
   archiveLimit?: number;
+}
+
+export type DashboardReportSource = "generated" | "archive" | "none";
+
+export interface DashboardReportLoadResult {
+  report: DailyReport | null;
+  reportPath: string | null;
+  source: DashboardReportSource;
 }
 
 function reportActionSummary(report: DailyReport): string {
@@ -67,6 +75,23 @@ function latestReportPath(reportDirectories: string[]): string | null {
   return candidates.sort().at(-1) ?? null;
 }
 
+function pathBelongsToDirectory(path: string, directory: string): boolean {
+  const normalizedPath = resolve(/* turbopackIgnore: true*/ path);
+  const normalizedDirectory = resolve(/* turbopackIgnore: true*/ directory);
+
+  return normalizedPath === normalizedDirectory || normalizedPath.startsWith(`${normalizedDirectory}${sep}`);
+}
+
+function reportSourceForPath(reportPath: string | null, archiveDirectories: string[]): DashboardReportSource {
+  if (!reportPath) {
+    return "none";
+  }
+
+  return archiveDirectories.some((directory) => pathBelongsToDirectory(reportPath, directory))
+    ? "archive"
+    : "generated";
+}
+
 export function loadArchiveEntries({
   archiveDirectories = [ARCHIVE_REPORT_DIR],
   excludeDates = [],
@@ -104,22 +129,38 @@ export function loadLatestDashboardReport({
   archiveDirectories = [ARCHIVE_REPORT_DIR],
   archiveLimit = 6,
 }: DashboardReportLoaderOptions = {}): DailyReport | null {
+  return loadLatestDashboardReportResult({
+    currentReportPath,
+    reportDirectories,
+    archiveDirectories,
+    archiveLimit,
+  }).report;
+}
+
+export function loadLatestDashboardReportResult({
+  currentReportPath,
+  reportDirectories = [GENERATED_REPORT_DIR, ARCHIVE_REPORT_DIR],
+  archiveDirectories = [ARCHIVE_REPORT_DIR],
+  archiveLimit = 6,
+}: DashboardReportLoaderOptions = {}): DashboardReportLoadResult {
   const resolvedCurrentReportPath =
     currentReportPath !== undefined
       ? currentReportPath
       : reportDirectories.includes(GENERATED_REPORT_DIR)
         ? LATEST_REPORT_PATH
         : null;
-  const report =
+  const reportPath =
     resolvedCurrentReportPath && existsSync(resolvedCurrentReportPath)
-      ? readReportFile(resolvedCurrentReportPath)
-      : (() => {
-          const reportPath = latestReportPath(reportDirectories);
-          return reportPath ? readReportFile(reportPath) : null;
-        })();
+      ? resolvedCurrentReportPath
+      : latestReportPath(reportDirectories);
+  const report = reportPath ? readReportFile(reportPath) : null;
 
   if (!report) {
-    return null;
+    return {
+      report: null,
+      reportPath: null,
+      source: "none",
+    };
   }
 
   const archive = loadArchiveEntries({
@@ -129,7 +170,11 @@ export function loadLatestDashboardReport({
   });
 
   return {
-    ...report,
-    archive: archive.length > 0 ? archive : report.archive,
+    report: {
+      ...report,
+      archive: archive.length > 0 ? archive : report.archive,
+    },
+    reportPath,
+    source: reportSourceForPath(reportPath, archiveDirectories),
   };
 }
