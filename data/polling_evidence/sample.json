@@ -1,0 +1,119 @@
+{
+  "evidence": [
+    {
+      "collected_at": "2026-05-06T19:30:00Z",
+      "source_url": "https://www.realclearpolling.com/",
+      "race": "Ohio Senate general",
+      "market_key": "ohio-senate-general",
+      "market_type": "binary-general",
+      "polling_average": {
+        "updated_at": "2026-05-06T19:00:00Z",
+        "leader": "Sherrod Brown",
+        "leader_share": 48,
+        "runner_up": "Jon Husted",
+        "runner_up_share": 45,
+        "spread": 3,
+        "fair_yes_cents": 61
+      },
+      "latest_polls": [
+        {
+          "pollster": "Marist",
+          "dates": {
+            "start": "2026-05-01",
+            "end": "2026-05-03"
+          },
+          "sample": "Likely voters 912",
+          "toplines": [
+            {
+              "candidate": "Sherrod Brown",
+              "pct": 48
+            },
+            {
+              "candidate": "Jon Husted",
+              "pct": 45
+            }
+          ],
+          "spread": "Brown +3"
+        },
+        {
+          "pollster": "Emerson",
+          "dates": {
+            "start": "2026-04-24",
+            "end": "2026-04-26"
+          },
+          "sample": "Likely voters 1000",
+          "toplines": [
+            {
+              "candidate": "Sherrod Brown",
+              "pct": 47
+            },
+            {
+              "candidate": "Jon Husted",
+              "pct": 45
+            }
+          ],
+          "spread": "Brown +2"
+        }
+      ],
+      "trend_summary": "Brown has held a narrow but steady lead across the latest RCP-tracked polls.",
+      "evidence_links": [
+        {
+          "label": "RCP Ohio Senate average",
+          "href": "https://www.realclearpolling.com/polls/senate/general/2026/ohio/brown-vs-husted",
+          "source": "Polling",
+          "note": "Primary polling average for the Ohio Senate general market."
+        }
+      ]
+    },
+    {
+      "collected_at": "2026-05-06T19:30:00Z",
+      "source_url": "https://www.realclearpolling.com/",
+      "race": "Louisiana Senate GOP primary",
+      "market_key": "louisiana-senate-gop-primary",
+      "market_type": "multi-candidate-primary",
+      "polling_average": {
+        "updated_at": "2026-05-06T19:00:00Z",
+        "leader": "John Fleming",
+        "leader_share": 32,
+        "runner_up": "Julia Letlow",
+        "runner_up_share": 28,
+        "spread": 4,
+        "fair_yes_cents": 58
+      },
+      "latest_polls": [
+        {
+          "pollster": "WPA Intelligence",
+          "dates": {
+            "start": "2026-04-27",
+            "end": "2026-04-29"
+          },
+          "sample": "Likely GOP primary voters 640",
+          "toplines": [
+            {
+              "candidate": "John Fleming",
+              "pct": 32
+            },
+            {
+              "candidate": "Julia Letlow",
+              "pct": 28
+            },
+            {
+              "candidate": "Bill Cassidy",
+              "pct": 20
+            }
+          ],
+          "spread": "Fleming +4"
+        }
+      ],
+      "trend_summary": "Fleming still leads, but the field remains fragmented and plurality dynamics matter more than raw vote share.",
+      "evidence_links": [
+        {
+          "label": "RCP Louisiana GOP primary average",
+          "href": "https://www.realclearpolling.com/polls/senate/republican-primary/2026/louisiana/fleming-vs-letlow-vs-cassidy",
+          "source": "Polling",
+          "note": "RCP table for the Louisiana Senate GOP primary."
+        }
+      ]
+    }
+  ]
+}

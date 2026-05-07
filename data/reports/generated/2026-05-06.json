@@ -76,12 +76,9 @@
         "expiresAt": "2026-05-20T12:00:00Z"
       },
       "marketClass": "politics",
-      "reasonCode": "low-confidence-pass",
-      "reason": "Pass: low-confidence setups need a much larger edge than the current 2c gap.",
-      "executablePrice": 43,
-      "marcusFairValue": 45,
-      "confidence": "Low",
-      "edge": 2
+      "reasonCode": "missing-or-stale-polling",
+      "reason": "Pass: missing-or-stale-polling.",
+      "executablePrice": 43
     }
   ]
 }

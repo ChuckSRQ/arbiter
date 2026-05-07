@@ -6,6 +6,7 @@ import {
   type PublicMarketSnapshotFile,
   buildDailyReport,
 } from "../src/analysis/engine";
+import { parsePollingEvidenceFile } from "../src/analysis/polling-evidence";
 import { parseDailyReport } from "../src/app/report-schema";
 
 const DATED_JSON_FILE = /^\d{4}-\d{2}-\d{2}\.json$/;
@@ -54,13 +55,18 @@ function main(): void {
   const reportDate = readFlag("--report-date") ?? reportDateFromPath(marketSnapshotPath);
   const outputPath =
     readFlag("--output") ?? resolve(cwd, "data", "reports", "generated", `${reportDate}.json`);
+  const pollingEvidencePath = readFlag("--polling-evidence");
 
   const marketSnapshot = readJsonFile<PublicMarketSnapshotFile>(marketSnapshotPath);
   const portfolioSnapshot = readJsonFile<PortfolioSnapshotInput>(portfolioSnapshotPath);
+  const pollingEvidence = pollingEvidencePath
+    ? parsePollingEvidenceFile(readJsonFile<unknown>(pollingEvidencePath)).evidence
+    : undefined;
   const report = buildDailyReport({
     reportDate,
     marketSnapshot,
     portfolioSnapshot,
+    pollingEvidence,
   });
 
   parseDailyReport(report);

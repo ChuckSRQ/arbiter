@@ -65,6 +65,50 @@ function createPortfolioSnapshot(positions: Array<Record<string, unknown>> = [])
   };
 }
 
+function createPollingEvidence(overrides: Record<string, unknown> = {}) {
+  return {
+    collected_at: "2026-05-06T19:30:00Z",
+    source_url: "https://www.realclearpolling.com/",
+    race: "Ohio Senate general",
+    market_key: "ohio-senate-general",
+    market_type: "binary-general",
+    polling_average: {
+      updated_at: "2026-05-06T19:00:00Z",
+      leader: "Sherrod Brown",
+      leader_share: 48,
+      runner_up: "Jon Husted",
+      runner_up_share: 45,
+      spread: 3,
+      fair_yes_cents: 61,
+    },
+    latest_polls: [
+      {
+        pollster: "Marist",
+        dates: {
+          start: "2026-05-01",
+          end: "2026-05-03",
+        },
+        sample: "Likely voters 912",
+        toplines: [
+          { candidate: "Sherrod Brown", pct: 48 },
+          { candidate: "Jon Husted", pct: 45 },
+        ],
+        spread: "Brown +3",
+      },
+    ],
+    trend_summary: "Brown has held a narrow but steady lead across the latest RCP-tracked polls.",
+    evidence_links: [
+      {
+        label: "RCP Ohio Senate average",
+        href: "https://www.realclearpolling.com/polls/senate/general/2026/ohio/brown-vs-husted",
+        source: "Polling",
+        note: "Primary polling average for the Ohio Senate general market.",
+      },
+    ],
+    ...overrides,
+  };
+}
+
 test("classifies supported market groups conservatively", () => {
   assert.equal(classifyMarket(createMarket({ category: "Politics" })), "politics");
   assert.equal(classifyMarket(createMarket({ ticker: "F1-MONACO-LEC", category: "Sports" })), "F1");
@@ -77,9 +121,9 @@ test("uses confidence-specific thresholds for ranking and pass logic", () => {
   const report = buildDailyReport({
     reportDate: "2026-05-06",
     marketSnapshot: createMarketSnapshot([
-      createMarket({ ticker: "HIGH-EDGE", yes_ask_cents: 45, no_ask_cents: 56 }),
-      createMarket({ ticker: "MEDIUM-WATCH", yes_ask_cents: 45, no_ask_cents: 56 }),
-      createMarket({ ticker: "LOW-PASS", yes_ask_cents: 44, no_ask_cents: 57 }),
+      createMarket({ ticker: "HIGH-EDGE", category: "Economics", yes_ask_cents: 45, no_ask_cents: 56 }),
+      createMarket({ ticker: "MEDIUM-WATCH", category: "Economics", yes_ask_cents: 45, no_ask_cents: 56 }),
+      createMarket({ ticker: "LOW-PASS", category: "Economics", yes_ask_cents: 44, no_ask_cents: 57 }),
     ]),
     portfolioSnapshot: createPortfolioSnapshot(),
     modelOverrides: {
@@ -252,6 +296,114 @@ test("caps generated opportunities at five ideas by default", () => {
     report.opportunities.map((opportunity) => opportunity.market.ticker),
     ["IDEA-7", "IDEA-6", "IDEA-5", "IDEA-4", "IDEA-3"],
   );
+});
+
+test("political markets use polling evidence links and fair value when evidence exists", () => {
+  const report = buildDailyReport({
+    reportDate: "2026-05-06",
+    marketSnapshot: createMarketSnapshot([
+      createMarket({
+        ticker: "OH-SEN-GEN-BROWN",
+        title: "Ohio Senate general: Brown vs Husted",
+        category: "Politics",
+        yes_bid_cents: 52,
+        yes_ask_cents: 54,
+        no_bid_cents: 46,
+        no_ask_cents: 48,
+      }),
+    ]),
+    portfolioSnapshot: createPortfolioSnapshot(),
+    pollingEvidence: [createPollingEvidence()],
+  });
+
+  const opportunity = report.opportunities[0];
+
+  assert.equal(opportunity?.market.ticker, "OH-SEN-GEN-BROWN");
+  assert.equal(opportunity?.action, "Buy YES");
+  assert.equal(opportunity?.marcusFairValue, 61);
+  assert.match(opportunity?.reason ?? "", /poll/i);
+  assert.equal(opportunity?.evidenceLinks[0]?.href.includes("realclearpolling.com"), true);
+  assert.equal(report.evidence.some((entry) => entry.href.includes("realclearpolling.com")), true);
+});
+
+test("political markets missing polling pass with missing-or-stale-polling", () => {
+  const report = buildDailyReport({
+    reportDate: "2026-05-06",
+    marketSnapshot: createMarketSnapshot([
+      createMarket({
+        ticker: "PA-SEN-GEN",
+        title: "Pennsylvania Senate general",
+        category: "Politics",
+      }),
+    ]),
+    portfolioSnapshot: createPortfolioSnapshot(),
+  });
+
+  assert.equal(report.opportunities.length, 0);
+  assert.equal(report.passes?.[0]?.reasonCode, "missing-or-stale-polling");
+  assert.match(report.passes?.[0]?.reason ?? "", /missing-or-stale-polling/i);
+});
+
+test("primary polling evidence includes a plurality and fragmentation warning", () => {
+  const report = buildDailyReport({
+    reportDate: "2026-05-06",
+    marketSnapshot: createMarketSnapshot([
+      createMarket({
+        ticker: "LA-SEN-GOP-FLEMING",
+        title: "Louisiana Senate GOP primary: Fleming vs Letlow vs Cassidy",
+        category: "Politics",
+        yes_bid_cents: 48,
+        yes_ask_cents: 50,
+        no_bid_cents: 50,
+        no_ask_cents: 52,
+      }),
+    ]),
+    portfolioSnapshot: createPortfolioSnapshot(),
+    pollingEvidence: [
+      createPollingEvidence({
+        race: "Louisiana Senate GOP primary",
+        market_key: "louisiana-senate-gop-primary",
+        market_type: "multi-candidate-primary",
+        polling_average: {
+          updated_at: "2026-05-06T19:00:00Z",
+          leader: "John Fleming",
+          leader_share: 32,
+          runner_up: "Julia Letlow",
+          runner_up_share: 28,
+          spread: 4,
+          fair_yes_cents: 58,
+        },
+        latest_polls: [
+          {
+            pollster: "WPA Intelligence",
+            dates: {
+              start: "2026-04-27",
+              end: "2026-04-29",
+            },
+            sample: "Likely GOP primary voters 640",
+            toplines: [
+              { candidate: "John Fleming", pct: 32 },
+              { candidate: "Julia Letlow", pct: 28 },
+              { candidate: "Bill Cassidy", pct: 20 },
+            ],
+            spread: "Fleming +4",
+          },
+        ],
+        trend_summary: "Fleming still leads, but the field remains fragmented and plurality dynamics matter more than raw vote share.",
+        evidence_links: [
+          {
+            label: "RCP Louisiana GOP primary average",
+            href: "https://www.realclearpolling.com/polls/senate/republican-primary/2026/louisiana/fleming-vs-letlow-vs-cassidy",
+            source: "Polling",
+            note: "RCP table for the Louisiana Senate GOP primary.",
+          },
+        ],
+      }),
+    ],
+  });
+
+  assert.equal(report.opportunities[0]?.market.ticker, "LA-SEN-GOP-FLEMING");
+  assert.match(report.opportunities[0]?.reason ?? "", /plurality|fragment/i);
 });
 
 test("prefers the latest generated report when one is present", () => {

@@ -133,9 +133,10 @@ with `available: false`, an empty positions list, and warnings the dashboard can
 
 ## Daily report generator
 
-The Session 5 analysis engine reads the saved public market snapshot plus an optional portfolio
-snapshot, applies conservative pass-first ranking rules, and writes a schema-valid daily report to
-`data/reports/generated/YYYY-MM-DD.json`.
+The analysis engine reads the saved public market snapshot plus optional portfolio and polling
+evidence inputs, applies conservative pass-first ranking rules, and writes a schema-valid daily
+report to `data/reports/generated/YYYY-MM-DD.json`. Political markets are polling-first: if
+matching RCP-style evidence is missing or stale, Arbiter passes them instead of inventing a view.
 
 ```bash
 npm run generate:report
@@ -145,6 +146,7 @@ Useful options:
 
 ```bash
 node --import tsx scripts/generate_daily_report.ts --market-snapshot data/kalshi_snapshot/2026-05-06.json --portfolio-snapshot data/portfolio/2026-05-06.json
+node --import tsx scripts/generate_daily_report.ts --market-snapshot data/kalshi_snapshot/2026-05-06.json --portfolio-snapshot data/portfolio/2026-05-06.json --polling-evidence data/polling_evidence/sample.json
 node --import tsx scripts/generate_daily_report.ts --output data/reports/generated/manual.json --report-date 2026-05-06
 ```
 

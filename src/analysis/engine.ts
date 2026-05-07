@@ -6,8 +6,10 @@ import type {
   Opportunity,
   PassReasonCode,
   PassDecision,
+  PollingEvidence,
   PositionReview,
 } from "../app/report-schema";
+import { findPollingEvidence, isPollingEvidenceStale, latestPollingDate } from "./polling-evidence";
 
 export const DEFAULT_OPPORTUNITY_LIMIT = 5;
 
@@ -82,6 +84,7 @@ interface BuildDailyReportArgs {
   marketSnapshot: PublicMarketSnapshotFile;
   portfolioSnapshot?: PortfolioSnapshotInput;
   modelOverrides?: Record<string, ModelOverride>;
+  pollingEvidence?: PollingEvidence[];
   opportunityLimit?: number;
 }
 
@@ -268,11 +271,73 @@ function defaultMarketModel(market: PublicMarketSnapshot, marketClass: MarketCla
   return null;
 }
 
+function pollingConfidence(marketType: PollingEvidence["market_type"]): ConfidenceLevel {
+  switch (marketType) {
+    case "binary-general":
+      return "High";
+    case "multi-candidate-primary":
+    case "top-two":
+      return "Medium";
+    default:
+      return "Low";
+  }
+}
+
+function fallbackFairYesFromPolling(record: PollingEvidence): number {
+  const multiplier = record.market_type === "binary-general" ? 4 : 2;
+  return clampCents(50 + record.polling_average.spread * multiplier) ?? 50;
+}
+
+function buildPoliticalPollingModel(record: PollingEvidence, marketClass: MarketClass): EvaluatedModel {
+  const fairYesCents = clampCents(record.polling_average.fair_yes_cents) ?? fallbackFairYesFromPolling(record);
+  const confidence = pollingConfidence(record.market_type);
+  const latestSpread = record.latest_polls[0]?.spread ?? `${record.polling_average.leader} +${record.polling_average.spread}`;
+  const pluralityWarning =
+    record.market_type === "multi-candidate-primary" || record.market_type === "top-two"
+      ? " Raw primary vote share is not direct win probability; plurality and fragmentation matter more than a one-to-one vote-share comparison."
+      : "";
+  const reason = `Polling-first view: ${record.polling_average.leader} leads ${record.polling_average.runner_up} ${record.polling_average.leader_share}-${record.polling_average.runner_up_share} in the current average, latest tracked spread is ${latestSpread}, and ${record.trend_summary} That supports roughly ${fairYesCents}c fair value.${pluralityWarning}`;
+  const whatWouldChange =
+    record.market_type === "multi-candidate-primary" || record.market_type === "top-two"
+      ? `A fresher poll showing the field consolidating behind ${record.polling_average.runner_up} would cut the plurality edge.`
+      : `A fresher poll moving ${record.polling_average.runner_up} ahead would take this back to pass.`;
+
+  return {
+    fairYesCents,
+    confidence,
+    reason,
+    whatWouldChange,
+    evidenceLinks:
+      record.evidence_links.length > 0
+        ? record.evidence_links
+        : [
+            {
+              label: `${record.race} polling source`,
+              href: record.source_url,
+              source: "Polling",
+              note: record.trend_summary,
+            },
+          ],
+    marketClass,
+  };
+}
+
 function resolveModel(
   market: PublicMarketSnapshot,
   overrides: Record<string, ModelOverride> | undefined,
   marketClass: MarketClass,
+  pollingEvidence: PollingEvidence[] | undefined,
+  reportDate: string,
 ): EvaluatedModel | null {
+  if (marketClass === "politics") {
+    const record = findPollingEvidence(market, pollingEvidence);
+    if (!record || isPollingEvidenceStale(record, reportDate)) {
+      return null;
+    }
+
+    return buildPoliticalPollingModel(record, marketClass);
+  }
+
   const override = overrides?.[market.ticker];
   if (override) {
     return { ...override, marketClass };
@@ -307,11 +372,32 @@ function buildPassDecision(
 function analyzeMarket(
   market: PublicMarketSnapshot,
   overrides: Record<string, ModelOverride> | undefined,
+  pollingEvidence: PollingEvidence[] | undefined,
+  reportDate: string,
 ): { opportunity?: Opportunity; pass?: PassDecision } {
   const marketClass = classifyMarket(market);
-  const model = resolveModel(market, overrides, marketClass);
   const executableYes = yesAskCents(market);
   const executableNo = noAskCents(market);
+
+  if (marketClass === "politics") {
+    const record = findPollingEvidence(market, pollingEvidence);
+
+    if (!record || isPollingEvidenceStale(record, reportDate)) {
+      const freshness = record ? ` Latest tracked poll ended ${latestPollingDate(record)}.` : "";
+
+      return {
+        pass: buildPassDecision(
+          market,
+          marketClass,
+          "missing-or-stale-polling",
+          `Pass: missing-or-stale-polling.${freshness}`,
+          executableYes,
+        ),
+      };
+    }
+  }
+
+  const model = resolveModel(market, overrides, marketClass, pollingEvidence, reportDate);
 
   if (marketClass === "other/no-model" || model === null) {
     return {
@@ -436,6 +522,8 @@ function reviewPosition(
   position: PortfolioPositionInput,
   liveMarket: PublicMarketSnapshot | undefined,
   overrides: Record<string, ModelOverride> | undefined,
+  pollingEvidence: PollingEvidence[] | undefined,
+  reportDate: string,
 ): PositionReview {
   const marketReference: PublicMarketSnapshot = liveMarket ?? {
     ticker: position.ticker,
@@ -447,7 +535,7 @@ function reviewPosition(
     no_ask_cents: inverseCents(position.current_price),
   };
   const marketClass = classifyMarket(marketReference);
-  const model = resolveModel(marketReference, overrides, marketClass);
+  const model = resolveModel(marketReference, overrides, marketClass, pollingEvidence, reportDate);
   const executablePrice = exitPriceForPosition(position, liveMarket);
 
   if (!model) {
@@ -532,6 +620,22 @@ function dedupeEvidence(links: EvidenceLink[]): EvidenceLink[] {
   return deduped;
 }
 
+function dedupePollingEvidence(records: PollingEvidence[]): PollingEvidence[] {
+  const seen = new Set<string>();
+  const deduped: PollingEvidence[] = [];
+
+  for (const record of records) {
+    if (seen.has(record.market_key)) {
+      continue;
+    }
+
+    seen.add(record.market_key);
+    deduped.push(record);
+  }
+
+  return deduped;
+}
+
 function opportunityPriority(opportunity: Opportunity): number {
   switch (opportunity.action) {
     case "Buy YES":
@@ -549,9 +653,12 @@ export function buildDailyReport({
   marketSnapshot,
   portfolioSnapshot,
   modelOverrides,
+  pollingEvidence,
   opportunityLimit = DEFAULT_OPPORTUNITY_LIMIT,
 }: BuildDailyReportArgs): DailyReport {
-  const evaluated = marketSnapshot.markets.map((market) => analyzeMarket(market, modelOverrides));
+  const evaluated = marketSnapshot.markets.map((market) =>
+    analyzeMarket(market, modelOverrides, pollingEvidence, reportDate),
+  );
   const opportunities = evaluated
     .flatMap((entry) => (entry.opportunity ? [entry.opportunity] : []))
     .sort((left, right) => opportunityPriority(right) - opportunityPriority(left) || right.edge - left.edge)
@@ -563,10 +670,21 @@ export function buildDailyReport({
       position,
       marketSnapshot.markets.find((market) => market.ticker === position.ticker),
       modelOverrides,
+      pollingEvidence,
+      reportDate,
     ),
   );
   const positionActions = portfolioReviews.filter((position) => position.action !== "Hold");
+  const matchedPollingEvidence = dedupePollingEvidence(
+    [
+      ...marketSnapshot.markets.map((market) => findPollingEvidence(market, pollingEvidence)),
+      ...(portfolioSnapshot?.positions ?? []).map((position) =>
+        findPollingEvidence({ ticker: position.ticker, title: position.market_title }, pollingEvidence),
+      ),
+    ].flatMap((record) => (record ? [record] : [])),
+  );
   const evidence = dedupeEvidence([
+    ...matchedPollingEvidence.flatMap((record) => record.evidence_links),
     ...opportunities.flatMap((opportunity) => opportunity.evidenceLinks),
     ...portfolioReviews.flatMap((position) => position.evidenceLinks),
   ]);
@@ -597,6 +715,7 @@ export function buildDailyReport({
       positions: portfolioReviews,
     },
     evidence,
+    pollingEvidence: matchedPollingEvidence.length > 0 ? matchedPollingEvidence : undefined,
     archive: [],
     watchlist: [
       "Most markets should stay passed until a reliable model exists.",

@@ -14,11 +14,20 @@ export const passReasonCodes = [
   "edge-below-threshold",
   "low-confidence-pass",
   "spread-too-wide",
+  "missing-or-stale-polling",
+] as const;
+export const pollingMarketTypes = [
+  "binary-general",
+  "multi-candidate-primary",
+  "top-two",
+  "chamber-control",
+  "unknown",
 ] as const;
 
 export type RecommendationAction = (typeof recommendationActions)[number];
 export type ConfidenceLevel = (typeof confidenceLevels)[number];
 export type PassReasonCode = (typeof passReasonCodes)[number];
+export type PollingMarketType = (typeof pollingMarketTypes)[number];
 
 export interface EvidenceLink {
   label: string;
@@ -90,6 +99,46 @@ export interface ArchiveEntry {
   verdict: string;
 }
 
+export interface PollingTopline {
+  candidate: string;
+  pct: number;
+}
+
+export interface PollDateRange {
+  start: string;
+  end: string;
+}
+
+export interface LatestPoll {
+  pollster: string;
+  dates: PollDateRange;
+  sample: string;
+  toplines: PollingTopline[];
+  spread: string;
+}
+
+export interface PollingAverage {
+  updated_at: string;
+  leader: string;
+  leader_share: number;
+  runner_up: string;
+  runner_up_share: number;
+  spread: number;
+  fair_yes_cents?: number;
+}
+
+export interface PollingEvidence {
+  collected_at: string;
+  source_url: string;
+  race: string;
+  market_key: string;
+  market_type: PollingMarketType;
+  polling_average: PollingAverage;
+  latest_polls: LatestPoll[];
+  trend_summary: string;
+  evidence_links: EvidenceLink[];
+}
+
 export interface DailyReport {
   reportDate: string;
   generatedAt: string;
@@ -100,6 +149,7 @@ export interface DailyReport {
   opportunities: Opportunity[];
   portfolio: PortfolioSnapshot;
   evidence: EvidenceLink[];
+  pollingEvidence?: PollingEvidence[];
   archive: ArchiveEntry[];
   watchlist: string[];
   passes?: PassDecision[];
@@ -313,6 +363,72 @@ function parseArchiveEntry(value: unknown, path: string): ArchiveEntry {
   };
 }
 
+function parsePollingTopline(value: unknown, path: string): PollingTopline {
+  const record = expectRecord(value, path);
+
+  return {
+    candidate: expectString(record.candidate, `${path}.candidate`),
+    pct: expectNumber(record.pct, `${path}.pct`),
+  };
+}
+
+function parsePollDateRange(value: unknown, path: string): PollDateRange {
+  const record = expectRecord(value, path);
+
+  return {
+    start: expectString(record.start, `${path}.start`),
+    end: expectString(record.end, `${path}.end`),
+  };
+}
+
+function parseLatestPoll(value: unknown, path: string): LatestPoll {
+  const record = expectRecord(value, path);
+
+  return {
+    pollster: expectString(record.pollster, `${path}.pollster`),
+    dates: parsePollDateRange(record.dates, `${path}.dates`),
+    sample: expectString(record.sample, `${path}.sample`),
+    toplines: expectArray(record.toplines, `${path}.toplines`).map((entry, index) =>
+      parsePollingTopline(entry, `${path}.toplines[${index}]`),
+    ),
+    spread: expectString(record.spread, `${path}.spread`),
+  };
+}
+
+function parsePollingAverage(value: unknown, path: string): PollingAverage {
+  const record = expectRecord(value, path);
+
+  return {
+    updated_at: expectString(record.updated_at, `${path}.updated_at`),
+    leader: expectString(record.leader, `${path}.leader`),
+    leader_share: expectNumber(record.leader_share, `${path}.leader_share`),
+    runner_up: expectString(record.runner_up, `${path}.runner_up`),
+    runner_up_share: expectNumber(record.runner_up_share, `${path}.runner_up_share`),
+    spread: expectNumber(record.spread, `${path}.spread`),
+    fair_yes_cents: expectOptionalNumber(record.fair_yes_cents, `${path}.fair_yes_cents`),
+  };
+}
+
+function parsePollingEvidence(value: unknown, path: string): PollingEvidence {
+  const record = expectRecord(value, path);
+
+  return {
+    collected_at: expectString(record.collected_at, `${path}.collected_at`),
+    source_url: expectString(record.source_url, `${path}.source_url`),
+    race: expectString(record.race, `${path}.race`),
+    market_key: expectString(record.market_key, `${path}.market_key`),
+    market_type: expectEnum(record.market_type, pollingMarketTypes, `${path}.market_type`, "PollingMarketType"),
+    polling_average: parsePollingAverage(record.polling_average, `${path}.polling_average`),
+    latest_polls: expectArray(record.latest_polls, `${path}.latest_polls`).map((entry, index) =>
+      parseLatestPoll(entry, `${path}.latest_polls[${index}]`),
+    ),
+    trend_summary: expectString(record.trend_summary, `${path}.trend_summary`),
+    evidence_links: expectArray(record.evidence_links, `${path}.evidence_links`).map((entry, index) =>
+      parseEvidenceLink(entry, `${path}.evidence_links[${index}]`),
+    ),
+  };
+}
+
 export function parseDailyReport(value: unknown): DailyReport {
   const record = expectRecord(value, "report");
 
@@ -330,6 +446,12 @@ export function parseDailyReport(value: unknown): DailyReport {
     evidence: expectArray(record.evidence, "report.evidence").map((entry, index) =>
       parseEvidenceLink(entry, `report.evidence[${index}]`),
     ),
+    pollingEvidence:
+      record.pollingEvidence === undefined
+        ? undefined
+        : expectArray(record.pollingEvidence, "report.pollingEvidence").map((entry, index) =>
+            parsePollingEvidence(entry, `report.pollingEvidence[${index}]`),
+          ),
     archive: expectArray(record.archive, "report.archive").map((entry, index) =>
       parseArchiveEntry(entry, `report.archive[${index}]`),
     ),

@@ -30,6 +30,21 @@ function formatSignedCurrency(value: number): string {
   return `${sign}$${Math.abs(value).toLocaleString()}`;
 }
 
+function formatPollingMarketType(value: string): string {
+  switch (value) {
+    case "binary-general":
+      return "Binary general";
+    case "multi-candidate-primary":
+      return "Multi-candidate primary";
+    case "top-two":
+      return "Top-two";
+    case "chamber-control":
+      return "Chamber control";
+    default:
+      return "Unknown";
+  }
+}
+
 type HomeProps = {
   report?: DailyReport;
   portfolioSnapshot?: PortfolioSnapshot;
@@ -41,6 +56,7 @@ export default function Home({
 }: HomeProps) {
   const topOpportunities = getTopOpportunities(report);
   const portfolioCards = getPortfolioReviewCards(report, portfolioSnapshot);
+  const pollingEvidence = report.pollingEvidence ?? [];
   const grossExposure = portfolioSnapshot.available
     ? portfolioSnapshot.positions.reduce((total, position) => total + (position.exposure ?? 0), 0)
     : report.portfolio.grossExposure;
@@ -391,10 +407,64 @@ export default function Home({
               </h2>
             </div>
             <p className="max-w-2xl text-sm leading-6 text-[#D7EAFE]">
-              Mock links show the evidence layer Arbiter will depend on before any narrative gets a
-              vote.
+              Polling summaries should anchor political calls before any narrative gets a vote.
             </p>
           </div>
+
+          {pollingEvidence.length > 0 ? (
+            <div className="mt-6 grid gap-4 xl:grid-cols-2">
+              {pollingEvidence.map((entry) => (
+                <article
+                  key={entry.market_key}
+                  className="rounded-[24px] border border-[#6EE7B7]/20 bg-[#101947]/90 p-5"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">
+                        {formatPollingMarketType(entry.market_type)}
+                      </p>
+                      <h3 className="mt-2 text-xl font-semibold text-white">{entry.race}</h3>
+                    </div>
+                    <p className="rounded-full border border-[#6EE7B7]/30 bg-[#0E3A2D]/25 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#BBF7D0]">
+                      {entry.polling_average.leader} +{entry.polling_average.spread}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">Polling average</p>
+                      <p className="mt-2 text-sm leading-6 text-[#F7F1E6]">
+                        {entry.polling_average.leader} {entry.polling_average.leader_share} -{" "}
+                        {entry.polling_average.runner_up} {entry.polling_average.runner_up_share}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">Latest poll</p>
+                      <p className="mt-2 text-sm leading-6 text-[#F7F1E6]">
+                        {entry.latest_polls[0]?.pollster ?? "Polling table"} · {entry.latest_polls[0]?.spread ?? "n/a"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 text-sm leading-6 text-[#EADFCB]">{entry.trend_summary}</p>
+
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {entry.evidence_links.map((link) => (
+                      <a
+                        key={`${entry.market_key}-${link.href}`}
+                        href={link.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-full border border-[#3B82C4]/30 bg-[#0A0F2E] px-3 py-2 text-xs font-medium text-[#D7EDFF] transition hover:border-[#3B82C4] hover:text-white"
+                      >
+                        {link.label}
+                      </a>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {report.evidence.length > 0 ? (
