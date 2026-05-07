@@ -1,54 +1,366 @@
+import { getTopOpportunities, mockDashboardReport } from "./dashboard-data";
+
+const sectionLinks = [
+  { href: "#today", label: "Today" },
+  { href: "#opportunities", label: "Opportunities" },
+  { href: "#portfolio", label: "Portfolio" },
+  { href: "#evidence", label: "Evidence" },
+  { href: "#archive", label: "Archive" },
+];
+
+const actionStyles = {
+  "Buy YES": "border-[#6EE7B7]/45 bg-[#0E3A2D] text-[#BBF7D0]",
+  "Buy NO": "border-[#F6C76B]/45 bg-[#4B3512] text-[#FCE7A8]",
+  Hold: "border-[#3B82C4]/45 bg-[#132B63] text-[#CFE7FF]",
+  Reduce: "border-[#F6C76B]/45 bg-[#4B3512] text-[#FCE7A8]",
+  Exit: "border-[#FB7185]/45 bg-[#4A1222] text-[#FFD0D8]",
+  Watch: "border-[#3B82C4]/45 bg-[#132B63] text-[#CFE7FF]",
+  Pass: "border-[#3B82C4]/30 bg-[#121739] text-[#D7EAFE]",
+} as const;
+
 export default function Home() {
+  const report = mockDashboardReport;
+  const topOpportunities = getTopOpportunities(report);
+
   return (
-    <main className="min-h-[100dvh] bg-[#101234] px-6 py-10 text-[#F7F1E6] md:px-12">
-      <section className="mx-auto flex max-w-6xl flex-col gap-10">
-        <nav className="flex items-center justify-between border-b border-[#3B82C4]/25 pb-5">
-          <div>
-            <p className="text-sm tracking-[0.18em] text-[#8FC5F4] uppercase">Kalshi intelligence</p>
-            <h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] text-white md:text-6xl">Arbiter</h1>
-          </div>
-          <div className="rounded-full border border-[#3B82C4]/40 px-4 py-2 text-sm text-[#CFE7FF]">
-            Session 1 pending
-          </div>
-        </nav>
+    <main className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,#1E245F_0%,#0A0D2A_55%,#070819_100%)] px-5 py-8 text-[#F7F1E6] md:px-10 md:py-10">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6">
+        <header className="overflow-hidden rounded-[32px] border border-[#3B82C4]/30 bg-[#0E1233]/92 shadow-[0_30px_80px_rgba(3,6,24,0.5)]">
+          <div className="flex flex-col gap-8 px-6 py-6 md:px-8">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+              <div className="max-w-3xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#9ED4FF]">
+                  Arbiter private terminal
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <h1 className="text-4xl font-semibold tracking-[-0.05em] text-white md:text-6xl">
+                    Arbiter
+                  </h1>
+                  <span className="rounded-full border border-[#3B82C4]/40 bg-[#101947] px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-[#D7EDFF]">
+                    {report.reportLabel}
+                  </span>
+                </div>
+                <p className="mt-5 max-w-2xl text-lg leading-8 text-[#EADFCB] md:text-xl">
+                  Judge Kalshi prices against disciplined fair value, portfolio risk, and evidence
+                  before risking capital.
+                </p>
+                <p className="mt-3 max-w-2xl text-base leading-7 text-[#CFE7FF]">
+                  {report.thesis} The brief only surfaces the few setups worth attention and leaves
+                  room for a clean pass.
+                </p>
+              </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-          <section className="rounded-[28px] border border-[#3B82C4]/25 bg-[#1B1B4A] p-8 shadow-2xl shadow-[#070817]/40">
-            <p className="text-sm tracking-[0.16em] text-[#8FC5F4] uppercase">Product thesis</p>
-            <h2 className="mt-4 max-w-3xl text-3xl font-medium tracking-[-0.03em] text-white md:text-5xl">
-              Judge market prices against evidence before risking capital.
-            </h2>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#E8DECB]">
-              Arbiter will scan Kalshi markets expiring in the next month, review the portfolio, and publish a daily edge report focused on the few trades worth attention — including no-trade days.
-            </p>
-          </section>
+              <div className="grid gap-3 sm:grid-cols-3 lg:w-[26rem] lg:grid-cols-1">
+                {[
+                  ["Generated", report.generatedAt],
+                  ["Today list", `${topOpportunities.length} qualified ideas`],
+                  ["Portfolio risk", report.portfolio.riskPosture],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="rounded-2xl border border-[#3B82C4]/25 bg-[#11163D]/95 p-4"
+                  >
+                    <p className="text-xs uppercase tracking-[0.22em] text-[#9ED4FF]">{label}</p>
+                    <p className="mt-2 text-sm leading-6 text-[#F7F1E6]">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          <aside className="rounded-[28px] border border-[#3B82C4]/25 bg-[#151743] p-6">
-            <p className="text-sm tracking-[0.16em] text-[#8FC5F4] uppercase">V1 constraints</p>
-            <ul className="mt-5 space-y-4 text-[#F7F1E6]">
-              <li>• Kalshi-first, not Polymarket-first</li>
-              <li>• Polling-first for politics</li>
-              <li>• F1 uses pace data</li>
-              <li>• No automatic trading</li>
-              <li>• Top 3-5 opportunities only</li>
-            </ul>
-          </aside>
-        </div>
+            <nav className="flex flex-wrap gap-3">
+              {sectionLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="rounded-full border border-[#3B82C4]/35 bg-[#101947]/85 px-4 py-2 text-sm font-medium text-[#D7EDFF] transition hover:border-[#3B82C4] hover:text-white"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+          </div>
+        </header>
 
         <section className="grid gap-4 md:grid-cols-4">
           {[
-            ["Today", "Daily recommendation report"],
-            ["Opportunities", "Ranked edge candidates"],
-            ["Portfolio", "Hold, reduce, exit review"],
-            ["Evidence", "Polling, pace, official data"],
-          ].map(([title, body]) => (
-            <div key={title} className="rounded-3xl border border-[#3B82C4]/20 bg-[#171943] p-5">
-              <h3 className="text-lg font-semibold text-white">{title}</h3>
-              <p className="mt-3 text-sm leading-6 text-[#E8DECB]">{body}</p>
+            ["Focus", "Top 3-5 opportunities only"],
+            ["Discipline", "No trade today remains a valid output"],
+            ["Venue", "Kalshi first, outside sources only as evidence"],
+            ["Mocked", "Static session shell with no live auth or trading"],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-2xl border border-[#3B82C4]/20 bg-[#10153A]/88 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-[#9ED4FF]">{label}</p>
+              <p className="mt-2 text-sm leading-6 text-[#F0E6D3]">{value}</p>
             </div>
           ))}
         </section>
-      </section>
+
+        <section id="today" className="grid gap-6 xl:grid-cols-[1.6fr_0.8fr]">
+          <div className="rounded-[28px] border border-[#3B82C4]/25 bg-[#0E1233]/92 p-6">
+            <div className="flex flex-col gap-3 border-b border-[#3B82C4]/20 pb-5 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-[#9ED4FF]">Today</p>
+                <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">
+                  Edge report
+                </h2>
+              </div>
+              <p className="max-w-2xl text-sm leading-6 text-[#D7EAFE]">
+                Arbiter is an edge filter, not a broad market screener. Every trade call needs a
+                price gap, evidence, and a clear reason to act now.
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-4 xl:grid-cols-2">
+              {topOpportunities.map((opportunity) => (
+                <article
+                  key={opportunity.ticker}
+                  className="rounded-[24px] border border-[#3B82C4]/22 bg-[#111741]/88 p-5"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-[#8FC5F4]">
+                        {opportunity.ticker}
+                      </p>
+                      <h3 className="mt-2 text-xl font-semibold text-white">{opportunity.title}</h3>
+                    </div>
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
+                        actionStyles[opportunity.action]
+                      }`}
+                    >
+                      {opportunity.action}
+                    </span>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                    <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
+                        Kalshi price
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[#F7F1E6]">
+                        {opportunity.kalshiPrice}c
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
+                        Marcus fair value
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[#F7F1E6]">
+                        {opportunity.marcusFairValue}c
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">Edge</p>
+                      <p className="mt-2 text-lg font-semibold text-[#6EE7B7]">
+                        +{opportunity.edge} pts
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
+                        Confidence
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[#F7F1E6]">
+                        {opportunity.confidence}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 md:grid-cols-[1fr_auto]">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">Reason</p>
+                      <p className="mt-2 text-sm leading-6 text-[#EADFCB]">{opportunity.reason}</p>
+                    </div>
+                    <div className="rounded-2xl border border-[#3B82C4]/20 bg-[#0A0F2E] px-4 py-3 text-right">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">
+                        Evidence count
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-white">
+                        {opportunity.evidenceCount}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-[#F6C76B]/25 bg-[#3A2A10]/20 p-4">
+                    <p className="text-xs uppercase tracking-[0.16em] text-[#F6C76B]">
+                      What would change the view
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-[#F3E5C0]">
+                      {opportunity.whatWouldChange}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <aside className="grid gap-4">
+            <section className="rounded-[28px] border border-[#6EE7B7]/25 bg-[#0E1233]/92 p-6">
+              <p className="text-xs uppercase tracking-[0.24em] text-[#9ED4FF]">Report discipline</p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">No trade today</h2>
+              <p className="mt-4 text-sm leading-7 text-[#EADFCB]">{report.noTradePolicy}</p>
+            </section>
+
+            <section
+              id="opportunities"
+              className="rounded-[28px] border border-[#3B82C4]/25 bg-[#0E1233]/92 p-6"
+            >
+              <p className="text-xs uppercase tracking-[0.24em] text-[#9ED4FF]">Opportunities</p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">What stays on watch</h2>
+              <ul className="mt-5 space-y-4">
+                {report.watchlist.map((item) => (
+                  <li
+                    key={item}
+                    className="rounded-2xl border border-[#3B82C4]/20 bg-[#101947]/90 px-4 py-3 text-sm leading-6 text-[#DDEFFF]"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </aside>
+        </section>
+
+        <section id="portfolio" className="rounded-[28px] border border-[#3B82C4]/25 bg-[#0E1233]/92 p-6">
+          <div className="flex flex-col gap-3 border-b border-[#3B82C4]/20 pb-5 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.24em] text-[#9ED4FF]">Portfolio</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">
+                Existing risk review
+              </h2>
+            </div>
+            <p className="max-w-2xl text-sm leading-6 text-[#D7EAFE]">
+              Hold, reduce, and exit calls matter as much as new trades when the edge fades or
+              concentration grows.
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-[0.7fr_1.3fr]">
+            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+              {[
+                ["Gross exposure", `$${report.portfolio.grossExposure.toLocaleString()}`],
+                ["Unrealized P&L", `+$${report.portfolio.unrealizedPnl.toLocaleString()}`],
+                ["Cash available", `$${report.portfolio.cashAvailable.toLocaleString()}`],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-[#3B82C4]/20 bg-[#101947]/90 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#8FC5F4]">{label}</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">{value}</p>
+                </div>
+              ))}
+              <div className="rounded-2xl border border-[#F6C76B]/25 bg-[#3A2A10]/20 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-[#F6C76B]">Risk posture</p>
+                <p className="mt-2 text-sm leading-6 text-[#F3E5C0]">{report.portfolio.riskPosture}</p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-3">
+              {report.portfolio.positions.map((position) => (
+                <article
+                  key={position.ticker}
+                  className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">
+                        {position.ticker}
+                      </p>
+                      <h3 className="mt-2 text-lg font-semibold text-white">{position.title}</h3>
+                    </div>
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
+                        actionStyles[position.action]
+                      }`}
+                    >
+                      {position.action}
+                    </span>
+                  </div>
+                  <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">Exposure</p>
+                      <p className="mt-2 text-lg font-semibold text-[#F7F1E6]">
+                        ${position.exposure.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">P&amp;L</p>
+                      <p
+                        className={`mt-2 text-lg font-semibold ${
+                          position.pnl >= 0 ? "text-[#6EE7B7]" : "text-[#FB7185]"
+                        }`}
+                      >
+                        {position.pnl >= 0 ? "+" : "-"}${Math.abs(position.pnl).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-4 text-sm leading-6 text-[#EADFCB]">{position.note}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="evidence" className="rounded-[28px] border border-[#3B82C4]/25 bg-[#0E1233]/92 p-6">
+          <div className="flex flex-col gap-3 border-b border-[#3B82C4]/20 pb-5 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.24em] text-[#9ED4FF]">Evidence</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">
+                Polling, pace, and official sources
+              </h2>
+            </div>
+            <p className="max-w-2xl text-sm leading-6 text-[#D7EAFE]">
+              Mock links show the evidence layer Arbiter will depend on before any narrative gets a
+              vote.
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {report.evidence.map((entry) => (
+              <a
+                key={entry.label}
+                href={entry.href}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5 transition hover:border-[#3B82C4] hover:bg-[#132055]"
+              >
+                <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">{entry.source}</p>
+                <h3 className="mt-3 text-lg font-semibold text-white">{entry.label}</h3>
+                <p className="mt-4 text-sm leading-6 text-[#EADFCB]">{entry.note}</p>
+                <p className="mt-4 text-xs uppercase tracking-[0.18em] text-[#9ED4FF]">Open source link</p>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <section id="archive" className="rounded-[28px] border border-[#3B82C4]/25 bg-[#0E1233]/92 p-6">
+          <div className="flex flex-col gap-3 border-b border-[#3B82C4]/20 pb-5 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.24em] text-[#9ED4FF]">Archive</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">
+                Prior daily reports
+              </h2>
+            </div>
+            <p className="max-w-2xl text-sm leading-6 text-[#D7EAFE]">
+              The archive should make it easy to review prior theses, passes, and portfolio cleanup
+              calls.
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {report.archive.map((entry) => (
+              <article
+                key={entry.date}
+                className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5"
+              >
+                <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">{entry.date}</p>
+                <h3 className="mt-3 text-xl font-semibold text-white">{entry.headline}</h3>
+                <p className="mt-4 text-sm leading-6 text-[#EADFCB]">{entry.summary}</p>
+                <p className="mt-5 rounded-2xl border border-[#3B82C4]/20 bg-[#0A0F2E] px-4 py-3 text-sm text-[#DDEFFF]">
+                  {entry.verdict}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+      </div>
     </main>
   );
 }
