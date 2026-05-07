@@ -11,6 +11,8 @@ import {
   type PortfolioSnapshot,
 } from "./portfolio-data";
 
+export const revalidate = 60;
+
 const sectionLinks = [
   { href: "#today", label: "Today" },
   { href: "#opportunities", label: "Opportunities" },
