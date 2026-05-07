@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
 
+import { DEFAULT_OPPORTUNITY_LIMIT } from "../analysis/engine";
 import { getTopOpportunities } from "./dashboard-data";
 import { ValidationError, parseDailyReport } from "./report-schema";
 
@@ -65,7 +66,7 @@ test("caps top opportunities at five highest-edge ideas", () => {
 
   const topOpportunities = getTopOpportunities(extendedReport);
 
-  assert.equal(topOpportunities.length, 5);
+  assert.equal(topOpportunities.length, DEFAULT_OPPORTUNITY_LIMIT);
   assert.deepEqual(
     topOpportunities.map((opportunity) => opportunity.market.ticker),
     [

@@ -9,9 +9,16 @@ export const recommendationActions = [
 ] as const;
 
 export const confidenceLevels = ["High", "Medium", "Low"] as const;
+export const passReasonCodes = [
+  "no-reliable-model",
+  "edge-below-threshold",
+  "low-confidence-pass",
+  "spread-too-wide",
+] as const;
 
 export type RecommendationAction = (typeof recommendationActions)[number];
 export type ConfidenceLevel = (typeof confidenceLevels)[number];
+export type PassReasonCode = (typeof passReasonCodes)[number];
 
 export interface EvidenceLink {
   label: string;
@@ -49,7 +56,23 @@ export interface PositionReview {
   exposure: number;
   pnl: number;
   note: string;
+   reason?: string;
+   confidence?: ConfidenceLevel;
+   marcusFairValue?: number;
+   executablePrice?: number;
   evidenceLinks: EvidenceLink[];
+}
+
+export interface PassDecision {
+  title: string;
+  market: MarketSnapshot;
+  marketClass: string;
+  reasonCode: PassReasonCode;
+  reason: string;
+  executablePrice: number;
+  marcusFairValue?: number;
+  edge?: number;
+  confidence?: ConfidenceLevel;
 }
 
 export interface PortfolioSnapshot {
@@ -79,6 +102,7 @@ export interface DailyReport {
   evidence: EvidenceLink[];
   archive: ArchiveEntry[];
   watchlist: string[];
+  passes?: PassDecision[];
 }
 
 export class ValidationError extends Error {
@@ -138,6 +162,22 @@ function expectNumber(value: unknown, path: string): number {
   }
 
   return value;
+}
+
+function expectOptionalNumber(value: unknown, path: string): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return expectNumber(value, path);
+}
+
+function expectOptionalString(value: unknown, path: string): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return expectString(value, path);
 }
 
 function expectArray(value: unknown, path: string): unknown[] {
@@ -216,9 +256,35 @@ function parsePositionReview(value: unknown, path: string): PositionReview {
     exposure: expectNumber(record.exposure, `${path}.exposure`),
     pnl: expectNumber(record.pnl, `${path}.pnl`),
     note: expectString(record.note, `${path}.note`),
+    reason: expectOptionalString(record.reason, `${path}.reason`),
+    confidence:
+      record.confidence === undefined
+        ? undefined
+        : expectEnum(record.confidence, confidenceLevels, `${path}.confidence`, "ConfidenceLevel"),
+    marcusFairValue: expectOptionalNumber(record.marcusFairValue, `${path}.marcusFairValue`),
+    executablePrice: expectOptionalNumber(record.executablePrice, `${path}.executablePrice`),
     evidenceLinks: expectArray(record.evidenceLinks, `${path}.evidenceLinks`).map((entry, index) =>
       parseEvidenceLink(entry, `${path}.evidenceLinks[${index}]`),
     ),
+  };
+}
+
+function parsePassDecision(value: unknown, path: string): PassDecision {
+  const record = expectRecord(value, path);
+
+  return {
+    title: expectString(record.title, `${path}.title`),
+    market: parseMarketSnapshot(record.market, `${path}.market`),
+    marketClass: expectString(record.marketClass, `${path}.marketClass`),
+    reasonCode: expectEnum(record.reasonCode, passReasonCodes, `${path}.reasonCode`, "PassReasonCode"),
+    reason: expectString(record.reason, `${path}.reason`),
+    executablePrice: expectNumber(record.executablePrice, `${path}.executablePrice`),
+    marcusFairValue: expectOptionalNumber(record.marcusFairValue, `${path}.marcusFairValue`),
+    edge: expectOptionalNumber(record.edge, `${path}.edge`),
+    confidence:
+      record.confidence === undefined
+        ? undefined
+        : expectEnum(record.confidence, confidenceLevels, `${path}.confidence`, "ConfidenceLevel"),
   };
 }
 
@@ -270,5 +336,11 @@ export function parseDailyReport(value: unknown): DailyReport {
     watchlist: expectArray(record.watchlist, "report.watchlist").map((entry, index) =>
       expectString(entry, `report.watchlist[${index}]`),
     ),
+    passes:
+      record.passes === undefined
+        ? undefined
+        : expectArray(record.passes, "report.passes").map((entry, index) =>
+            parsePassDecision(entry, `report.passes[${index}]`),
+          ),
   };
 }

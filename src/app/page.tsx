@@ -118,7 +118,7 @@ export default function Home({
             ["Focus", "Top 3-5 opportunities only"],
             ["Discipline", "No trade today remains a valid output"],
             ["Venue", "Kalshi first, outside sources only as evidence"],
-            ["Mocked", "Static session shell with no live auth or trading"],
+            ["Report feed", report.passes ? "Generated from saved snapshots" : "Sample fallback report"],
           ].map(([label, value]) => (
             <div key={label} className="rounded-2xl border border-[#3B82C4]/20 bg-[#10153A]/88 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[#9ED4FF]">{label}</p>

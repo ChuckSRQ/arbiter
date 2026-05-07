@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { getTopOpportunities, mockDashboardReport, sampleReports } from "./dashboard-data";
+import { getTopOpportunities, sampleReports } from "./dashboard-data";
 import Home from "./page";
 import { fixturePortfolioSnapshot, unavailablePortfolioSnapshot } from "./portfolio-data";
 
 test("renders the edge-filter shell with required report sections", () => {
-  const markup = renderToStaticMarkup(<Home />);
+  const markup = renderToStaticMarkup(<Home report={sampleReports.politicalEdgeDay} />);
 
   assert.match(markup, /Arbiter/);
   assert.match(markup, /edge filter, not a broad market screener/i);
@@ -23,7 +23,7 @@ test("renders the edge-filter shell with required report sections", () => {
 });
 
 test("renders mocked market details for recommendation cards", () => {
-  const markup = renderToStaticMarkup(<Home />);
+  const markup = renderToStaticMarkup(<Home report={sampleReports.politicalEdgeDay} />);
 
   assert.match(markup, /Kalshi price/i);
   assert.match(markup, /Marcus fair value/i);
@@ -32,7 +32,7 @@ test("renders mocked market details for recommendation cards", () => {
 });
 
 test("keeps the today list focused on the top 3-5 opportunities", () => {
-  const topOpportunities = getTopOpportunities(mockDashboardReport);
+  const topOpportunities = getTopOpportunities(sampleReports.politicalEdgeDay);
 
   assert.ok(topOpportunities.length >= 3);
   assert.ok(topOpportunities.length <= 5);
