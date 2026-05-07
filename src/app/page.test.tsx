@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { getTopOpportunities, mockDashboardReport, sampleReports } from "./dashboard-data";
 import Home from "./page";
+import { fixturePortfolioSnapshot, unavailablePortfolioSnapshot } from "./portfolio-data";
 
 test("renders the edge-filter shell with required report sections", () => {
   const markup = renderToStaticMarkup(<Home />);
@@ -50,6 +51,27 @@ test("renders missing evidence and portfolio exit actions gracefully", () => {
   const markup = renderToStaticMarkup(<Home report={sampleReports.portfolioExitDay} />);
 
   assert.match(markup, /No linked evidence yet/i);
+  assert.match(markup, /Reduce/i);
+  assert.match(markup, /Exit/i);
+});
+
+test("renders a clean portfolio unavailable state", () => {
+  const markup = renderToStaticMarkup(
+    <Home report={sampleReports.noTradeDay} portfolioSnapshot={unavailablePortfolioSnapshot} />,
+  );
+
+  assert.match(markup, /Portfolio unavailable/i);
+  assert.match(markup, /Missing Kalshi portfolio credentials/i);
+  assert.match(markup, /Hold/i);
+});
+
+test("renders fixture-backed reduce and exit recommendations", () => {
+  const markup = renderToStaticMarkup(
+    <Home report={sampleReports.noTradeDay} portfolioSnapshot={fixturePortfolioSnapshot} />,
+  );
+
+  assert.match(markup, /Live portfolio snapshot/i);
+  assert.match(markup, /OIL-ABOVE-85/i);
   assert.match(markup, /Reduce/i);
   assert.match(markup, /Exit/i);
 });

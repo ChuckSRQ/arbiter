@@ -1,5 +1,10 @@
 import { getTopOpportunities, mockDashboardReport } from "./dashboard-data";
 import type { DailyReport } from "./report-schema";
+import {
+  defaultPortfolioSnapshot,
+  getPortfolioReviewCards,
+  type PortfolioSnapshot,
+} from "./portfolio-data";
 
 const sectionLinks = [
   { href: "#today", label: "Today" },
@@ -27,10 +32,27 @@ function formatSignedCurrency(value: number): string {
 
 type HomeProps = {
   report?: DailyReport;
+  portfolioSnapshot?: PortfolioSnapshot;
 };
 
-export default function Home({ report = mockDashboardReport }: HomeProps) {
+export default function Home({
+  report = mockDashboardReport,
+  portfolioSnapshot = defaultPortfolioSnapshot,
+}: HomeProps) {
   const topOpportunities = getTopOpportunities(report);
+  const portfolioCards = getPortfolioReviewCards(report, portfolioSnapshot);
+  const grossExposure = portfolioSnapshot.available
+    ? portfolioSnapshot.positions.reduce((total, position) => total + (position.exposure ?? 0), 0)
+    : report.portfolio.grossExposure;
+  const unrealizedPnl = portfolioSnapshot.available
+    ? portfolioSnapshot.positions.reduce((total, position) => total + (position.unrealizedPnl ?? 0), 0)
+    : report.portfolio.unrealizedPnl;
+  const cashAvailable = portfolioSnapshot.available
+    ? (portfolioSnapshot.balance?.cashBalance ?? 0)
+    : report.portfolio.cashAvailable;
+  const riskPosture = portfolioSnapshot.available
+    ? `Live portfolio snapshot${portfolioSnapshot.collectedAt ? ` · ${portfolioSnapshot.collectedAt}` : ""}`
+    : report.portfolio.riskPosture;
 
   return (
     <main className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,#1E245F_0%,#0A0D2A_55%,#070819_100%)] px-5 py-8 text-[#F7F1E6] md:px-10 md:py-10">
@@ -64,7 +86,7 @@ export default function Home({ report = mockDashboardReport }: HomeProps) {
                 {[
                   ["Generated", report.generatedAt],
                   ["Today list", `${topOpportunities.length} qualified ideas`],
-                  ["Portfolio risk", report.portfolio.riskPosture],
+                  ["Portfolio feed", portfolioSnapshot.available ? "Live portfolio snapshot" : "Portfolio unavailable"],
                 ].map(([label, value]) => (
                   <div
                     key={label}
@@ -271,9 +293,9 @@ export default function Home({ report = mockDashboardReport }: HomeProps) {
           <div className="mt-6 grid gap-4 lg:grid-cols-[0.7fr_1.3fr]">
             <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
               {[
-                ["Gross exposure", `$${report.portfolio.grossExposure.toLocaleString()}`],
-                 ["Unrealized P&L", formatSignedCurrency(report.portfolio.unrealizedPnl)],
-                 ["Cash available", `$${report.portfolio.cashAvailable.toLocaleString()}`],
+                ["Gross exposure", `$${grossExposure.toLocaleString()}`],
+                ["Unrealized P&L", formatSignedCurrency(unrealizedPnl)],
+                ["Cash available", `$${cashAvailable.toLocaleString()}`],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-[#3B82C4]/20 bg-[#101947]/90 p-4">
                   <p className="text-xs uppercase tracking-[0.2em] text-[#8FC5F4]">{label}</p>
@@ -282,52 +304,80 @@ export default function Home({ report = mockDashboardReport }: HomeProps) {
               ))}
               <div className="rounded-2xl border border-[#F6C76B]/25 bg-[#3A2A10]/20 p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-[#F6C76B]">Risk posture</p>
-                <p className="mt-2 text-sm leading-6 text-[#F3E5C0]">{report.portfolio.riskPosture}</p>
+                <p className="mt-2 text-sm leading-6 text-[#F3E5C0]">{riskPosture}</p>
+              </div>
+              <div
+                className={`rounded-2xl border p-4 ${
+                  portfolioSnapshot.available
+                    ? "border-[#6EE7B7]/25 bg-[#0E3A2D]/25"
+                    : "border-[#FB7185]/25 bg-[#4A1222]/25"
+                }`}
+              >
+                <p className="text-xs uppercase tracking-[0.2em] text-[#9ED4FF]">
+                  {portfolioSnapshot.available ? "Live portfolio snapshot" : "Portfolio unavailable"}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-[#F7F1E6]">
+                  {portfolioSnapshot.available
+                    ? "Read-only balance and positions came from the latest sanitized portfolio snapshot."
+                    : portfolioSnapshot.warnings.join(" ")}
+                </p>
+                <p className="mt-3 text-xs uppercase tracking-[0.16em] text-[#CFE7FF]">
+                  Source {portfolioSnapshot.source.baseUrl}
+                </p>
               </div>
             </div>
 
             <div className="grid gap-4 xl:grid-cols-3">
-              {report.portfolio.positions.map((position) => (
-                <article
-                  key={position.market.ticker}
-                  className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">
-                        {position.market.ticker}
-                      </p>
-                      <h3 className="mt-2 text-lg font-semibold text-white">{position.title}</h3>
-                    </div>
-                    <span
-                      className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
-                        actionStyles[position.action]
-                      }`}
-                    >
-                      {position.action}
-                    </span>
-                  </div>
-                  <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-2xl bg-[#0A0F2E] p-3">
-                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">Exposure</p>
-                      <p className="mt-2 text-lg font-semibold text-[#F7F1E6]">
-                        ${position.exposure.toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl bg-[#0A0F2E] p-3">
-                      <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">P&amp;L</p>
-                      <p
-                        className={`mt-2 text-lg font-semibold ${
-                          position.pnl >= 0 ? "text-[#6EE7B7]" : "text-[#FB7185]"
+              {portfolioCards.length > 0 ? (
+                portfolioCards.map((position) => (
+                  <article
+                    key={position.ticker}
+                    className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-[#8FC5F4]">
+                          {position.ticker}
+                        </p>
+                        <h3 className="mt-2 text-lg font-semibold text-white">{position.title}</h3>
+                      </div>
+                      <span
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
+                          actionStyles[position.action]
                         }`}
                       >
-                        {position.pnl >= 0 ? "+" : "-"}${Math.abs(position.pnl).toLocaleString()}
-                      </p>
+                        {position.action}
+                      </span>
                     </div>
-                  </div>
-                  <p className="mt-4 text-sm leading-6 text-[#EADFCB]">{position.note}</p>
+                    <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+                      <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">Exposure</p>
+                        <p className="mt-2 text-lg font-semibold text-[#F7F1E6]">
+                          ${position.exposure.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-[#0A0F2E] p-3">
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#8FC5F4]">P&amp;L</p>
+                        <p
+                          className={`mt-2 text-lg font-semibold ${
+                            position.pnl >= 0 ? "text-[#6EE7B7]" : "text-[#FB7185]"
+                          }`}
+                        >
+                          {position.pnl >= 0 ? "+" : "-"}${Math.abs(position.pnl).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="mt-4 text-sm leading-6 text-[#EADFCB]">{position.note}</p>
+                  </article>
+                ))
+              ) : (
+                <article className="rounded-[24px] border border-[#3B82C4]/20 bg-[#101947]/90 p-5 xl:col-span-3">
+                  <p className="text-lg font-semibold text-white">No live positions detected</p>
+                  <p className="mt-3 text-sm leading-6 text-[#EADFCB]">
+                    The account is readable, but there are no open positions to review right now.
+                  </p>
                 </article>
-              ))}
+              )}
             </div>
           </div>
         </section>

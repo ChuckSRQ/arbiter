@@ -100,6 +100,37 @@ python3 scripts/collect_kalshi_public_snapshot.py --fixture tests/fixtures/kalsh
 
 ---
 
+## Portfolio Reader
+
+The Session 4 portfolio collector is read-only. It only calls `GET /portfolio/balance` and
+`GET /portfolio/positions`, signs requests with RSA-PSS using the full `/trade-api/v2/...` path,
+never prints credentials or private key contents, and falls back to clean JSON when local
+credentials are missing.
+
+```bash
+npm run collect:kalshi-portfolio
+```
+
+Useful options:
+
+```bash
+python3 scripts/collect_kalshi_portfolio.py --fixture tests/fixtures/kalshi_portfolio_fixture.json --output data/portfolio/fixture.json
+python3 scripts/collect_kalshi_portfolio.py --output data/portfolio/$(date +%F).json
+```
+
+Local-only environment variables:
+
+```bash
+KALSHI_BASE_URL=https://api.elections.kalshi.com/trade-api/v2
+KALSHI_API_KEY_ID=
+KALSHI_PRIVATE_KEY_PATH=
+```
+
+If `KALSHI_API_KEY_ID` or `KALSHI_PRIVATE_KEY_PATH` is missing, the collector still exits cleanly
+with `available: false`, an empty positions list, and warnings the dashboard can render safely.
+
+---
+
 ## Roadmap — 7 Sessions
 
 ### Session 1 — Project Scaffold + Static Dashboard Shell
