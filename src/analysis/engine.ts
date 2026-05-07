@@ -180,29 +180,13 @@ function categoryLabel(marketClass: MarketClass): string {
 export function classifyMarket(market: Pick<PublicMarketSnapshot, "category" | "ticker" | "title">): MarketClass {
   const haystack = `${market.category ?? ""} ${market.ticker} ${market.title}`.toLowerCase();
 
+  // Only electoral/polling markets are in scope.
+  // All other categories — F1, economics, weather, admin — are out of scope.
   if (
     haystack.includes("politic") ||
-    /\b(election|pres|senate|house|governor|nominee|poll|primary)\b/.test(haystack)
+    /\b(election|pres|senate|house|governor|nominee|poll|primary|impeach|congress|shutdown|pardon|resign|trump|vance|gabbard|scotus|fed|dissent)\b|ballot|vote/.test(haystack)
   ) {
     return "politics";
-  }
-
-  if (
-    /\b(f1|formula 1|grand prix|verstappen|leclerc|podium|qualifying|race winner)\b/.test(haystack)
-  ) {
-    return "F1";
-  }
-
-  if (
-    /\b(economic|economics|macro|gdp|cpi|inflation|fed|rate|oil|jobs|payroll|unemployment|treasury)\b/.test(
-      haystack,
-    )
-  ) {
-    return "economics";
-  }
-
-  if (/\b(weather|rain|snow|storm|hurricane|temperature|wind)\b/.test(haystack)) {
-    return "weather";
   }
 
   return "other/no-model";
@@ -330,6 +314,11 @@ function resolveModel(
   reportDate: string,
 ): EvaluatedModel | null {
   if (marketClass === "politics") {
+    const override = overrides?.[market.ticker];
+    if (override) {
+      return { ...override, marketClass };
+    }
+
     const record = findPollingEvidence(market, pollingEvidence);
     if (!record || isPollingEvidenceStale(record, reportDate)) {
       return null;

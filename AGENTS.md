@@ -16,6 +16,11 @@ Stack: Next.js 16, React 19, TypeScript, Tailwind CSS 4
 License: MIT
 Created: 2026-05-06
 
+## Skills
+
+- **`kalshi-integration`** — Kalshi API integration: authentication, market data, order placement, F1 trading workflows. Base URL: `https://api.elections.kalshi.com/trade-api/v2`. Public market data requires no API key. Authenticated endpoints (portfolio, orders) need RSA-PSS signed requests via `kalshi_python_sync` SDK.
+- **`prediction-market-trading`** — Prediction market analysis, trading strategy, and data queries. Kalshi-first for politics and F1. Polymarket as optional cross-market context only. Polling-first for political markets. F1 markets require F1ReplayTiming pace data — never driver reputation.
+
 ## Product Rule
 
 Arbiter is an edge filter, not a market screener. The daily report should focus on the 3-5 best opportunities or explicitly say “No trade today.” Do not force a position on every market.

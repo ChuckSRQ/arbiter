@@ -110,36 +110,51 @@ function createPollingEvidence(overrides: Record<string, unknown> = {}) {
 }
 
 test("classifies supported market groups conservatively", () => {
+  // Only electoral/polling markets are in scope.
+  // Politics with any political keyword → politics
   assert.equal(classifyMarket(createMarket({ category: "Politics" })), "politics");
-  assert.equal(classifyMarket(createMarket({ ticker: "F1-MONACO-LEC", category: "Sports" })), "F1");
-  assert.equal(classifyMarket(createMarket({ category: "Economics", title: "Will Q3 GDP exceed 4%?" })), "economics");
-  assert.equal(classifyMarket(createMarket({ category: "Weather", title: "Will NYC see snow?" })), "weather");
+  assert.equal(classifyMarket(createMarket({ category: "Politics", title: "Will the Senate pass a bill?" })), "politics");
+  assert.equal(classifyMarket(createMarket({ category: "Politics", title: "Will the approval rating exceed 50%?" })), "politics");
+  // All other categories — F1, Economics, Weather, Culture — are out of scope
+  assert.equal(classifyMarket(createMarket({ ticker: "F1-MONACO-LEC", category: "Sports" })), "other/no-model");
+  assert.equal(classifyMarket(createMarket({ category: "Economics", title: "Will Q3 GDP exceed 4%?" })), "other/no-model");
+  assert.equal(classifyMarket(createMarket({ category: "Weather", title: "Will NYC see snow?" })), "other/no-model");
   assert.equal(classifyMarket(createMarket({ category: "Culture", title: "Will this movie win an Oscar?" })), "other/no-model");
 });
 
 test("uses confidence-specific thresholds for ranking and pass logic", () => {
+  // Political tickers so classifyMarket returns "politics" (not "other/no-model").
+  // Polling evidence must be provided for Politics markets so the early return doesn't
+  // fire before modelOverrides are consulted. market_key is set to a value that
+  // normalizeCompact(ticker) contains (for the findPollingEvidence substring match).
+  const pollDate = new Date().toDateString();
   const report = buildDailyReport({
     reportDate: "2026-05-06",
     marketSnapshot: createMarketSnapshot([
-      createMarket({ ticker: "HIGH-EDGE", category: "Economics", yes_ask_cents: 45, no_ask_cents: 56 }),
-      createMarket({ ticker: "MEDIUM-WATCH", category: "Economics", yes_ask_cents: 45, no_ask_cents: 56 }),
-      createMarket({ ticker: "LOW-PASS", category: "Economics", yes_ask_cents: 44, no_ask_cents: 57 }),
+      createMarket({ ticker: "KXPOLL-HIGH-EDGE", category: "Politics", yes_ask_cents: 45, no_ask_cents: 56 }),
+      createMarket({ ticker: "KXPOLL-MEDIUM-WATCH", category: "Politics", yes_ask_cents: 45, no_ask_cents: 56 }),
+      createMarket({ ticker: "KXPOLL-LOW-PASS", category: "Politics", yes_ask_cents: 44, no_ask_cents: 57 }),
     ]),
+    pollingEvidence: [
+      createPollingEvidence({ market_key: "pollhighedge", race: "High Edge Poll", polling_average: { updated_at: `${pollDate}T12:00:00Z` } }),
+      createPollingEvidence({ market_key: "pollmediumwatch", race: "Medium Watch Poll", polling_average: { updated_at: `${pollDate}T12:00:00Z` } }),
+      createPollingEvidence({ market_key: "polllowpass", race: "Low Pass Poll", polling_average: { updated_at: `${pollDate}T12:00:00Z` } }),
+    ],
     portfolioSnapshot: createPortfolioSnapshot(),
     modelOverrides: {
-      "HIGH-EDGE": {
+      "KXPOLL-HIGH-EDGE": {
         fairYesCents: 50,
         confidence: "High",
         reason: "High-confidence model still shows a clean gap.",
         whatWouldChange: "A meaningfully worse entry.",
       },
-      "MEDIUM-WATCH": {
+      "KXPOLL-MEDIUM-WATCH": {
         fairYesCents: 52,
         confidence: "Medium",
         reason: "The setup is close but still shy of the medium-confidence bar.",
         whatWouldChange: "A cheaper price or stronger evidence.",
       },
-      "LOW-PASS": {
+      "KXPOLL-LOW-PASS": {
         fairYesCents: 54,
         confidence: "Low",
         reason: "Without stronger evidence the edge is not big enough to act.",
@@ -148,12 +163,12 @@ test("uses confidence-specific thresholds for ranking and pass logic", () => {
     },
   });
 
-  assert.equal(report.opportunities[0]?.market.ticker, "HIGH-EDGE");
+  assert.equal(report.opportunities[0]?.market.ticker, "KXPOLL-HIGH-EDGE");
   assert.equal(report.opportunities[0]?.action, "Buy YES");
-  assert.equal(report.opportunities[1]?.market.ticker, "MEDIUM-WATCH");
+  assert.equal(report.opportunities[1]?.market.ticker, "KXPOLL-MEDIUM-WATCH");
   assert.equal(report.opportunities[1]?.action, "Watch");
-  assert.ok(report.passes?.some((entry) => entry.market.ticker === "LOW-PASS"));
-  assert.equal(report.passes?.find((entry) => entry.market.ticker === "LOW-PASS")?.reasonCode, "low-confidence-pass");
+  assert.ok(report.passes?.some((entry) => entry.market.ticker === "KXPOLL-LOW-PASS"));
+  assert.equal(report.passes?.find((entry) => entry.market.ticker === "KXPOLL-LOW-PASS")?.reasonCode, "low-confidence-pass");
 });
 
 test("generates a no-trade report when nothing clears the bar", () => {
@@ -264,11 +279,13 @@ test("recommends reduce and exit when fair value is below the executable exit pr
 });
 
 test("caps generated opportunities at five ideas by default", () => {
+  // Uses Politics-category markets (in scope) instead of Economics (out of scope).
+  const pollDate = new Date().toDateString();
   const markets = Array.from({ length: 7 }, (_, index) =>
     createMarket({
-      ticker: `IDEA-${index + 1}`,
-      title: `Idea ${index + 1}`,
-      category: "Economics",
+      ticker: `POLLIDEA-${index + 1}`,
+      title: `Poll Idea ${index + 1}`,
+      category: "Politics",
       yes_ask_cents: 30 + index,
       no_ask_cents: 70 - index,
     }),
@@ -277,6 +294,13 @@ test("caps generated opportunities at five ideas by default", () => {
   const report = buildDailyReport({
     reportDate: "2026-05-06",
     marketSnapshot: createMarketSnapshot(markets),
+    pollingEvidence: markets.map((m, i) =>
+      createPollingEvidence({
+        market_key: `pollidea${i + 1}`,
+        race: `Poll Idea ${i + 1}`,
+        polling_average: { updated_at: `${pollDate}T12:00:00Z` },
+      }),
+    ),
     portfolioSnapshot: createPortfolioSnapshot(),
     modelOverrides: Object.fromEntries(
       markets.map((market, index) => [
@@ -294,7 +318,7 @@ test("caps generated opportunities at five ideas by default", () => {
   assert.equal(report.opportunities.length, DEFAULT_OPPORTUNITY_LIMIT);
   assert.deepEqual(
     report.opportunities.map((opportunity) => opportunity.market.ticker),
-    ["IDEA-7", "IDEA-6", "IDEA-5", "IDEA-4", "IDEA-3"],
+    ["POLLIDEA-7", "POLLIDEA-6", "POLLIDEA-5", "POLLIDEA-4", "POLLIDEA-3"],
   );
 });
 
