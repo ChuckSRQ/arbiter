@@ -8,8 +8,6 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    max-width: 1200px;
-    margin: 0 auto;
     background: #0D0F1A;
     color: #E8E4DC;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -17,15 +15,81 @@
     overflow-y: auto;
   }
 
+  .report-shell {
+    max-width: 1460px;
+    margin: 0 auto;
+    padding: 0 12px 12px;
+  }
+
+  .brief-tabs {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 16px 0 10px;
+    flex-wrap: wrap;
+  }
+
+  .brief-tab {
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    background: rgba(59, 130, 246, 0.08);
+    color: #93C5FD;
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .brief-tab.is-active {
+    border-color: rgba(251, 191, 36, 0.5);
+    background: rgba(251, 191, 36, 0.12);
+    color: #FCD34D;
+  }
+
+  .brief-page {
+    margin-top: 12px;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 400px));
+    gap: 18px;
+    justify-content: center;
+    justify-items: center;
+  }
+
   .card {
     background: linear-gradient(160deg, #141828 0%, #0D0F1A 60%);
     border: 1px solid rgba(59, 130, 246, 0.18);
     border-radius: 20px;
     padding: 18px;
-    margin: 12px;
+    width: min(100%, 400px);
+    margin: 0;
   }
 
-  .card + .card { margin-top: 0; }
+  .empty-state {
+    font-size: 14px;
+    color: #94A3B8;
+    text-align: center;
+    padding: 20px;
+    border: 1px dashed rgba(59, 130, 246, 0.2);
+    border-radius: 12px;
+    width: min(100%, 400px);
+  }
+
+  @media (max-width: 1260px) {
+    .cards-grid {
+      grid-template-columns: repeat(2, minmax(0, 400px));
+    }
+  }
+
+  @media (max-width: 860px) {
+    .cards-grid {
+      grid-template-columns: minmax(0, 400px);
+    }
+  }
 
   .section-label {
     font-size: 11px;
@@ -260,7 +324,15 @@
   <div class="header-date">Friday, May 8, 2026 &nbsp;·&nbsp; 9 elections tracked</div>
 </div>
 
-<div class="card">
+<main class="report-shell">
+  <div class="brief-tabs" role="tablist" aria-label="Political brief pages">
+    <button class="brief-tab is-active" type="button" role="tab" id="tab-page-1" aria-controls="panel-page-1" aria-selected="true" data-tab-target="panel-page-1">Page 1</button>
+    <button class="brief-tab" type="button" role="tab" id="tab-page-2" aria-controls="panel-page-2" aria-selected="false" data-tab-target="panel-page-2">Page 2</button>
+    <button class="brief-tab" type="button" role="tab" id="tab-page-3" aria-controls="panel-page-3" aria-selected="false" data-tab-target="panel-page-3">Page 3</button>
+  </div>
+  <section class="brief-page is-active" id="panel-page-1" role="tabpanel" aria-labelledby="tab-page-1">
+      <div class="cards-grid">
+        <div class="card">
   <div class="kalshi-badge">KXGENERICBALLOTVOTEHUB-26MAY15-T5.8</div>
   <div class="race-header">
     <div class="race-title">Above 5.8%</div>
@@ -297,8 +369,7 @@
     <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
   </div>
 </div>
-
-<div class="card">
+        <div class="card">
   <div class="kalshi-badge">KXAPRPOTUS-26MAY15-41.6</div>
   <div class="race-header">
     <div class="race-title">Will the President&#x27;s approval rating be above 41.6 according to RealClearPolitics?</div>
@@ -335,8 +406,7 @@
     <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
   </div>
 </div>
-
-<div class="card">
+        <div class="card">
   <div class="kalshi-badge">KXAPRPOTUS-26MAY15-41.5</div>
   <div class="race-header">
     <div class="race-title">Will the President&#x27;s approval rating be between 41.4 and 41.6 according to RealClearPolitics?</div>
@@ -373,8 +443,11 @@
     <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
   </div>
 </div>
-
-<div class="card">
+      </div>
+    </section>
+    <section class="brief-page" id="panel-page-2" role="tabpanel" aria-labelledby="tab-page-2" hidden>
+      <div class="cards-grid">
+        <div class="card">
   <div class="kalshi-badge">KXAPRPOTUS-26MAY15-41.2</div>
   <div class="race-header">
     <div class="race-title">Will the President&#x27;s approval rating be between 41.1 and 41.3 according to RealClearPolitics?</div>
@@ -411,8 +484,7 @@
     <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
   </div>
 </div>
-
-<div class="card">
+        <div class="card">
   <div class="kalshi-badge">KXAPRPOTUS-26MAY15-39.9</div>
   <div class="race-header">
     <div class="race-title">Will the President&#x27;s approval rating be below 39.9 according to RealClearPolitics?</div>
@@ -449,8 +521,7 @@
     <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
   </div>
 </div>
-
-<div class="card">
+        <div class="card">
   <div class="kalshi-badge">KXAPRPOTUS-26MAY15-40.0</div>
   <div class="race-header">
     <div class="race-title">Will the President&#x27;s approval rating be between 39.9 and 40.1 according to RealClearPolitics?</div>
@@ -487,8 +558,11 @@
     <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
   </div>
 </div>
-
-<div class="card">
+      </div>
+    </section>
+    <section class="brief-page" id="panel-page-3" role="tabpanel" aria-labelledby="tab-page-3" hidden>
+      <div class="cards-grid">
+        <div class="card">
   <div class="kalshi-badge">KXAPRPOTUS-26MAY15-40.9</div>
   <div class="race-header">
     <div class="race-title">Will the President&#x27;s approval rating be between 40.8 and 41.0 according to RealClearPolitics?</div>
@@ -525,8 +599,7 @@
     <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
   </div>
 </div>
-
-<div class="card">
+        <div class="card">
   <div class="kalshi-badge">KXAPRPOTUS-26MAY15-40.6</div>
   <div class="race-header">
     <div class="race-title">Will the President&#x27;s approval rating be between 40.5 and 40.7 according to RealClearPolitics?</div>
@@ -563,8 +636,7 @@
     <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
   </div>
 </div>
-
-<div class="card">
+        <div class="card">
   <div class="kalshi-badge">KXAPRPOTUS-26MAY15-40.3</div>
   <div class="race-header">
     <div class="race-title">Will the President&#x27;s approval rating be between 40.2 and 40.4 according to RealClearPolitics?</div>
@@ -601,8 +673,37 @@
     <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
   </div>
 </div>
+      </div>
+    </section>
+</main>
 
 <div class="footer">Arbiter &nbsp;·&nbsp; Not financial advice &nbsp;·&nbsp; cr: 2026-05-08</div>
+
+<script>
+(() => {
+  const tabs = Array.from(document.querySelectorAll('.brief-tab'));
+  const panels = Array.from(document.querySelectorAll('.brief-page'));
+  if (!tabs.length || tabs.length < 2) return;
+
+  const activate = (tab) => {
+    const targetId = tab.getAttribute('data-tab-target');
+    tabs.forEach((item) => {
+      const isActive = item === tab;
+      item.classList.toggle('is-active', isActive);
+      item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    panels.forEach((panel) => {
+      const isActive = panel.id === targetId;
+      panel.classList.toggle('is-active', isActive);
+      panel.hidden = !isActive;
+    });
+  };
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => activate(tab));
+  });
+})();
+</script>
 
 </body>
 </html>
