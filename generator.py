@@ -69,9 +69,9 @@ def _render_card(market):
         delta = int(round(float(market.get("delta") or 0)))
     except (TypeError, ValueError):
         delta = 0
-    verdict = _verdict(delta)
+    verdict = market.get("verdict") or ("TRADE" if abs(delta) >= 5 else "PASS")
     verdict_class = "verdict-trade" if verdict == "TRADE" else "verdict-pass"
-    delta_style = "" if delta >= 5 else ' style="color:#9CA3AF"'
+    delta_style = "" if abs(delta) >= 5 else ' style="color:#9CA3AF"'
     sources = market.get("sources") or []
     source_links = "\n    ".join(_source_anchor(source) for source in sources)
     if source_links:
