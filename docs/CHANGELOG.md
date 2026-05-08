@@ -27,6 +27,7 @@
 ### Added
 - `state.py` — state read/write/upsert/transition helpers (Task 1 complete)
 - `state/analysis.json` — empty schema file
+- `collector.py` — Kalshi market discovery via public API (Task 2 complete)
 
 ---
 
