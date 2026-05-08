@@ -136,7 +136,7 @@ Each task is a self-contained 5-minute coding session. Do them in order.
 |---|---|---|---|
 | 1 | Define state schema | `state/analysis.json`, `state.py` | Schema + read/write/transition helpers **DONE** |
 | 2 | Write Collector | `collector.py` | Kalshi API, ≤60d markets, write to state **DONE** |
-| 3 | Write Engine (polling) | `engine.py` | VoteHub API + Ballotpedia polling fetch, FV, verdict |
+| 3 | Write Engine (polling) | `engine.py` | VoteHub API + Ballotpedia polling fetch, FV, verdict **DONE** |
 | 4 | Write Engine (financials) | `engine.py` | OpenFEC API — receipts, top donors, outside spend |
 | 5 | Write Generator | `generator.py` | Read complete markets → `output/index.html` |
 | 6 | First full run | — | Run pipeline end-to-end, verify output |
