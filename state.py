@@ -62,6 +62,8 @@ def upsert_market(state, market):
         "ticker": ticker,
         "title": market.get("title"),
         "race_title": market.get("race_title"),
+        "candidate_name": market.get("candidate_name"),
+        "event_ticker": market.get("event_ticker"),
         "election_date": market.get("election_date"),
         "series_ticker": market.get("series_ticker"),
         "status": "discovered",

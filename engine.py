@@ -189,6 +189,8 @@ def _market_type(ticker):
         return "approval"
     if "GENERICBALLOT" in t or "VOTEHUB" in t:
         return "generic"
+    if "KXMAYOR" in t:
+        return "mayor"
     return "other"
 
 
@@ -335,6 +337,139 @@ def _analyze_generic_market(market, polls):
         {"label": "VoteHub API", "url": "https://api.votehub.com"},
     ]
     return fv, context, analysis, sources
+
+
+# LA Mayor 2026 race data — hardcoded from public polling
+# Poll average from racetothewh.com and UCLA Luskin (April 2026)
+LA_MAYOR_POLLS = {
+    "Karen Bass":      23,   # incumbent, avg of UCLA/Berkeley/Emerson
+    "Nithya Raman":    13,   # city councilmember
+    "Spencer Pratt":   12,   # reality TV / conservative
+    "Rae Huang":        5,   # housing advocate
+    "Adam Miller":      5,   # tech executive
+    # remaining candidates: low single digits, treat as 1%
+    "Other":           42,  # includes undecided + <1% candidates
+}
+LA_MAYOR_FUNDRAISING = {
+    "Karen Bass":      28.5,
+    "Adam Miller":     27.2,
+    "Spencer Pratt":    5.4,
+    "Nithya Raman":     5.3,
+    "Rae Huang":        2.7,
+}
+LA_MAYOR_ELECTION_DATE = "June 2, 2026"  # 23 days away
+LA_MAYOR_SOURCE_URL = "https://www.racetothewh.com/mayor/losangeles"
+
+
+def _candidate_fv(market_price, candidate_name, poll_pct):
+    """Estimate fair value for a mayoral candidate contract.
+
+    This is a crowded nonpartisan mayoral field with a likely runoff, so top-choice
+    support is not the same thing as win probability. The heuristic boosts viable
+    top-two candidates while keeping low-polling candidates as long shots.
+    """
+    if poll_pct >= 25:
+        base = 45
+    elif poll_pct >= 20:
+        base = 38
+    elif poll_pct >= 15:
+        base = 30
+    elif poll_pct >= 10:
+        base = 20
+    elif poll_pct >= 5:
+        base = 8
+    elif poll_pct >= 1:
+        base = 3
+    else:
+        base = 1
+
+    # Reality check: if the market is already pricing a candidate materially above
+    # their top-choice support, haircut the FV unless polling says they are clearly viable.
+    if market_price is not None:
+        diff = market_price - poll_pct
+        if diff > 15:
+            base = max(base - 7, 1)
+        elif diff > 8:
+            base = max(base - 4, 1)
+    return base
+
+
+def _analyze_mayor_race(market, all_markets_in_race):
+    """Analyze a mayoral race as a group, computing per-candidate FV and race-level signal.
+
+    Args:
+        market: one of the market entries (used for context/sources only)
+        all_markets_in_race: list of all markets in the same event_ticker group
+    Returns:
+        (race_fv, context, analysis, sources)
+        race_fv is a dict keyed by ticker -> fair value
+    """
+    candidate_polls = dict(LA_MAYOR_POLLS)
+    n_candidates = len(all_markets_in_race)
+
+    # Build ticker -> candidate name mapping from Kalshi contract metadata
+    ticker_to_candidate = {}
+    for m in all_markets_in_race:
+        ticker = m.get("ticker", "")
+        name = (m.get("candidate_name") or "").strip()
+        if not name:
+            title = m.get("title", "")
+            # Fallback for markets where candidate is embedded in title
+            name = title
+            for prefix in ("Will ", " win the LA mayoral election?", " win Los Angeles mayor?"):
+                name = name.replace(prefix, "")
+            name = name.strip()
+        ticker_to_candidate[ticker] = name
+
+    # Compute per-candidate FV
+    race_fv = {}  # ticker -> fv cents
+    for m in all_markets_in_race:
+        ticker = m.get("ticker", "")
+        price = m.get("market_price")
+        candidate = ticker_to_candidate.get(ticker, "")
+        poll_pct = candidate_polls.get(candidate, 2)
+        fv = _candidate_fv(price, candidate, poll_pct)
+        race_fv[ticker] = fv
+
+    # Race-level signal
+    sorted_candidates = sorted(
+        [(ticker_to_candidate.get(t, t), ticker, race_fv.get(t, 5))
+         for t, fv in race_fv.items()],
+        key=lambda x: x[2],
+        reverse=True
+    )
+    leading_ticker = sorted_candidates[0][1] if sorted_candidates else ""
+    leading_name = sorted_candidates[0][0] if sorted_candidates else "Unknown"
+    leading_fv = sorted_candidates[0][2] if sorted_candidates else 0
+
+    # Build candidate table for context
+    rows = []
+    for name, ticker, fv in sorted_candidates:
+        price = next((m.get("market_price") for m in all_markets_in_race if m.get("ticker") == ticker), None)
+        poll = candidate_polls.get(name, "?")
+        delta = fv - (price or 0) if price is not None else 0
+        rows.append(f"{name}: {poll}% in polling, market at {price}¢, Marcus FV {fv}¢ (edge {delta:+.0f})")
+    candidates_text = " | ".join(rows)
+
+    context = (
+        f"LA Mayor race polling (Race to the WH average, April 2026) shows Karen Bass leading "
+        f"at {candidate_polls.get('Karen Bass', '?')}%, followed by Nithya Raman ({candidate_polls.get('Nithya Raman', '?')}%) "
+        f"and Spencer Pratt ({candidate_polls.get('Spencer Pratt', '?')}%). "
+        f"{round(candidate_polls.get('Other', 0))}% of voters remain undecided. "
+        f"The primary is {LA_MAYOR_ELECTION_DATE} — {n_candidates} candidate contracts active. "
+        f"Fundraising: Bass ${LA_MAYOR_FUNDRAISING.get('Karen Bass', '?')}M, Miller ${LA_MAYOR_FUNDRAISING.get('Adam Miller', '?')}M."
+    )
+    analysis = (
+        f"Marcus evaluates the full race field. Leading candidate {leading_name} (FV {leading_fv}¢) "
+        f"is still below majority support, so the model treats this as a volatile top-two/runoff race rather than a clean incumbent lock. "
+        f"Contracts with large poll-to-price gaps represent edge. "
+        f"Note: {round(candidate_polls.get('Other', 0))}% undecided/other voters make this race volatile — a runoff is likely (top two vote-getters advance to November)."
+    )
+    sources = [
+        {"label": "Race to the WH — LA Mayor polling", "url": LA_MAYOR_SOURCE_URL},
+        {"label": "UCLA Luskin Poll (March 2026)", "url": "https://luskin.ucla.edu/volatility-ahead-in-la-mayors-race-ucla-luskin-poll-finds-40-of-voters-undecided"},
+    ]
+    return race_fv, context, analysis, sources
 
 
 class VoteHubClient:
@@ -520,7 +655,58 @@ def run():
     fec_client = OpenFECClient()
     completed = 0
 
-    for market in pending:
+    # Group mayor markets by event_ticker so we process the full race at once
+    mayor_pending = [m for m in pending if _market_type(m.get("ticker")) == "mayor"]
+    other_pending = [m for m in pending if _market_type(m.get("ticker")) != "mayor"]
+
+    # Process mayor races — group pending markets, but analyze against every contract
+    # in that race so one new/pending candidate cannot be evaluated in isolation.
+    mayor_by_race = {}
+    for m in mayor_pending:
+        race_key = m.get("event_ticker") or m.get("race_key") or m.get("series_ticker") or m.get("ticker")
+        if race_key not in mayor_by_race:
+            mayor_by_race[race_key] = []
+        mayor_by_race[race_key].append(m)
+
+    for race_key, pending_race_markets in mayor_by_race.items():
+        race_markets = [
+            m for m in state.get("markets", [])
+            if _market_type(m.get("ticker")) == "mayor"
+            and (m.get("event_ticker") or m.get("race_key") or m.get("series_ticker") or m.get("ticker")) == race_key
+        ]
+        if not race_markets:
+            race_markets = pending_race_markets
+
+        # Transition pending members to analyzing; complete members remain complete
+        for market in pending_race_markets:
+            ticker = market.get("ticker")
+            if market.get("status") == "discovered":
+                transition(state, ticker, "analyzing")
+        write_state(state)
+
+        # Analyze the full race
+        race_fv, context, analysis, sources = _analyze_mayor_race(race_markets[0], race_markets)
+
+        # Finalize every market in the race so the group has one coherent analysis
+        for market in race_markets:
+            ticker = market.get("ticker")
+            fv = race_fv.get(ticker, 5)
+            _finalize_market(market, fv, context, analysis, sources)
+            market["race_key"] = race_key  # used by generator to group
+            _attach_financials(market, fec_client)
+            if market.get("status") == "analyzing":
+                transition(state, ticker, "complete")
+            elif market.get("status") == "discovered":
+                transition(state, ticker, "analyzing")
+                transition(state, ticker, "complete")
+            else:
+                market["status"] = "complete"
+            write_state(state)
+            completed += 1
+            print(f"Completed {ticker}: {market.get('verdict')} (FV {fv}¢)")
+
+    # Process non-mayor markets (approval, generic, other) one at a time
+    for market in other_pending:
         ticker = market.get("ticker")
         if market.get("status") == "discovered":
             transition(state, ticker, "analyzing")

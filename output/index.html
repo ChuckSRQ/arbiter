@@ -315,13 +315,91 @@
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
+
+  .race-card {
+    width: min(100%, 460px);
+  }
+
+  .leading-signal {
+    font-size: 12px;
+    color: #FCD34D;
+    font-weight: 600;
+    margin-top: 4px;
+    letter-spacing: 0.03em;
+  }
+
+  .candidates-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 14px;
+    font-size: 14px;
+  }
+
+  .candidates-table th {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #64748B;
+    padding: 4px 6px;
+    text-align: left;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+  }
+
+  .candidates-table th:nth-child(n+3) {
+    text-align: right;
+  }
+
+  .candidate-row td {
+    padding: 6px 6px;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.08);
+    color: #CBD5E1;
+  }
+
+  .candidate-row:last-child td {
+    border-bottom: none;
+  }
+
+  .candidate-rank {
+    color: #475569;
+    font-weight: 600;
+    font-size: 12px;
+    width: 20px;
+  }
+
+  .candidate-name {
+    font-weight: 600;
+    color: #E2E8F0;
+  }
+
+  .candidate-price {
+    text-align: right;
+    color: #93C5FD;
+    font-weight: 700;
+  }
+
+  .candidate-delta {
+    text-align: right;
+    color: #FDE68A;
+    font-weight: 700;
+  }
+
+  .candidate-fv {
+    text-align: right;
+    color: #94A3B8;
+  }
+
+  .verdict-sm {
+    font-size: 9px;
+    padding: 2px 7px;
+  }
 </style>
 </head>
 <body>
 
 <div class="header-bar">
   <div class="header-title">Arbiter Political Briefing <span class="watch-indicator">● Live</span></div>
-  <div class="header-date">Friday, May 8, 2026 &nbsp;·&nbsp; 9 elections tracked</div>
+  <div class="header-date">Friday, May 8, 2026 &nbsp;·&nbsp; 11 races tracked</div>
 </div>
 
 <main class="report-shell">
@@ -329,6 +407,7 @@
     <button class="brief-tab is-active" type="button" role="tab" id="tab-page-1" aria-controls="panel-page-1" aria-selected="true" data-tab-target="panel-page-1">Page 1</button>
     <button class="brief-tab" type="button" role="tab" id="tab-page-2" aria-controls="panel-page-2" aria-selected="false" data-tab-target="panel-page-2">Page 2</button>
     <button class="brief-tab" type="button" role="tab" id="tab-page-3" aria-controls="panel-page-3" aria-selected="false" data-tab-target="panel-page-3">Page 3</button>
+    <button class="brief-tab" type="button" role="tab" id="tab-page-4" aria-controls="panel-page-4" aria-selected="false" data-tab-target="panel-page-4">Page 4</button>
   </div>
   <section class="brief-page is-active" id="panel-page-1" role="tabpanel" aria-labelledby="tab-page-1">
       <div class="cards-grid">
@@ -599,6 +678,114 @@
     <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
   </div>
 </div>
+        <div class="card race-card">
+  <div class="kalshi-badge">KXMAYORLA-26</div>
+  <div class="race-header">
+    <div class="race-title">Who will win Los Angeles Mayoral Election?</div>
+    <div class="election-date">June 2, 2026 &nbsp;·&nbsp; 10 candidates</div>
+    <div class="leading-signal">Leading: Karen Bass at 49c (-18 edge)</div>
+  </div>
+
+  <div class="context">
+    LA Mayor race polling (Race to the WH average, April 2026) shows Karen Bass leading at 23%, followed by Nithya Raman (13%) and Spencer Pratt (12%). 42% of voters remain undecided. The primary is June 2, 2026 — 10 candidate contracts active. Fundraising: Bass $28.5M, Miller $27.2M.
+  </div>
+
+  <table class="candidates-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Candidate</th>
+        <th>Price</th>
+        <th>Edge</th>
+        <th>FV</th>
+        <th>Signal</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="candidate-row">
+        <td class="candidate-rank">1</td>
+        <td class="candidate-name">Karen Bass</td>
+        <td class="candidate-price">49c</td>
+        <td class="candidate-delta">-18</td>
+        <td class="candidate-fv">31c</td>
+        <td><span class="verdict-tag verdict-trade verdict-sm">TRADE</span></td>
+      </tr>      <tr class="candidate-row">
+        <td class="candidate-rank">2</td>
+        <td class="candidate-name">Spencer Pratt</td>
+        <td class="candidate-price">26c</td>
+        <td class="candidate-delta">-10</td>
+        <td class="candidate-fv">16c</td>
+        <td><span class="verdict-tag verdict-trade verdict-sm">TRADE</span></td>
+      </tr>      <tr class="candidate-row">
+        <td class="candidate-rank">3</td>
+        <td class="candidate-name">Nithya Raman</td>
+        <td class="candidate-price">20c</td>
+        <td class="candidate-delta" style="color:#9CA3AF">0</td>
+        <td class="candidate-fv">20c</td>
+        <td><span class="verdict-tag verdict-pass verdict-sm">PASS</span></td>
+      </tr>      <tr class="candidate-row">
+        <td class="candidate-rank">4</td>
+        <td class="candidate-name">Rae Huang</td>
+        <td class="candidate-price">1c</td>
+        <td class="candidate-delta">+7</td>
+        <td class="candidate-fv">8c</td>
+        <td><span class="verdict-tag verdict-trade verdict-sm">TRADE</span></td>
+      </tr>      <tr class="candidate-row">
+        <td class="candidate-rank">5</td>
+        <td class="candidate-name">Adam Miller</td>
+        <td class="candidate-price">0c</td>
+        <td class="candidate-delta">+8</td>
+        <td class="candidate-fv">8c</td>
+        <td><span class="verdict-tag verdict-trade verdict-sm">TRADE</span></td>
+      </tr>      <tr class="candidate-row">
+        <td class="candidate-rank">6</td>
+        <td class="candidate-name">Austin Beutner</td>
+        <td class="candidate-price">0c</td>
+        <td class="candidate-delta" style="color:#9CA3AF">+3</td>
+        <td class="candidate-fv">3c</td>
+        <td><span class="verdict-tag verdict-pass verdict-sm">PASS</span></td>
+      </tr>      <tr class="candidate-row">
+        <td class="candidate-rank">7</td>
+        <td class="candidate-name">Vincent Wali</td>
+        <td class="candidate-price">0c</td>
+        <td class="candidate-delta" style="color:#9CA3AF">+3</td>
+        <td class="candidate-fv">3c</td>
+        <td><span class="verdict-tag verdict-pass verdict-sm">PASS</span></td>
+      </tr>      <tr class="candidate-row">
+        <td class="candidate-rank">8</td>
+        <td class="candidate-name">Gina Viola</td>
+        <td class="candidate-price">0c</td>
+        <td class="candidate-delta" style="color:#9CA3AF">+3</td>
+        <td class="candidate-fv">3c</td>
+        <td><span class="verdict-tag verdict-pass verdict-sm">PASS</span></td>
+      </tr>      <tr class="candidate-row">
+        <td class="candidate-rank">9</td>
+        <td class="candidate-name">Rick Caruso</td>
+        <td class="candidate-price">0c</td>
+        <td class="candidate-delta" style="color:#9CA3AF">+3</td>
+        <td class="candidate-fv">3c</td>
+        <td><span class="verdict-tag verdict-pass verdict-sm">PASS</span></td>
+      </tr>      <tr class="candidate-row">
+        <td class="candidate-rank">10</td>
+        <td class="candidate-name">Asaad Alnajjar</td>
+        <td class="candidate-price">0c</td>
+        <td class="candidate-delta" style="color:#9CA3AF">+3</td>
+        <td class="candidate-fv">3c</td>
+        <td><span class="verdict-tag verdict-pass verdict-sm">PASS</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    Marcus evaluates the full race field. Leading candidate Karen Bass (FV 31¢) is still below majority support, so the model treats this as a volatile top-two/runoff race rather than a clean incumbent lock. Contracts with large poll-to-price gaps represent edge. Note: 42% undecided/other voters make this race volatile — a runoff is likely (top two vote-getters advance to November).
+  </div>
+  <div style="margin-top:10px">
+    <a class="source-link" href="https://www.racetothewh.com/mayor/losangeles" target="_blank" rel="noopener noreferrer">Race to the WH — LA Mayor polling</a>
+    <a class="source-link" href="https://luskin.ucla.edu/volatility-ahead-in-la-mayors-race-ucla-luskin-poll-finds-40-of-voters-undecided" target="_blank" rel="noopener noreferrer">UCLA Luskin Poll (March 2026)</a>
+    <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
+  </div>
+</div>
         <div class="card">
   <div class="kalshi-badge">KXAPRPOTUS-26MAY15-40.6</div>
   <div class="race-header">
@@ -636,6 +823,10 @@
     <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
   </div>
 </div>
+      </div>
+    </section>
+    <section class="brief-page" id="panel-page-4" role="tabpanel" aria-labelledby="tab-page-4" hidden>
+      <div class="cards-grid">
         <div class="card">
   <div class="kalshi-badge">KXAPRPOTUS-26MAY15-40.3</div>
   <div class="race-header">
@@ -669,6 +860,43 @@
   </div>
   <div style="margin-top:10px">
     <a class="source-link" href="https://api.votehub.com/polls?poll_type=approval&amp;subject=donald-trump&amp;from_date=2026-04-01" target="_blank" rel="noopener noreferrer">VoteHub approval polls</a>
+    <a class="source-link" href="https://api.votehub.com" target="_blank" rel="noopener noreferrer">VoteHub API</a>
+    <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
+  </div>
+</div>
+        <div class="card">
+  <div class="kalshi-badge">KXGENERICBALLOT-26APR03-T5.3</div>
+  <div class="race-header">
+    <div class="race-title">Will the VoteHub 2026 generic ballot margin (D − R), time-weighted be above 5.3 on Apr 3, 2026 at 10:00 AM ET?</div>
+    <div class="election-date">July 2, 2026</div>
+    <div class="verdict-tag verdict-trade">TRADE</div>
+  </div>
+
+  <div class="context">
+    VoteHub generic ballot polling (last 5 polls) shows Democrats at 44.4% and Republicans at 42.2%, a Democratic spread of 2.2 points on average. Recent spread readings vary by 3.0 points across the sample.
+  </div>
+
+  <div class="price-row">
+    <div class="price-box market-box">
+      <div class="price-label">Market</div>
+      <div class="price-value market">0c</div>
+    </div>
+    <div class="delta-box">
+      <div class="delta-label">Edge</div>
+      <div class="delta-value">+10</div>
+    </div>
+    <div class="price-box marcus-box">
+      <div class="price-label">Marcus</div>
+      <div class="price-value marcus">10c</div>
+    </div>
+  </div>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    Marcus applies the same bracket heuristic to the Democratic spread and estimates fair value at 10¢ for this binary market. Versus the current price of 0¢, the model implies a tradable edge.
+  </div>
+  <div style="margin-top:10px">
+    <a class="source-link" href="https://api.votehub.com/polls?poll_type=generic-ballot&amp;subject=2026" target="_blank" rel="noopener noreferrer">VoteHub generic ballot polls</a>
     <a class="source-link" href="https://api.votehub.com" target="_blank" rel="noopener noreferrer">VoteHub API</a>
     <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
   </div>
