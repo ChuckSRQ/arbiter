@@ -6,7 +6,7 @@
 
 ## Status: Phase 1 Complete — MVP Running
 
-Core pipeline complete. All 10 tasks done. Daily cron fires at 1:30PM ET.
+Core pipeline complete. All 10 original MVP tasks done. Daily cron fires at 1:30PM ET. Race-level grouping for multi-contract candidate markets is now implemented for mayoral races.
 
 ---
 
@@ -26,7 +26,7 @@ discovered → analyzing → complete
 | `complete` | Brief written, market on report | Skip on next cron run |
 | `stale` | Market was complete but new polling may change FV | Re-enter `analyzing` for delta recalculation |
 
-**Market exits the pipeline at `complete` (or `stale`).** The report only shows `complete` markets.
+**Market exits the pipeline at `complete` (or `stale`).** The report only shows `complete` markets. Multi-contract races still store each contract as an individual market row, but the generator can collapse supported races into one briefing card keyed by `event_ticker`.
 
 ---
 
@@ -34,15 +34,15 @@ discovered → analyzing → complete
 
 ### Built
 - `docs/agents.md` — agent roles, handoffs, brief specification
-- `docs/README.md` — project overview and MVP scope (root)
+- `README.md` — project overview and MVP scope (root)
 - `docs/currentstate.md` — project state + state machine
 - `docs/CHANGELOG.md` — change log
 - `docs/bugs.md` — known limitations, resolved questions, pitfalls
 - `docs/artifact-reference/artifact.html` — design spec
 - `state.py` — state read/write/upsert/transition helpers
-- `collector.py` — Kalshi market discovery (public API, rate-limited, 0.35s delay)
-- `engine.py` — polling + financials analysis engine (VoteHub fetch, OpenFEC financials, FV heuristic, verdict, brief writing)
-- `generator.py` — HTML report generator from complete market state
+- `collector.py` — Kalshi market discovery (public API, rate-limited, 0.35s delay) with `event_ticker` and `candidate_name` capture for candidate-contract races
+- `engine.py` — polling + financials analysis engine (VoteHub fetch, OpenFEC financials, FV heuristic, verdict, brief writing) with grouped mayoral race analysis
+- `generator.py` — HTML report generator from complete market state; groups supported multi-contract races into one race card with a candidate table
 - `~/.hermes/scripts/arbiter-daily.py` — Hermes cron pipeline runner (collector → engine → generator, non-zero failure alerts)
 - `state/analysis.json` — populated market state with completed briefs
 - `output/index.html` — generated report output
@@ -74,6 +74,11 @@ discovered → analyzing → complete
 - [x] Continuation logic (don't restart analysis from scratch)
 - [x] Error handling with WhatsApp failure alert (non-zero exit triggers Hermes error notification)
 
+**Phase 3 — Brief Quality Improvements**
+- [x] Race-level cards for multi-contract candidate races keyed by `event_ticker`
+- [x] Mayor race analysis groups all contracts in the race before assigning candidate-level FV/edge/verdict
+- [x] LA Mayor 2026 verified as one race card with 10 candidates instead of 10 separate candidate cards
+
 **Stays Local (no deployment planned)**
 - No Vercel, no GitHub Pages, no cloud hosting
 - Arbiter runs on Carlos's machine via localhost
@@ -93,12 +98,14 @@ discovered → analyzing → complete
 | Verdict tag | TRADE (amber) or PASS (grey) — on its own line below election date |
 | Report minimum | Always show 3-5 political briefs per day. If fewer markets qualify, show what's available. Even PASS verdicts show full polling + analysis. Carlos decides, not Marcus. |
 | WhatsApp ping | "Done" on completion — no summary, just confirmation |
+| Multi-contract races | Keep each Kalshi contract in state for tracking, but group supported candidate races by `event_ticker` at render time. Mayor races are analyzed as a candidate field, not isolated binary contracts. |
 
 ---
 
 ## What's Still Open
 
 - Wikipedia page URL structure for non-US elections (low priority, US-only for now)
+- Senate, House, and Governor races still need dedicated race-level analysis before they should be grouped like mayorals.
 
 All open questions go in `bugs.md` or get resolved before that phase is started.
 

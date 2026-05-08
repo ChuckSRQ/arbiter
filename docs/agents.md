@@ -11,7 +11,7 @@
 | **Cron Runner** | Hermes script — runs the daily pipeline at 1:30PM ET and delivers stdout to WhatsApp |
 | **Collector** | `collector.py` — queries public Kalshi API, surfaces qualifying political markets |
 | **Marcus / Engine** | `engine.py` — polling + financial research, fair value, verdict, full brief generation |
-| **Generator** | `generator.py` — takes complete briefs, renders `output/index.html`, prints `Done` |
+| **Generator** | `generator.py` — takes complete briefs, groups supported multi-contract races, renders `output/index.html`, prints `Done` |
 
 ---
 
@@ -21,6 +21,7 @@ Marcus is implemented by `engine.py`, the reasoning layer. He does not scrape Ka
 
 **Marcus's inputs:**
 - Market ticker (e.g. `KXMAYORLA-26JUN02`)
+- Candidate name and `event_ticker` when Kalshi exposes a candidate-contract race
 - Market title, expiry date, market price (from Collector)
 - Polling data (see sources below)
 - Financial data: candidate receipts, disbursements, top donors, outside spending (OpenFEC API)
@@ -46,6 +47,8 @@ Marcus is implemented by `engine.py`, the reasoning layer. He does not scrape Ka
   "status": "complete"
 }
 ```
+
+For supported multi-contract races, Marcus analyzes the full candidate field together, then writes candidate-level `marcus_fv`, `delta`, and `verdict` back to each individual Kalshi contract. The individual market rows remain the source of truth for tracking; the generator decides whether they appear as separate cards or one grouped race card.
 
 **Verdict logic:** Absolute delta ≥5c → TRADE. Absolute delta <5c → PASS. Positive delta means Marcus FV is above market price; negative delta means Marcus FV is below market price. This is Marcus's signal, not Carlos's decision.
 
@@ -90,7 +93,7 @@ Collector is a Python script (`collector.py`). It runs first, before Marcus.
 3. Further filters to markets with polling-accessible races (excludes DOGE, tariff, admin-action markets)
 4. Compares against `state/analysis.json` — identifies new markets vs existing
 5. Writes market list to `state/analysis.json` (new markets as `discovered`)
-6. Returns ticker, title, expiry, market_price for each new market
+6. Returns ticker, title, expiry, market_price, `event_ticker`, and candidate name when available for each new market
 
 **API:** Uses Kalshi's public elections API for market discovery. No authentication is required for the current collector path; credentials are stored externally for future authenticated work only.
 
@@ -106,11 +109,12 @@ Generator is a Python script (`generator.py`). It runs last, after Marcus.
 
 **What it does:**
 1. Reads `state/analysis.json` for all markets with `status: complete`
-2. Renders `index.html` matching the design in `docs/artifact-reference/`
-3. Writes to `output/index.html`
-4. Prints `Done` on success; the Hermes cron job delivers stdout to WhatsApp
+2. Groups supported multi-contract races by `event_ticker` into one race card while preserving individual market state
+3. Renders `index.html` matching the design in `docs/artifact-reference/`
+4. Writes to `output/index.html`
+5. Prints `Done` on success; the Hermes cron job delivers stdout to WhatsApp
 
-**HTML design:** Dark theme, blue + amber accents, 1200px max-width, card-per-market layout. See `docs/artifact-reference/artifact.html` for the exact design spec.
+**HTML design:** Dark theme, blue + amber accents, portrait-width briefing cards, 3 cards per desktop page when possible. Single-contract markets render as normal cards; grouped races render one race card with a candidate table. See `docs/artifact-reference/artifact.html` for the design baseline.
 
 *Reference: README.md*
 
@@ -132,7 +136,7 @@ Daily Cron (1:30PM ET)
     │
     ▼
 [2] engine.py (Marcus)
-    → For each market in discovered/analyzing:
+    → For each market, or supported grouped race, in discovered/analyzing:
       → Fetch VoteHub polling + OpenFEC financials
       → Compute FV + delta + verdict
       → Write back to state/analysis.json
@@ -140,6 +144,7 @@ Daily Cron (1:30PM ET)
     ▼
 [3] generator.py
     → Reads complete markets from state/analysis.json
+    → Groups supported candidate-contract races by event_ticker
     → Renders output/index.html
     → Prints "Done"; Hermes delivers stdout to WhatsApp
 ```
@@ -164,14 +169,14 @@ Daily Cron (1:30PM ET)
 | `docs/currentstate.md` | Project state + state machine |
 | `docs/bugs.md` | Known limitations and edge cases |
 | `docs/CHANGELOG.md` | What changed |
-| `docs/README.md` | Project overview |
+| `README.md` | Project overview |
 | `docs/artifact-reference/artifact.html` | Design spec |
 
 ---
 
 ## What Goes In a Brief (Full Specification)
 
-Every market that enters the pipeline gets a full brief. No filtering by verdict.
+Every market that enters the pipeline gets a full brief. No filtering by verdict. Supported multi-contract candidate races may render as one grouped race card instead of one card per contract.
 
 **Required fields:**
 - `kalshi_badge`: ticker + market type (e.g. "KXLAXMAY26 / First Round Winner")
@@ -182,6 +187,7 @@ Every market that enters the pipeline gets a full brief. No filtering by verdict
 - `price_row`: Market price | Delta | Marcus FV (styled per artifact)
 - `analysis`: Marcus's full reasoning — what polls say, why market is mispriced or not, what he's watching
 - `sources`: List of poll sources with labels
+- For grouped race cards: candidate table with candidate, market price, Marcus FV, edge, and TRADE/PASS signal
 
 **Optional (if applicable):**
 - `no_market_reason`: If market price is "—" (not yet trading), explain why and what triggers market creation
