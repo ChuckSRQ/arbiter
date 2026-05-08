@@ -32,6 +32,7 @@
 - `docs/currentstate.md` — updated Phase 1 engine checklist item to include OpenFEC financials and moved in-progress focus to generator work.
 - `README.md` — marked Task 5 ("Write Generator") as DONE in roadmap table.
 - `docs/currentstate.md` — moved generator/report output into Built and checked off Phase 1 generator/output items.
+- `docs/agents.md`, `README.md`, `docs/currentstate.md` — synced docs to the completed MVP implementation: public Kalshi discovery, VoteHub/OpenFEC engine, cron runner, stdout-based WhatsApp delivery, and no remaining MVP tasks.
 
 ### Resolved
 - Verdict tag PASS styling: grey (#9CA3AF)

@@ -43,6 +43,7 @@ discovered → analyzing → complete
 - `collector.py` — Kalshi market discovery (public API, rate-limited, 0.35s delay)
 - `engine.py` — polling + financials analysis engine (VoteHub fetch, OpenFEC financials, FV heuristic, verdict, brief writing)
 - `generator.py` — HTML report generator from complete market state
+- `~/.hermes/scripts/arbiter-daily.py` — Hermes cron pipeline runner (collector → engine → generator, non-zero failure alerts)
 - `state/analysis.json` — populated market state with completed briefs
 - `output/index.html` — generated report output
 
@@ -50,7 +51,10 @@ discovered → analyzing → complete
 - (all core tasks complete)
 
 ### Planned (not built)
-- Error handling with WhatsApp failure alert
+- (no remaining MVP tasks)
+
+### Post-MVP candidates
+- Broader polling-source coverage beyond VoteHub/approval/generic ballot when reliable free sources are available
 
 ---
 
@@ -81,6 +85,7 @@ discovered → analyzing → complete
 | Decision | Resolution |
 |---|---|
 | Stack | Python + static HTML. No Next.js/DB for MVP. |
+| Cron | Hermes job `799f5a1b57ba`, `no_agent=true`, schedule `30 13 * * *`, script `~/.hermes/scripts/arbiter-daily.py` |
 | Polling sources | VoteHub API (primary), Ballotpedia (secondary), RaceToTheWH, Wikipedia (mayorals), Quinnipiac/Siena (tertiary). Not locked to any single source. |
 | Financial data | OpenFEC API — candidate receipts, disbursements, cash on hand, top donors, outside spend. DEMO_KEY works, no key required. |
 | Market filter | ≤60 days from expiry, political/election only, has polling |
@@ -94,7 +99,6 @@ discovered → analyzing → complete
 ## What's Still Open
 
 - Wikipedia page URL structure for non-US elections (low priority, US-only for now)
-- How to handle 3-5 minimum when fewer than 3 markets qualify — show what's available, no padding
 
 All open questions go in `bugs.md` or get resolved before that phase is started.
 
