@@ -149,6 +149,7 @@ Daily Cron (1:30PM ET)
 | File | Purpose |
 |---|---|
 | `state/analysis.json` | Market state tracker |
+| `state.py` | State read/write/upsert/transition helpers |
 | `collector.py` | Kalshi market discovery |
 | `engine.py` | Marcus analysis |
 | `generator.py` | HTML generation |
