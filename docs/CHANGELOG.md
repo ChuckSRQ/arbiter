@@ -16,6 +16,7 @@
 - `engine.py` — Task 4 OpenFEC financials integration with per-market `financials` population and OpenFEC source tracking
 - `generator.py` — Task 5 HTML report generator reading complete markets from state and rendering artifact-matching cards to `output/index.html`
 - `output/index.html` — generated sample report output
+- Tasks 8, 10 completed — Hermes cron job (1:30PM ET, `arbiter-daily.py`, WhatsApp delivery), error handling with failure alert
 
 ### Changed
 - `generator.py` — wrapped CLI execution in try/except; on success prints `Generated {path}` and `Done`, on failure prints `ERROR: generator failed — ...` and exits non-zero.

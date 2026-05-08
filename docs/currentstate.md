@@ -4,9 +4,9 @@
 
 ---
 
-## Status: Phase 1 — Core Pipeline
+## Status: Phase 1 Complete — MVP Running
 
-Core pipeline is active. Collector, engine, and generator are implemented, and report output is generated from complete markets in state.
+Core pipeline complete. All 10 tasks done. Daily cron fires at 1:30PM ET.
 
 ---
 
@@ -47,7 +47,7 @@ discovered → analyzing → complete
 - `output/index.html` — generated report output
 
 ### In Progress
-- Task 8: Hermes cron scheduling + dry-run validation
+- (all core tasks complete)
 
 ### Planned (not built)
 - Error handling with WhatsApp failure alert
@@ -66,9 +66,9 @@ discovered → analyzing → complete
 - [x] WhatsApp "Done" ping
 
 **Phase 2 — Localhost Cron**
-- [ ] Hermes cron job at 1:30PM ET
+- [x] Hermes cron job at 1:30PM ET (`arbiter-daily.py` via no_agent script, WhatsApp delivery)
 - [x] Continuation logic (don't restart analysis from scratch)
-- [ ] Error handling with WhatsApp failure alert
+- [x] Error handling with WhatsApp failure alert (non-zero exit triggers Hermes error notification)
 
 **Stays Local (no deployment planned)**
 - No Vercel, no GitHub Pages, no cloud hosting
