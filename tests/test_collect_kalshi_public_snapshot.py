@@ -79,9 +79,12 @@ class KalshiPublicSnapshotTests(unittest.TestCase):
                 "title": "Will the Democratic nominee win the 2028 presidential election?",
                 "event_ticker": "PRES-2028",
                 "series_ticker": "PRES",
+                "type": "election",
                 "category": "Politics",
                 "close_time": "2026-05-20T12:00:00Z",
                 "expiration_time": "2026-05-20T12:00:00Z",
+                "candidate_name": None,
+                "tracker_value": None,
                 "yes_bid_cents": 41,
                 "yes_ask_cents": 43,
                 "no_bid_cents": 57,
@@ -93,6 +96,63 @@ class KalshiPublicSnapshotTests(unittest.TestCase):
                 "liquidity": 1500,
                 "rules_text": "Resolved to YES if the Democratic nominee wins the general election.",
             },
+        )
+
+    def test_watchlisted_election_bypasses_default_window(self):
+        module = load_module()
+
+        self.assertTrue(
+            module.market_closes_within_window(
+                {
+                    "ticker": "KXMAYORLA-26-AMIL",
+                    "event_ticker": "KXMAYORLA-26",
+                    "series_ticker": "KXMAYORLA",
+                    "expiration_time": "2027-06-02T14:00:00Z",
+                },
+                collected_at=module.parse_datetime("2026-05-06T12:00:00Z"),
+                window_days=60,
+            )
+        )
+
+    def test_collapse_tracker_markets_keeps_one_representative_per_event(self):
+        module = load_module()
+
+        collapsed = module.collapse_tracker_markets(
+            [
+                {
+                    "ticker": "KXAPRPOTUS-26MAY08-40.0",
+                    "event_ticker": "KXAPRPOTUS-26MAY08",
+                    "series_ticker": "KXAPRPOTUS",
+                    "type": "tracker",
+                    "yes_midpoint_cents": 23,
+                    "yes_ask_cents": 24,
+                    "volume": None,
+                },
+                {
+                    "ticker": "KXAPRPOTUS-26MAY08-40.9",
+                    "event_ticker": "KXAPRPOTUS-26MAY08",
+                    "series_ticker": "KXAPRPOTUS",
+                    "type": "tracker",
+                    "yes_midpoint_cents": 49,
+                    "yes_ask_cents": 50,
+                    "volume": None,
+                },
+                {
+                    "ticker": "KXMAYORLA-26-AMIL",
+                    "event_ticker": "KXMAYORLA-26",
+                    "series_ticker": "KXMAYORLA",
+                    "type": "election",
+                    "yes_midpoint_cents": 18,
+                    "yes_ask_cents": 19,
+                    "volume": None,
+                },
+            ]
+        )
+
+        self.assertEqual([market["ticker"] for market in collapsed], ["KXMAYORLA-26-AMIL", "KXAPRPOTUS-26MAY08-40.9"])
+        self.assertEqual(
+            collapsed[1]["tracker_components"],
+            ["KXAPRPOTUS-26MAY08-40.0", "KXAPRPOTUS-26MAY08-40.9"],
         )
 
 

@@ -2,21 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { getTopOpportunities, sampleReports, type DashboardReportStatus } from "./dashboard-data";
+import { getTopOpportunities, sampleReports } from "./dashboard-data";
 import Home from "./page";
-import { fixturePortfolioSnapshot, unavailablePortfolioSnapshot } from "./portfolio-data";
-
-const generatedReportStatus: DashboardReportStatus = {
-  state: "generated",
-  label: "Generated report ready",
-  detail: "The latest saved brief is in place.",
-  sourceLabel: "Generated brief · 2026-05-06",
-};
 
 test("renders the edge-filter shell with required report sections", () => {
-  const markup = renderToStaticMarkup(
-    <Home report={sampleReports.politicalEdgeDay} reportStatus={generatedReportStatus} />,
-  );
+  const markup = renderToStaticMarkup(<Home report={sampleReports.politicalEdgeDay} />);
 
   assert.match(markup, /Arbiter/);
   assert.match(markup, /edge filter, not a broad market screener/i);
@@ -34,9 +24,7 @@ test("renders the edge-filter shell with required report sections", () => {
 });
 
 test("renders mocked market details for recommendation cards", () => {
-  const markup = renderToStaticMarkup(
-    <Home report={sampleReports.politicalEdgeDay} reportStatus={generatedReportStatus} />,
-  );
+  const markup = renderToStaticMarkup(<Home report={sampleReports.politicalEdgeDay} />);
 
   assert.match(markup, /Kalshi price/i);
   assert.match(markup, /Marcus fair value/i);
@@ -54,9 +42,7 @@ test("keeps the today list focused on the top 3-5 opportunities", () => {
 });
 
 test("renders a no-trade report without opportunity cards", () => {
-  const markup = renderToStaticMarkup(
-    <Home report={sampleReports.noTradeDay} reportStatus={generatedReportStatus} />,
-  );
+  const markup = renderToStaticMarkup(<Home report={sampleReports.noTradeDay} />);
 
   assert.match(markup, /No trade today/i);
   assert.match(markup, /0 qualified ideas/i);
@@ -65,9 +51,7 @@ test("renders a no-trade report without opportunity cards", () => {
 });
 
 test("renders missing evidence and portfolio exit actions gracefully", () => {
-  const markup = renderToStaticMarkup(
-    <Home report={sampleReports.portfolioExitDay} reportStatus={generatedReportStatus} />,
-  );
+  const markup = renderToStaticMarkup(<Home report={sampleReports.portfolioExitDay} />);
 
   assert.match(markup, /No linked evidence yet/i);
   assert.match(markup, /Reduce/i);
@@ -76,13 +60,7 @@ test("renders missing evidence and portfolio exit actions gracefully", () => {
 });
 
 test("renders a clean portfolio unavailable state", () => {
-  const markup = renderToStaticMarkup(
-    <Home
-      report={sampleReports.noTradeDay}
-      reportStatus={generatedReportStatus}
-      portfolioSnapshot={unavailablePortfolioSnapshot}
-    />,
-  );
+  const markup = renderToStaticMarkup(<Home report={sampleReports.noTradeDay} />);
 
   assert.match(markup, /Portfolio unavailable/i);
   assert.match(markup, /Missing Kalshi portfolio credentials/i);
@@ -91,13 +69,7 @@ test("renders a clean portfolio unavailable state", () => {
 });
 
 test("renders fixture-backed reduce and exit recommendations", () => {
-  const markup = renderToStaticMarkup(
-    <Home
-      report={sampleReports.noTradeDay}
-      reportStatus={generatedReportStatus}
-      portfolioSnapshot={fixturePortfolioSnapshot}
-    />,
-  );
+  const markup = renderToStaticMarkup(<Home report={sampleReports.noTradeDay} />);
 
   assert.match(markup, /Live portfolio snapshot/i);
   assert.match(markup, /OIL-ABOVE-85/i);
@@ -152,7 +124,7 @@ test("renders polling evidence summaries and source links from the report", () =
     ],
   };
 
-  const markup = renderToStaticMarkup(<Home report={report} reportStatus={generatedReportStatus} />);
+  const markup = renderToStaticMarkup(<Home report={report} />);
 
   assert.match(markup, /Ohio Senate general/i);
   assert.match(markup, /Brown \+3/i);
@@ -160,26 +132,14 @@ test("renders polling evidence summaries and source links from the report", () =
 });
 
 test("renders archive status when no prior reports are archived yet", () => {
-  const markup = renderToStaticMarkup(
-    <Home report={{ ...sampleReports.noTradeDay, archive: [] }} reportStatus={generatedReportStatus} />,
-  );
+  const markup = renderToStaticMarkup(<Home report={{ ...sampleReports.noTradeDay, archive: [] }} />);
 
   assert.match(markup, /Archive pending/i);
   assert.match(markup, /The latest daily report is ready, but there are no prior archived briefs yet/i);
 });
 
 test("renders a static fallback report status when the feed needs review", () => {
-  const markup = renderToStaticMarkup(
-    <Home
-      report={sampleReports.noTradeDay}
-      reportStatus={{
-        state: "error",
-        label: "Report feed needs review",
-        detail: "Saved report data could not be loaded cleanly.",
-        sourceLabel: "Fallback after load error",
-      }}
-    />,
-  );
+  const markup = renderToStaticMarkup(<Home report={sampleReports.noTradeDay} />);
 
   assert.match(markup, /Report feed needs review/i);
   assert.match(markup, /Fallback after load error/i);

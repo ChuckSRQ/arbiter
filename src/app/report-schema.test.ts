@@ -23,7 +23,7 @@ test("accepts the schema-valid sample reports", () => {
 
 test("rejects invalid reports with a useful path-based error message", () => {
   const invalidReport = parseDailyReport(readSampleReport("political-edge-day"));
-  invalidReport.opportunities[0].action = "Trim profits";
+  invalidReport.opportunities[0].action = "Exit";
 
   assert.throws(
     () => parseDailyReport(invalidReport),

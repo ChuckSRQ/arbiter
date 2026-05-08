@@ -24,9 +24,9 @@ export const pollingMarketTypes = [
   "unknown",
 ] as const;
 
-export type RecommendationAction = (typeof recommendationActions)[number];
 export type ConfidenceLevel = (typeof confidenceLevels)[number];
 export type PassReasonCode = (typeof passReasonCodes)[number];
+export type RecommendationAction = (typeof recommendationActions)[number];
 export type PollingMarketType = (typeof pollingMarketTypes)[number];
 
 export interface EvidenceLink {
@@ -82,6 +82,22 @@ export interface PassDecision {
   marcusFairValue?: number;
   edge?: number;
   confidence?: ConfidenceLevel;
+}
+
+export interface TrackerEntry {
+  seriesTicker: string;
+  title: string;
+  currentValue: string;
+  marketPrice: number;
+  direction: string;
+}
+
+export interface OnWatchEntry {
+  ticker: string;
+  title: string;
+  electionDate: string;
+  marketFavorites: Array<{ candidate: string; yesPrice: number }>;
+  pollingSpread: string | null;
 }
 
 export interface PortfolioSnapshot {
@@ -153,6 +169,8 @@ export interface DailyReport {
   archive: ArchiveEntry[];
   watchlist: string[];
   passes?: PassDecision[];
+  trackers?: TrackerEntry[];
+  onWatch?: OnWatchEntry[];
 }
 
 export class ValidationError extends Error {
@@ -338,6 +356,36 @@ function parsePassDecision(value: unknown, path: string): PassDecision {
   };
 }
 
+function parseTrackerEntry(value: unknown, path: string): TrackerEntry {
+  const record = expectRecord(value, path);
+
+  return {
+    seriesTicker: expectString(record.seriesTicker, `${path}.seriesTicker`),
+    title: expectString(record.title, `${path}.title`),
+    currentValue: expectString(record.currentValue, `${path}.currentValue`),
+    marketPrice: expectNumber(record.marketPrice, `${path}.marketPrice`),
+    direction: expectString(record.direction, `${path}.direction`),
+  };
+}
+
+function parseOnWatchEntry(value: unknown, path: string): OnWatchEntry {
+  const record = expectRecord(value, path);
+
+  return {
+    ticker: expectString(record.ticker, `${path}.ticker`),
+    title: expectString(record.title, `${path}.title`),
+    electionDate: expectString(record.electionDate, `${path}.electionDate`),
+    marketFavorites: expectArray(record.marketFavorites, `${path}.marketFavorites`).map((entry, index) => {
+      const fav = expectRecord(entry, `${path}.marketFavorites[${index}]`);
+      return {
+        candidate: expectString(fav.candidate, `${path}.marketFavorites[${index}].candidate`),
+        yesPrice: expectNumber(fav.yesPrice, `${path}.marketFavorites[${index}].yesPrice`),
+      };
+    }),
+    pollingSpread: record.pollingSpread === null ? null : (expectOptionalString(record.pollingSpread, `${path}.pollingSpread`) || null),
+  };
+}
+
 function parsePortfolioSnapshot(value: unknown, path: string): PortfolioSnapshot {
   const record = expectRecord(value, path);
 
@@ -463,6 +511,18 @@ export function parseDailyReport(value: unknown): DailyReport {
         ? undefined
         : expectArray(record.passes, "report.passes").map((entry, index) =>
             parsePassDecision(entry, `report.passes[${index}]`),
+          ),
+    trackers:
+      record.trackers === undefined
+        ? undefined
+        : expectArray(record.trackers, "report.trackers").map((entry, index) =>
+            parseTrackerEntry(entry, `report.trackers[${index}]`),
+          ),
+    onWatch:
+      record.onWatch === undefined
+        ? undefined
+        : expectArray(record.onWatch, "report.onWatch").map((entry, index) =>
+            parseOnWatchEntry(entry, `report.onWatch[${index}]`),
           ),
   };
 }

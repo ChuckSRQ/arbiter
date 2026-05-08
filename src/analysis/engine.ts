@@ -3,22 +3,29 @@ import type {
   DailyReport,
   EvidenceLink,
   MarketSnapshot as ReportMarketSnapshot,
+  OnWatchEntry,
   Opportunity,
   PassReasonCode,
   PassDecision,
   PollingEvidence,
   PositionReview,
+  TrackerEntry,
 } from "../app/report-schema";
 import { findPollingEvidence, isPollingEvidenceStale, latestPollingDate } from "./polling-evidence";
 
 export const DEFAULT_OPPORTUNITY_LIMIT = 5;
+export const TRACKER_SERIES = new Set(["KXAPRPOTUS", "KXGENERICBALLOTVOTEHUB"]);
 
-export type MarketClass = "politics" | "F1" | "economics" | "weather" | "other/no-model";
+export type MarketClass = "politics" | "tracker" | "other";
 
 export interface PublicMarketSnapshot {
   ticker: string;
   title: string;
   category?: string | null;
+  type?: string | null;
+  series_ticker?: string | null;
+  tracker_value?: string | null;
+  candidate_name?: string | null;
   close_time?: string | null;
   expiration_time?: string | null;
   yes_bid_cents?: number | null;
@@ -40,7 +47,7 @@ export interface PublicMarketSnapshotFile {
     endpoint?: string;
   };
   filters?: Record<string, unknown>;
-  markets: PublicMarketSnapshot[];
+  markets: Array<PublicMarketSnapshot | Record<string, unknown>>;
 }
 
 export interface PortfolioPositionInput {
@@ -64,10 +71,10 @@ export interface PortfolioSnapshotInput {
   available: boolean;
   balance?: {
     cash_balance?: number | null;
-    withdrawable_balance?: number | null;
-    portfolio_value?: number | null;
-  };
-  positions: PortfolioPositionInput[];
+      withdrawable_balance?: number | null;
+      portfolio_value?: number | null;
+    };
+  positions: Array<PortfolioPositionInput | Record<string, unknown>>;
   warnings: string[];
 }
 
@@ -92,9 +99,68 @@ interface EvaluatedModel extends ModelOverride {
   marketClass: MarketClass;
 }
 
+interface MarketAnalysis {
+  opportunity?: Opportunity;
+  pass?: PassDecision;
+  tracker?: TrackerEntry;
+  skipReason?: "other" | "no-model";
+}
+
 const DEFAULT_THESIS = "Arbiter is an edge filter, not a broad market screener.";
 const DEFAULT_NO_TRADE_POLICY =
   "No trade today is a valid report when none of the current Kalshi prices clear the evidence bar.";
+const POLITICAL_MARKET_PATTERN = /\b(election|senate|house|governor|mayor|nominee|primary|runoff|ballot|vote)\b/;
+
+function asString(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function asNullableString(value: unknown): string | null | undefined {
+  return typeof value === "string" ? value : value === null ? null : undefined;
+}
+
+function asNullableNumber(value: unknown): number | null | undefined {
+  return typeof value === "number" ? value : value === null ? null : undefined;
+}
+
+function normalizeMarket(market: PublicMarketSnapshot | Record<string, unknown>): PublicMarketSnapshot {
+  return {
+    ticker: asString(market.ticker),
+    title: asString(market.title),
+    category: asNullableString(market.category),
+    type: asNullableString(market.type),
+    series_ticker: asNullableString(market.series_ticker),
+    tracker_value: asNullableString(market.tracker_value),
+    candidate_name: asNullableString(market.candidate_name),
+    close_time: asNullableString(market.close_time),
+    expiration_time: asNullableString(market.expiration_time),
+    yes_bid_cents: asNullableNumber(market.yes_bid_cents),
+    yes_ask_cents: asNullableNumber(market.yes_ask_cents),
+    no_bid_cents: asNullableNumber(market.no_bid_cents),
+    no_ask_cents: asNullableNumber(market.no_ask_cents),
+    yes_midpoint_cents: asNullableNumber(market.yes_midpoint_cents),
+    no_midpoint_cents: asNullableNumber(market.no_midpoint_cents),
+    volume: asNullableNumber(market.volume),
+    open_interest: asNullableNumber(market.open_interest),
+    liquidity: asNullableNumber(market.liquidity),
+    rules_text: asNullableString(market.rules_text),
+  };
+}
+
+function normalizePosition(position: PortfolioPositionInput | Record<string, unknown>): PortfolioPositionInput {
+  return {
+    ticker: asString(position.ticker),
+    market_title: asString(position.market_title),
+    side: asString(position.side, "YES"),
+    count: typeof position.count === "number" ? position.count : 0,
+    avg_price: asNullableNumber(position.avg_price),
+    current_price: asNullableNumber(position.current_price),
+    market_value: asNullableNumber(position.market_value),
+    unrealized_pnl: asNullableNumber(position.unrealized_pnl),
+    exposure: asNullableNumber(position.exposure),
+    recommendation: asNullableString(position.recommendation),
+  };
+}
 
 function clampCents(value: number | null | undefined): number | null {
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -166,30 +232,29 @@ function categoryLabel(marketClass: MarketClass): string {
   switch (marketClass) {
     case "politics":
       return "Politics";
-    case "F1":
-      return "F1";
-    case "economics":
-      return "Economics";
-    case "weather":
-      return "Weather";
+    case "tracker":
+      return "Tracker";
     default:
       return "Other";
   }
 }
 
-export function classifyMarket(market: Pick<PublicMarketSnapshot, "category" | "ticker" | "title">): MarketClass {
+export function classifyMarket(
+  market: Pick<PublicMarketSnapshot, "category" | "ticker" | "title" | "type" | "series_ticker">,
+): MarketClass {
   const haystack = `${market.category ?? ""} ${market.ticker} ${market.title}`.toLowerCase();
+  const marketType = market.type?.toLowerCase();
+  const seriesTicker = market.series_ticker?.toUpperCase();
 
-  // Only electoral/polling markets are in scope.
-  // All other categories — F1, economics, weather, admin — are out of scope.
-  if (
-    haystack.includes("politic") ||
-    /\b(election|pres|senate|house|governor|nominee|poll|primary|impeach|congress|shutdown|pardon|resign|trump|vance|gabbard|scotus|fed|dissent)\b|ballot|vote/.test(haystack)
-  ) {
+  if (marketType === "tracker" || (seriesTicker && TRACKER_SERIES.has(seriesTicker))) {
+    return "tracker";
+  }
+
+  if (marketType === "election" || POLITICAL_MARKET_PATTERN.test(haystack)) {
     return "politics";
   }
 
-  return "other/no-model";
+  return "other";
 }
 
 function requiredEdge(confidence: ConfidenceLevel): number {
@@ -216,43 +281,6 @@ function watchEdge(confidence: ConfidenceLevel): number {
 
 function marketSpread(market: PublicMarketSnapshot): number {
   return Math.max(0, yesAskCents(market) - yesBidCents(market));
-}
-
-function defaultMarketModel(market: PublicMarketSnapshot, marketClass: MarketClass): EvaluatedModel | null {
-  if (market.ticker === "PRES-DEM-2028") {
-    return {
-      fairYesCents: 45,
-      confidence: "Low",
-      reason: "Without fresh polling, the current price is too close to fair value to justify a trade.",
-      whatWouldChange: "Fresh polling that opens a materially larger gap.",
-      evidenceLinks: [],
-      marketClass,
-    };
-  }
-
-  if (market.ticker === "OIL-ABOVE-85") {
-    return {
-      fairYesCents: 44,
-      confidence: "Low",
-      reason: "The price is richer than the cautious commodity stub can justify.",
-      whatWouldChange: "A materially cheaper entry or stronger energy data.",
-      evidenceLinks: [],
-      marketClass,
-    };
-  }
-
-  if (market.ticker === "F1-VER-WIN") {
-    return {
-      fairYesCents: 48,
-      confidence: "Medium",
-      reason: "The current mark is above a conservative race-win baseline without confirming pace evidence.",
-      whatWouldChange: "Practice and qualifying data that materially strengthen the pace picture.",
-      evidenceLinks: [],
-      marketClass,
-    };
-  }
-
-  return null;
 }
 
 function pollingConfidence(marketType: PollingEvidence["market_type"]): ConfidenceLevel {
@@ -313,12 +341,12 @@ function resolveModel(
   pollingEvidence: PollingEvidence[] | undefined,
   reportDate: string,
 ): EvaluatedModel | null {
-  if (marketClass === "politics") {
-    const override = overrides?.[market.ticker];
-    if (override) {
-      return { ...override, marketClass };
-    }
+  const override = overrides?.[market.ticker];
+  if (override) {
+    return { ...override, marketClass };
+  }
 
+  if (marketClass === "politics") {
     const record = findPollingEvidence(market, pollingEvidence);
     if (!record || isPollingEvidenceStale(record, reportDate)) {
       return null;
@@ -327,12 +355,36 @@ function resolveModel(
     return buildPoliticalPollingModel(record, marketClass);
   }
 
-  const override = overrides?.[market.ticker];
-  if (override) {
-    return { ...override, marketClass };
+  return null;
+}
+
+function trackerDirection(market: PublicMarketSnapshot): string {
+  const currentValue = market.tracker_value?.toLowerCase() ?? "";
+  const title = market.title.toLowerCase();
+
+  if (currentValue.includes(" to ") || title.includes(" between ")) {
+    return "Between";
   }
 
-  return defaultMarketModel(market, marketClass);
+  if (/\b(above|over)\b/.test(currentValue) || /\b(above|over)\b/.test(title)) {
+    return "Above";
+  }
+
+  if (/\b(below|under)\b/.test(currentValue) || /\b(below|under)\b/.test(title)) {
+    return "Below";
+  }
+
+  return "Range";
+}
+
+function buildTrackerEntry(market: PublicMarketSnapshot): TrackerEntry {
+  return {
+    seriesTicker: market.series_ticker ?? market.ticker,
+    title: market.title,
+    currentValue: market.tracker_value ?? market.title,
+    marketPrice: lastTradeCents(market),
+    direction: trackerDirection(market),
+  };
 }
 
 function buildPassDecision(
@@ -363,41 +415,39 @@ function analyzeMarket(
   overrides: Record<string, ModelOverride> | undefined,
   pollingEvidence: PollingEvidence[] | undefined,
   reportDate: string,
-): { opportunity?: Opportunity; pass?: PassDecision } {
+): MarketAnalysis {
   const marketClass = classifyMarket(market);
+
+  if (marketClass === "tracker") {
+    return { tracker: buildTrackerEntry(market) };
+  }
+
+  if (marketClass === "other") {
+    return { skipReason: "other" };
+  }
+
   const executableYes = yesAskCents(market);
   const executableNo = noAskCents(market);
 
-  if (marketClass === "politics") {
-    const record = findPollingEvidence(market, pollingEvidence);
+  const record = findPollingEvidence(market, pollingEvidence);
+  if (!record || isPollingEvidenceStale(record, reportDate)) {
+    const freshness = record ? ` Latest tracked poll ended ${latestPollingDate(record)}.` : "";
 
-    if (!record || isPollingEvidenceStale(record, reportDate)) {
-      const freshness = record ? ` Latest tracked poll ended ${latestPollingDate(record)}.` : "";
-
-      return {
-        pass: buildPassDecision(
-          market,
-          marketClass,
-          "missing-or-stale-polling",
-          `Pass: missing-or-stale-polling.${freshness}`,
-          executableYes,
-        ),
-      };
-    }
-  }
-
-  const model = resolveModel(market, overrides, marketClass, pollingEvidence, reportDate);
-
-  if (marketClass === "other/no-model" || model === null) {
     return {
       pass: buildPassDecision(
         market,
         marketClass,
-        "no-reliable-model",
-        "Pass: no reliable model is available for this market yet.",
+        "missing-or-stale-polling",
+        `Pass: missing-or-stale-polling.${freshness}`,
         executableYes,
       ),
     };
+  }
+
+  const model = resolveModel(market, overrides, marketClass, pollingEvidence, reportDate);
+
+  if (model === null) {
+    return { skipReason: "no-model" };
   }
 
   const fairNo = 100 - model.fairYesCents;
@@ -625,16 +675,98 @@ function dedupePollingEvidence(records: PollingEvidence[]): PollingEvidence[] {
   return deduped;
 }
 
-function opportunityPriority(opportunity: Opportunity): number {
-  switch (opportunity.action) {
-    case "Buy YES":
-    case "Buy NO":
-      return 2;
-    case "Watch":
-      return 1;
-    default:
-      return 0;
+function confidenceMultiplier(confidence: ConfidenceLevel): number {
+  switch (confidence) {
+    case "High":
+      return 1.0;
+    case "Medium":
+      return 0.7;
+    case "Low":
+      return 0.4;
   }
+}
+
+function daysUntilExpiration(expiresAt: string, now: Date = new Date()): number {
+  const expiryDate = new Date(expiresAt);
+  if (Number.isNaN(expiryDate.getTime())) {
+    return Number.POSITIVE_INFINITY;
+  }
+  return Math.max(0, (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+export function calculateOpportunityScore(opportunity: Opportunity, now: Date = new Date()): number {
+  const daysUntilExpiry = daysUntilExpiration(opportunity.market.expiresAt, now);
+
+  let timeWeight = 1.0;
+  if (daysUntilExpiry <= 14) {
+    timeWeight = 1.5;
+  } else if (daysUntilExpiry <= 30) {
+    timeWeight = 1.2;
+  }
+  
+  const confidenceMultiplierValue = confidenceMultiplier(opportunity.confidence);
+  const score = opportunity.edge * confidenceMultiplierValue * timeWeight;
+
+  return score;
+}
+
+function buildOnWatchEntry(
+  markets: PublicMarketSnapshot[],
+  mainMarket: PublicMarketSnapshot,
+  pollingEvidence: PollingEvidence[] | undefined,
+): OnWatchEntry | null {
+  const maybeMayorLaGroup =
+    (mainMarket.ticker === "KXMAYORLA" || mainMarket.ticker.startsWith("KXMAYORLA-")) &&
+    markets.some((m) => m.ticker === "KXMAYORLA" || m.ticker.startsWith("KXMAYORLA-"));
+
+  if (maybeMayorLaGroup) {
+    const primary = markets.find((m) => m.ticker === "KXMAYORLA") ?? mainMarket;
+    const electionDate = primary.close_time || primary.expiration_time || mainMarket.close_time || mainMarket.expiration_time || "";
+    const title = primary.title || "Los Angeles Mayoral Election";
+    const candidates = markets
+      .filter((m) => m.ticker?.startsWith("KXMAYORLA-"))
+      .map((m) => {
+        const name = m.candidate_name
+          || m.ticker?.split("-").pop()
+          || m.title;
+        const price = yesAskCents(m);
+        return { candidate: name, yesPrice: price };
+      })
+      .sort((a, b) => b.yesPrice - a.yesPrice);
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    const pollingRecord = findPollingEvidence(primary, pollingEvidence);
+    const pollingSpread = pollingRecord?.polling_average?.spread
+      ? `${pollingRecord.polling_average.leader} +${pollingRecord.polling_average.spread}`
+      : null;
+
+    return {
+      ticker: "KXMAYORLA",
+      title,
+      electionDate,
+      marketFavorites: candidates,
+      pollingSpread,
+    };
+  }
+
+  const ticker = mainMarket.ticker;
+  const title = mainMarket.title;
+  const electionDate = mainMarket.close_time || mainMarket.expiration_time || "";
+  const pollingRecord = findPollingEvidence(mainMarket, pollingEvidence);
+  const pollingSpread = pollingRecord?.polling_average?.spread
+    ? `${pollingRecord.polling_average.leader} +${pollingRecord.polling_average.spread}`
+    : null;
+
+  return {
+    ticker,
+    title,
+    electionDate,
+    marketFavorites: [{ candidate: "YES", yesPrice: yesAskCents(mainMarket) }],
+    pollingSpread,
+  };
 }
 
 export function buildDailyReport({
@@ -645,19 +777,23 @@ export function buildDailyReport({
   pollingEvidence,
   opportunityLimit = DEFAULT_OPPORTUNITY_LIMIT,
 }: BuildDailyReportArgs): DailyReport {
-  const evaluated = marketSnapshot.markets.map((market) =>
+  const normalizedMarkets = marketSnapshot.markets.map((market) => normalizeMarket(market));
+  const normalizedPositions = (portfolioSnapshot?.positions ?? []).map((position) => normalizePosition(position));
+  const evaluated = normalizedMarkets.map((market) =>
     analyzeMarket(market, modelOverrides, pollingEvidence, reportDate),
   );
-  const opportunities = evaluated
-    .flatMap((entry) => (entry.opportunity ? [entry.opportunity] : []))
-    .sort((left, right) => opportunityPriority(right) - opportunityPriority(left) || right.edge - left.edge)
+  const generatedOpportunities = evaluated.flatMap((entry) => (entry.opportunity ? [entry.opportunity] : []));
+  const opportunities = generatedOpportunities
+    .slice()
+    .sort((left, right) => calculateOpportunityScore(right) - calculateOpportunityScore(left))
     .slice(0, opportunityLimit);
   const passes = evaluated.flatMap((entry) => (entry.pass ? [entry.pass] : []));
+  const trackers = evaluated.flatMap((entry) => (entry.tracker ? [entry.tracker] : []));
 
-  const portfolioReviews = (portfolioSnapshot?.positions ?? []).map((position) =>
+  const portfolioReviews = normalizedPositions.map((position) =>
     reviewPosition(
       position,
-      marketSnapshot.markets.find((market) => market.ticker === position.ticker),
+      normalizedMarkets.find((market) => market.ticker === position.ticker),
       modelOverrides,
       pollingEvidence,
       reportDate,
@@ -666,8 +802,10 @@ export function buildDailyReport({
   const positionActions = portfolioReviews.filter((position) => position.action !== "Hold");
   const matchedPollingEvidence = dedupePollingEvidence(
     [
-      ...marketSnapshot.markets.map((market) => findPollingEvidence(market, pollingEvidence)),
-      ...(portfolioSnapshot?.positions ?? []).map((position) =>
+      ...normalizedMarkets
+        .filter((market) => classifyMarket(market) === "politics")
+        .map((market) => findPollingEvidence(market, pollingEvidence)),
+      ...normalizedPositions.map((position) =>
         findPollingEvidence({ ticker: position.ticker, title: position.market_title }, pollingEvidence),
       ),
     ].flatMap((record) => (record ? [record] : [])),
@@ -682,6 +820,55 @@ export function buildDailyReport({
       ? "No trade today. Nothing cleared the evidence bar after executable prices and confidence thresholds."
       : `${opportunities.length} opportunity${opportunities.length === 1 ? "" : "ies"} cleared the bar, with ${positionActions.length} portfolio action${positionActions.length === 1 ? "" : "s"} also worth attention.`;
 
+  // Build onWatch entries for politics markets without opportunities
+  const politicsMarkets = normalizedMarkets.filter((m) => classifyMarket(m) === "politics");
+  const generatedOpportunityTickers = new Set(generatedOpportunities.map((o) => o.market.ticker));
+
+  // Handle KXMAYORLA specially - group all sub-markets
+  const kxmayorlaMarkets = politicsMarkets.filter((m) => m.ticker === "KXMAYORLA" || m.ticker.startsWith("KXMAYORLA-"));
+  const onWatchItems: OnWatchEntry[] = [];
+
+  if (
+    kxmayorlaMarkets.length > 0 &&
+    !kxmayorlaMarkets.some((market) => generatedOpportunityTickers.has(market.ticker))
+  ) {
+    const main = kxmayorlaMarkets.find((m) => m.ticker === "KXMAYORLA") || kxmayorlaMarkets[0];
+    const entry = buildOnWatchEntry(kxmayorlaMarkets, main, pollingEvidence);
+    if (entry) {
+      onWatchItems.push(entry);
+    }
+  }
+
+  // Add other politics markets without opportunities
+  for (const market of politicsMarkets) {
+    if (generatedOpportunityTickers.has(market.ticker) || market.ticker.startsWith("KXMAYORLA")) {
+      continue;
+    }
+    const entry = buildOnWatchEntry(politicsMarkets, market, pollingEvidence);
+    if (entry) {
+      onWatchItems.push(entry);
+    }
+  }
+
+  // Sort onWatch items by election date (closest first)
+  onWatchItems.sort((a, b) => {
+    const leftTime = new Date(a.electionDate).getTime();
+    const rightTime = new Date(b.electionDate).getTime();
+    const leftValid = Number.isFinite(leftTime);
+    const rightValid = Number.isFinite(rightTime);
+    if (!leftValid && !rightValid) {
+      return a.title.localeCompare(b.title);
+    }
+    if (!leftValid) {
+      return 1;
+    }
+    if (!rightValid) {
+      return -1;
+    }
+    return leftTime - rightTime;
+  });
+
+
   return {
     reportDate,
     generatedAt: formatGeneratedAt(marketSnapshot.collected_at),
@@ -691,8 +878,8 @@ export function buildDailyReport({
     noTradePolicy: DEFAULT_NO_TRADE_POLICY,
     opportunities,
     portfolio: {
-      grossExposure: (portfolioSnapshot?.positions ?? []).reduce((total, position) => total + (position.exposure ?? 0), 0),
-      unrealizedPnl: (portfolioSnapshot?.positions ?? []).reduce(
+      grossExposure: normalizedPositions.reduce((total, position) => total + (position.exposure ?? 0), 0),
+      unrealizedPnl: normalizedPositions.reduce(
         (total, position) => total + (position.unrealized_pnl ?? 0),
         0,
       ),
@@ -713,6 +900,8 @@ export function buildDailyReport({
         : `Only the top ${opportunityLimit} ideas make the report.`,
       "Use executable prices, not midpoints, when deciding whether an edge is real.",
     ],
-    passes,
+    passes: passes.length > 0 ? passes : undefined,
+    trackers: trackers.length > 0 ? trackers : undefined,
+    onWatch: onWatchItems.length > 0 ? onWatchItems : undefined,
   };
 }

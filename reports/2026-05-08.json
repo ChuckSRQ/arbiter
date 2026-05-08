@@ -1,0 +1,117 @@
+{
+  "reportDate": "2026-05-08",
+  "generatedAt": "May 7, 2026, 9:05 PM ET",
+  "reportLabel": "Generated edge brief",
+  "thesis": "Arbiter is an edge filter, not a broad market screener.",
+  "summary": "1 opportunity cleared the bar, with 0 portfolio actions also worth attention.",
+  "noTradePolicy": "No trade today is a valid report when none of the current Kalshi prices clear the evidence bar.",
+  "opportunities": [
+    {
+      "title": "Above 6%",
+      "market": {
+        "ticker": "KXGENERICBALLOTVOTEHUB-26MAY08-T6",
+        "title": "Above 6%",
+        "category": "Politics",
+        "yesBidCents": 10,
+        "yesAskCents": 13,
+        "lastTradeCents": 12,
+        "expiresAt": "2026-05-08T14:00:00Z"
+      },
+      "action": "Buy YES",
+      "marcusFairValue": 74,
+      "edge": 61,
+      "confidence": "Low",
+      "reason": "Polling-first view: Democrats leads Republicans 52.95-47.05 in the current average, latest tracked spread is Democrats +5.9, and Democrats lead the generic ballot by 5.9pts (53% D / 47% R). Polling has been stable with Dems holding a modest lead. That supports roughly 74c fair value.",
+      "evidenceLinks": [
+        {
+          "label": "Silver Bulletin Generic Ballot Average",
+          "href": "https://www.natesilver.net/p/generic-ballot-average-2026-nate-silver-bulletin-congress-polls",
+          "source": "Silver Bulletin",
+          "note": "Quality-weighted polling average with house-effect adjustments."
+        },
+        {
+          "label": "RealClearPolitics Generic Ballot",
+          "href": "https://www.realclearpolling.com/polls/generic-ballot",
+          "source": "RealClearPolling",
+          "note": "Simple average of all major generic ballot polls."
+        }
+      ],
+      "whatWouldChange": "A fresher poll moving Republicans ahead would take this back to pass."
+    }
+  ],
+  "portfolio": {
+    "grossExposure": 0,
+    "unrealizedPnl": 0,
+    "cashAvailable": 0,
+    "riskPosture": "Stay patient; most markets should stay passed until a reliable model appears.",
+    "positions": []
+  },
+  "evidence": [
+    {
+      "label": "Silver Bulletin Generic Ballot Average",
+      "href": "https://www.natesilver.net/p/generic-ballot-average-2026-nate-silver-bulletin-congress-polls",
+      "source": "Silver Bulletin",
+      "note": "Quality-weighted polling average with house-effect adjustments."
+    },
+    {
+      "label": "RealClearPolitics Generic Ballot",
+      "href": "https://www.realclearpolling.com/polls/generic-ballot",
+      "source": "RealClearPolling",
+      "note": "Simple average of all major generic ballot polls."
+    }
+  ],
+  "pollingEvidence": [
+    {
+      "collected_at": "2026-05-07T16:37:48Z",
+      "source_url": "https://www.natesilver.net/p/generic-ballot-average-2026-nate-silver-bulletin-congress-polls",
+      "race": "Generic Congressional Ballot 2026",
+      "market_key": "generic-ballot",
+      "market_type": "chamber-control",
+      "polling_average": {
+        "updated_at": "2026-05-07T16:37:48Z",
+        "leader": "Democrats",
+        "leader_share": 52.95,
+        "runner_up": "Republicans",
+        "runner_up_share": 47.05,
+        "spread": 5.9,
+        "fair_yes_cents": 74
+      },
+      "latest_polls": [],
+      "trend_summary": "Democrats lead the generic ballot by 5.9pts (53% D / 47% R). Polling has been stable with Dems holding a modest lead.",
+      "evidence_links": [
+        {
+          "label": "Silver Bulletin Generic Ballot Average",
+          "href": "https://www.natesilver.net/p/generic-ballot-average-2026-nate-silver-bulletin-congress-polls",
+          "source": "Silver Bulletin",
+          "note": "Quality-weighted polling average with house-effect adjustments."
+        },
+        {
+          "label": "RealClearPolitics Generic Ballot",
+          "href": "https://www.realclearpolling.com/polls/generic-ballot",
+          "source": "RealClearPolling",
+          "note": "Simple average of all major generic ballot polls."
+        }
+      ]
+    }
+  ],
+  "archive": [
+    {
+      "date": "2026-05-07",
+      "headline": "Archived brief · Generated edge brief",
+      "summary": "1 opportunity cleared the bar, with 0 portfolio actions also worth attention.",
+      "verdict": "1 trade idea"
+    },
+    {
+      "date": "2026-05-06",
+      "headline": "Archived brief · No trade day",
+      "summary": "No trade today. Nothing cleared the evidence bar after executable prices and confidence thresholds.",
+      "verdict": "No trade today"
+    }
+  ],
+  "watchlist": [
+    "Most markets should stay passed until a reliable model exists.",
+    "Only the top 5 ideas make the report.",
+    "Use executable prices, not midpoints, when deciding whether an edge is real."
+  ],
+  "passes": []
+}

@@ -1,0 +1,495 @@
+{
+  "evidence": [
+    {
+      "collected_at": "2026-05-07T16:37:48Z",
+      "source_url": "https://www.natesilver.net/p/generic-ballot-average-2026-nate-silver-bulletin-congress-polls",
+      "race": "Generic Congressional Ballot 2026",
+      "market_key": "generic-ballot",
+      "market_type": "chamber-control",
+      "polling_average": {
+        "updated_at": "2026-05-07T16:37:48Z",
+        "leader": "Democrats",
+        "leader_share": 52.95,
+        "runner_up": "Republicans",
+        "runner_up_share": 47.05,
+        "spread": 5.9,
+        "fair_yes_cents": 74
+      },
+      "latest_polls": [],
+      "trend_summary": "Democrats lead the generic ballot by 5.9pts (53% D / 47% R). Polling has been stable with Dems holding a modest lead.",
+      "evidence_links": [
+        {
+          "label": "Silver Bulletin Generic Ballot Average",
+          "href": "https://www.natesilver.net/p/generic-ballot-average-2026-nate-silver-bulletin-congress-polls",
+          "source": "Silver Bulletin",
+          "note": "Quality-weighted polling average with house-effect adjustments."
+        },
+        {
+          "label": "RealClearPolitics Generic Ballot",
+          "href": "https://www.realclearpolling.com/polls/generic-ballot",
+          "source": "RealClearPolling",
+          "note": "Simple average of all major generic ballot polls."
+        }
+      ]
+    },
+    {
+      "collected_at": "2026-05-07T16:37:48Z",
+      "source_url": "https://www.realclearpolling.com",
+      "race": "Nevada Senate General",
+      "market_key": "KXNV-SENATE-26",
+      "market_type": "binary-general",
+      "polling_average": {
+        "updated_at": "2026-05-07T16:37:48Z",
+        "leader": "TBD",
+        "leader_share": 50,
+        "runner_up": "TBD",
+        "runner_up_share": 50,
+        "spread": 0,
+        "fair_yes_cents": 50
+      },
+      "latest_polls": [],
+      "trend_summary": "No recent polling data available for this race. Market price is the best available signal.",
+      "evidence_links": [
+        {
+          "label": "Silver Bulletin Pollster Ratings",
+          "href": "https://www.natesilver.net/p/pollster-ratings-silver-bulletin",
+          "source": "Silver Bulletin",
+          "note": "Pollster quality grades inform how much weight to give each poll."
+        }
+      ]
+    },
+    {
+      "collected_at": "2026-05-07T16:37:48Z",
+      "source_url": "https://www.realclearpolling.com",
+      "race": "South Carolina Governor General",
+      "market_key": "KXSC-GOV-26",
+      "market_type": "multi-candidate-primary",
+      "polling_average": {
+        "updated_at": "2026-05-07T16:37:48Z",
+        "leader": "PamelaEvette",
+        "leader_share": 18.3,
+        "runner_up": "AlanWilson",
+        "runner_up_share": 16.3,
+        "spread": 2.0,
+        "fair_yes_cents": 45
+      },
+      "latest_polls": [
+        {
+          "pollster": "RealClearPolitics",
+          "dates": {
+            "start": "October 2, 2025",
+            "end": "March 27, 2026"
+          },
+          "sample": "N/A",
+          "toplines": [
+            {
+              "candidate": "PamelaEvette",
+              "pct": 18.3
+            },
+            {
+              "candidate": "AlanWilson",
+              "pct": 16.3
+            }
+          ],
+          "spread": "PamelaEvette +2.0"
+        },
+        {
+          "pollster": "Race to the WH",
+          "dates": {
+            "start": "N/A",
+            "end": "March 13, 2026"
+          },
+          "sample": "N/A",
+          "toplines": [
+            {
+              "candidate": "PamelaEvette",
+              "pct": 17.6
+            },
+            {
+              "candidate": "AlanWilson",
+              "pct": 19.8
+            }
+          ],
+          "spread": "AlanWilson +2.2"
+        },
+        {
+          "pollster": "Decision Desk HQ",
+          "dates": {
+            "start": "N/A",
+            "end": "March 27, 2026"
+          },
+          "sample": "N/A",
+          "toplines": [
+            {
+              "candidate": "PamelaEvette",
+              "pct": 18.5
+            },
+            {
+              "candidate": "AlanWilson",
+              "pct": 16.4
+            }
+          ],
+          "spread": "PamelaEvette +2.1"
+        }
+      ],
+      "trend_summary": "Latest polls show PamelaEvette at 18% vs AlanWilson at 16 (, October 2, 2025 – March 27, 2026). Recent pollsters: Decision Desk HQ, Race to the WH, RealClearPolitics.",
+      "evidence_links": [
+        {
+          "label": "Wikipedia South Carolina Governor General Polling",
+          "href": "https://en.wikipedia.org/wiki/2026_South_Carolina_gubernatorial_election",
+          "source": "Wikipedia",
+          "note": "Compiled polling data for South Carolina Governor General from Wikipedia."
+        },
+        {
+          "label": "Silver Bulletin Pollster Ratings",
+          "href": "https://www.natesilver.net/p/pollster-ratings-silver-bulletin",
+          "source": "Silver Bulletin",
+          "note": "Pollster quality grades inform how much weight to give each poll."
+        }
+      ]
+    },
+    {
+      "collected_at": "2026-05-07T16:37:48Z",
+      "source_url": "https://www.realclearpolling.com",
+      "race": "Georgia Senate Runoff",
+      "market_key": "KXGA-SENATE-RUNOFF-26",
+      "market_type": "binary-general",
+      "polling_average": {
+        "updated_at": "2026-05-07T16:37:48Z",
+        "leader": "TBD",
+        "leader_share": 50,
+        "runner_up": "TBD",
+        "runner_up_share": 50,
+        "spread": 0,
+        "fair_yes_cents": 50
+      },
+      "latest_polls": [],
+      "trend_summary": "No recent polling data available for this race. Market price is the best available signal.",
+      "evidence_links": [
+        {
+          "label": "Silver Bulletin Pollster Ratings",
+          "href": "https://www.natesilver.net/p/pollster-ratings-silver-bulletin",
+          "source": "Silver Bulletin",
+          "note": "Pollster quality grades inform how much weight to give each poll."
+        }
+      ]
+    },
+    {
+      "collected_at": "2026-05-07T16:37:48Z",
+      "source_url": "https://www.realclearpolling.com",
+      "race": "Georgia Governor Runoff",
+      "market_key": "KXGA-GOV-RUNOFF-26",
+      "market_type": "binary-general",
+      "polling_average": {
+        "updated_at": "2026-05-07T16:37:48Z",
+        "leader": "TBD",
+        "leader_share": 50,
+        "runner_up": "TBD",
+        "runner_up_share": 50,
+        "spread": 0,
+        "fair_yes_cents": 50
+      },
+      "latest_polls": [],
+      "trend_summary": "No recent polling data available for this race. Market price is the best available signal.",
+      "evidence_links": [
+        {
+          "label": "Silver Bulletin Pollster Ratings",
+          "href": "https://www.natesilver.net/p/pollster-ratings-silver-bulletin",
+          "source": "Silver Bulletin",
+          "note": "Pollster quality grades inform how much weight to give each poll."
+        }
+      ]
+    },
+    {
+      "collected_at": "2026-05-07T16:37:48Z",
+      "source_url": "https://www.realclearpolling.com",
+      "race": "Alabama Senate Runoff",
+      "market_key": "KXAL-SENATE-RUNOFF-26",
+      "market_type": "multi-candidate-primary",
+      "polling_average": {
+        "updated_at": "2026-05-07T16:37:48Z",
+        "leader": "GarlanGudger",
+        "leader_share": 30.0,
+        "runner_up": "CindyMyrex",
+        "runner_up_share": 29.0,
+        "spread": 1.0,
+        "fair_yes_cents": 54
+      },
+      "latest_polls": [
+        {
+          "pollster": "Cullman Daily",
+          "dates": {
+            "start": "August 13, 2025",
+            "end": "August 13, 2025"
+          },
+          "sample": "N/A",
+          "toplines": [
+            {
+              "candidate": "GarlanGudger",
+              "pct": 30.0
+            },
+            {
+              "candidate": "CindyMyrex",
+              "pct": 29.0
+            }
+          ],
+          "spread": "GarlanGudger +1.0"
+        }
+      ],
+      "trend_summary": "Latest polls show GarlanGudger at 30% vs CindyMyrex at 29 (, August 13, 2025). Recent pollsters: Cullman Daily.",
+      "evidence_links": [
+        {
+          "label": "Wikipedia Alabama Senate Runoff Polling",
+          "href": "https://en.wikipedia.org/wiki/2026_Alabama_Senate_election",
+          "source": "Wikipedia",
+          "note": "Compiled polling data for Alabama Senate Runoff from Wikipedia."
+        },
+        {
+          "label": "Silver Bulletin Pollster Ratings",
+          "href": "https://www.natesilver.net/p/pollster-ratings-silver-bulletin",
+          "source": "Silver Bulletin",
+          "note": "Pollster quality grades inform how much weight to give each poll."
+        }
+      ]
+    },
+    {
+      "collected_at": "2026-05-07T16:37:48Z",
+      "source_url": "https://www.realclearpolling.com",
+      "race": "Alabama Governor Runoff",
+      "market_key": "KXAL-GOV-RUNOFF-26",
+      "market_type": "binary-general",
+      "polling_average": {
+        "updated_at": "2026-05-07T16:37:48Z",
+        "leader": "TBD",
+        "leader_share": 50,
+        "runner_up": "TBD",
+        "runner_up_share": 50,
+        "spread": 0,
+        "fair_yes_cents": 50
+      },
+      "latest_polls": [],
+      "trend_summary": "No recent polling data available for this race. Market price is the best available signal.",
+      "evidence_links": [
+        {
+          "label": "Silver Bulletin Pollster Ratings",
+          "href": "https://www.natesilver.net/p/pollster-ratings-silver-bulletin",
+          "source": "Silver Bulletin",
+          "note": "Pollster quality grades inform how much weight to give each poll."
+        }
+      ]
+    },
+    {
+      "collected_at": "2026-05-07T16:37:48Z",
+      "source_url": "https://www.realclearpolling.com",
+      "race": "New York Governor General",
+      "market_key": "KXNY-GOV-26",
+      "market_type": "binary-general",
+      "polling_average": {
+        "updated_at": "2026-05-07T16:37:48Z",
+        "leader": "Kathy Hochul",
+        "leader_share": 51.0,
+        "runner_up": "Bruce Blakeman",
+        "runner_up_share": 37.0,
+        "spread": 14.0,
+        "fair_yes_cents": 100
+      },
+      "latest_polls": [
+        {
+          "pollster": "270toWin",
+          "dates": {
+            "start": "March 30 – March 31, 2026",
+            "end": "March 30 – March 31, 2026"
+          },
+          "sample": "N/A",
+          "toplines": [
+            {
+              "candidate": "Kathy Hochul",
+              "pct": 51.0
+            },
+            {
+              "candidate": "Bruce Blakeman",
+              "pct": 37.0
+            }
+          ],
+          "spread": "Kathy Hochul +14.0"
+        },
+        {
+          "pollster": "Race to the WH",
+          "dates": {
+            "start": "N/A",
+            "end": "March 26, 2026"
+          },
+          "sample": "N/A",
+          "toplines": [
+            {
+              "candidate": "Kathy Hochul",
+              "pct": 50.6
+            },
+            {
+              "candidate": "Bruce Blakeman",
+              "pct": 36.0
+            }
+          ],
+          "spread": "Kathy Hochul +14.6"
+        },
+        {
+          "pollster": "RealClearPolitics",
+          "dates": {
+            "start": "January 26, 2026",
+            "end": "March 26, 2026"
+          },
+          "sample": "N/A",
+          "toplines": [
+            {
+              "candidate": "Kathy Hochul",
+              "pct": 48.5
+            },
+            {
+              "candidate": "Bruce Blakeman",
+              "pct": 33.5
+            }
+          ],
+          "spread": "Kathy Hochul +15.0"
+        }
+      ],
+      "trend_summary": "Latest polls show Kathy Hochul at 51% vs Bruce Blakeman at 37 (, March 30 – March 31, 2026). Recent pollsters: 270toWin, Race to the WH, RealClearPolitics.",
+      "evidence_links": [
+        {
+          "label": "Wikipedia New York Governor General Polling",
+          "href": "https://en.wikipedia.org/wiki/2026_New_York_gubernatorial_election",
+          "source": "Wikipedia",
+          "note": "Compiled polling data for New York Governor General from Wikipedia."
+        },
+        {
+          "label": "Silver Bulletin Pollster Ratings",
+          "href": "https://www.natesilver.net/p/pollster-ratings-silver-bulletin",
+          "source": "Silver Bulletin",
+          "note": "Pollster quality grades inform how much weight to give each poll."
+        }
+      ]
+    },
+    {
+      "collected_at": "2026-05-07T16:37:48Z",
+      "source_url": "https://www.realclearpolling.com",
+      "race": "Maryland Governor General",
+      "market_key": "KXMD-GOV-26",
+      "market_type": "multi-candidate-primary",
+      "polling_average": {
+        "updated_at": "2026-05-07T16:37:48Z",
+        "leader": "WesMoore (D)",
+        "leader_share": 45.0,
+        "runner_up": "LarryHogan (R)",
+        "runner_up_share": 37.0,
+        "spread": 8.0,
+        "fair_yes_cents": 66
+      },
+      "latest_polls": [
+        {
+          "pollster": "OpinionWorks",
+          "dates": {
+            "start": "October 7−10, 2025",
+            "end": "October 7−10, 2025"
+          },
+          "sample": "N/A",
+          "toplines": [
+            {
+              "candidate": "WesMoore (D)",
+              "pct": 45.0
+            },
+            {
+              "candidate": "LarryHogan (R)",
+              "pct": 37.0
+            }
+          ],
+          "spread": "WesMoore (D) +8.0"
+        },
+        {
+          "pollster": "Gonzales Research",
+          "dates": {
+            "start": "December 27, 2024",
+            "end": "January 4, 2025"
+          },
+          "sample": "N/A",
+          "toplines": [
+            {
+              "candidate": "WesMoore (D)",
+              "pct": 52.0
+            },
+            {
+              "candidate": "LarryHogan (R)",
+              "pct": 38.0
+            }
+          ],
+          "spread": "WesMoore (D) +14.0"
+        }
+      ],
+      "trend_summary": "Latest polls show WesMoore (D) at 45% vs LarryHogan (R) at 37 (, October 7−10, 2025). Recent pollsters: OpinionWorks, Gonzales Research.",
+      "evidence_links": [
+        {
+          "label": "Wikipedia Maryland Governor General Polling",
+          "href": "https://en.wikipedia.org/wiki/2026_Maryland_gubernatorial_election",
+          "source": "Wikipedia",
+          "note": "Compiled polling data for Maryland Governor General from Wikipedia."
+        },
+        {
+          "label": "Silver Bulletin Pollster Ratings",
+          "href": "https://www.natesilver.net/p/pollster-ratings-silver-bulletin",
+          "source": "Silver Bulletin",
+          "note": "Pollster quality grades inform how much weight to give each poll."
+        }
+      ]
+    },
+    {
+      "collected_at": "2026-05-07T16:37:48Z",
+      "source_url": "https://www.realclearpolling.com",
+      "race": "Louisiana Senate Runoff",
+      "market_key": "KXLA-SENATE-RUNOFF-26",
+      "market_type": "binary-general",
+      "polling_average": {
+        "updated_at": "2026-05-07T16:37:48Z",
+        "leader": "TBD",
+        "leader_share": 50,
+        "runner_up": "TBD",
+        "runner_up_share": 50,
+        "spread": 0,
+        "fair_yes_cents": 50
+      },
+      "latest_polls": [],
+      "trend_summary": "No recent polling data available for this race. Market price is the best available signal.",
+      "evidence_links": [
+        {
+          "label": "Silver Bulletin Pollster Ratings",
+          "href": "https://www.natesilver.net/p/pollster-ratings-silver-bulletin",
+          "source": "Silver Bulletin",
+          "note": "Pollster quality grades inform how much weight to give each poll."
+        }
+      ]
+    },
+    {
+      "collected_at": "2026-05-07T16:37:48Z",
+      "source_url": "https://www.realclearpolling.com",
+      "race": "Louisiana Governor Runoff",
+      "market_key": "KXLA-GOV-RUNOFF-26",
+      "market_type": "binary-general",
+      "polling_average": {
+        "updated_at": "2026-05-07T16:37:48Z",
+        "leader": "TBD",
+        "leader_share": 50,
+        "runner_up": "TBD",
+        "runner_up_share": 50,
+        "spread": 0,
+        "fair_yes_cents": 50
+      },
+      "latest_polls": [],
+      "trend_summary": "No recent polling data available for this race. Market price is the best available signal.",
+      "evidence_links": [
+        {
+          "label": "Silver Bulletin Pollster Ratings",
+          "href": "https://www.natesilver.net/p/pollster-ratings-silver-bulletin",
+          "source": "Silver Bulletin",
+          "note": "Pollster quality grades inform how much weight to give each poll."
+        }
+      ]
+    }
+  ]
+}

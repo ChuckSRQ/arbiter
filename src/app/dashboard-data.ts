@@ -1,5 +1,5 @@
 import { type DailyReport, type Opportunity, parseDailyReport } from "./report-schema";
-import { DEFAULT_OPPORTUNITY_LIMIT } from "../analysis/engine";
+import { calculateOpportunityScore, DEFAULT_OPPORTUNITY_LIMIT } from "../analysis/engine";
 import {
   type DashboardReportLoaderOptions,
   type DashboardReportSource,
@@ -108,5 +108,7 @@ export const mockDashboardReport = defaultDashboardPageData.report;
 export const mockDashboardReportStatus = defaultDashboardPageData.reportStatus;
 
 export function getTopOpportunities(report: DailyReport): Opportunity[] {
-  return [...report.opportunities].sort((left, right) => right.edge - left.edge).slice(0, DEFAULT_OPPORTUNITY_LIMIT);
+  return [...report.opportunities]
+    .sort((left, right) => calculateOpportunityScore(right) - calculateOpportunityScore(left))
+    .slice(0, DEFAULT_OPPORTUNITY_LIMIT);
 }

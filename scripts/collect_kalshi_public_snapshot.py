@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Collect a Kalshi market snapshot of electoral/polling markets closing soon.
+"""Collect a Kalshi market snapshot of election and polling markets.
 
-Only collects markets with underlying polling data — presidential approval ratings,
-generic ballot polling, and election winner markets. Excludes all government
-administration markets (DOGE, Fed decisions, Trump Truth Social, etc.).
+Only collects markets with underlying polling data — tracker markets like
+presidential approval and the generic ballot, plus curated election winner
+markets. Excludes government-administration markets (Fed, SCOTUS, cabinet, etc.).
 
 Usage:
     python collect_kalshi_public_snapshot.py                          # electoral + polling
@@ -26,31 +26,30 @@ from urllib.request import urlopen
 
 DEFAULT_BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
 MARKETS_ENDPOINT = "/markets"
-SERIES_ENDPOINT = "/series"
-DEFAULT_WINDOW_DAYS = 30
+DEFAULT_WINDOW_DAYS = 60
 DEFAULT_MAX_PAGES = 5
 DEFAULT_PAGE_LIMIT = 200
 
 # Sleep between series queries to avoid hammering the API
 SERIES_QUERY_DELAY = 0.05  # 50ms
 
-# Curated near-term electoral/polling series only.
-# These are the ONLY series that have actual polling data behind them.
-# Everything else — admin actions, DOGE, Fed decisions, Trump Truth Social — is
-# government administration data with no underlying poll to trade against.
-CURATED_NEAR_TERM_SERIES = [
-    # Presidential approval ratings
-    "KXAPRPOTUS",       # RCP Presidential approval rating (daily, real polls)
-    "KXGENERICBALLOTVOTEHUB",  # Generic ballot polling (real polls)
-    "KXMAYORLA",        # LA Mayor election (has polls, resolves 2027-06-02)
+# Curated tracker series. These update frequently and should be represented as
+# informational pulse checks, not a pile of duplicate sub-markets.
+TRACKER_SERIES = [
+    "KXAPRPOTUS",  # RealClearPolitics presidential approval rating
+    "KXGENERICBALLOTVOTEHUB",  # Generic congressional ballot spread
 ]
 
-# Keywords to filter /series?category=Politics for additional polling series.
-# STRICTLY limited to electoral and polling terms.
-POLITICAL_SERIES_KEYWORDS = [
-    "approval rating", "ballot", "polling", "electoral",
-    "senate election", "house election", "governor election",
-    "mayoral", "primary election", "runoff",
+# Curated election series with real polling behind them.
+# Add future election tickers here as Kalshi lists more true election markets.
+ELECTION_SERIES = [
+    "KXMAYORLA",  # 2026 Los Angeles mayoral election
+]
+
+# Elections worth carrying even when they sit outside the default near-term
+# window because the polling file still tracks them.
+ELECTION_WATCHLIST = [
+    "KXMAYORLA",
 ]
 
 
@@ -147,6 +146,9 @@ def market_closes_within_window(
     collected_at: datetime,
     window_days: int,
 ) -> bool:
+    if is_watchlisted_market(market):
+        return True
+
     close_time = market_close_time(market)
     if close_time is None:
         return False
@@ -180,6 +182,22 @@ def derive_series_ticker(event_ticker: str | None) -> str | None:
     return result
 
 
+def market_series_ticker(market: dict[str, Any]) -> str | None:
+    return market.get("series_ticker") or derive_series_ticker(market.get("event_ticker"))
+
+
+def is_tracker_series(series_ticker: str | None) -> bool:
+    return series_ticker in TRACKER_SERIES
+
+
+def is_watchlisted_market(market: dict[str, Any]) -> bool:
+    return market_series_ticker(market) in ELECTION_WATCHLIST
+
+
+def tracker_display_value(raw_market: dict[str, Any]) -> str | None:
+    return first_non_empty(raw_market.get("subtitle"), raw_market.get("yes_sub_title"))
+
+
 def normalize_market(raw_market: dict[str, Any]) -> dict[str, Any]:
     yes_bid_cents = parse_price_to_cents(first_non_empty(raw_market.get("yes_bid"), raw_market.get("yes_bid_dollars")))
     yes_ask_cents = parse_price_to_cents(first_non_empty(raw_market.get("yes_ask"), raw_market.get("yes_ask_dollars")))
@@ -201,9 +219,12 @@ def normalize_market(raw_market: dict[str, Any]) -> dict[str, Any]:
         "title": first_non_empty(raw_market.get("title"), raw_market.get("subtitle")),
         "event_ticker": event_ticker,
         "series_ticker": series_ticker,
+        "type": "tracker" if is_tracker_series(series_ticker) else "election",
         "category": raw_market.get("category"),
         "close_time": close_time,
         "expiration_time": expiration_time,
+        "candidate_name": first_non_empty(raw_market.get("yes_sub_title"), raw_market.get("subtitle")),
+        "tracker_value": tracker_display_value(raw_market),
         "yes_bid_cents": yes_bid_cents,
         "yes_ask_cents": yes_ask_cents,
         "no_bid_cents": no_bid_cents,
@@ -250,23 +271,6 @@ def fetch_page(
         return json.load(response)
 
 
-def fetch_series_page(
-    base_url: str,
-    *,
-    cursor: str | None,
-    category: str | None = None,
-) -> dict[str, Any]:
-    params: dict[str, str | int] = {"limit": 500}
-    if cursor:
-        params["cursor"] = cursor
-    if category:
-        params["category"] = category
-
-    url = f"{base_url.rstrip('/')}{SERIES_ENDPOINT}?{urlencode(params)}"
-    with urlopen(url, timeout=30) as response:
-        return json.load(response)
-
-
 def iter_market_pages(
     base_url: str,
     *,
@@ -290,32 +294,8 @@ def iter_market_pages(
     return pages
 
 
-def iter_political_series_tickers(base_url: str) -> list[str]:
-    """Discover US political series tickers from the /series?category=Politics endpoint.
-
-    Returns a deduplicated list of series tickers that match political keywords,
-    combined with the curated near-term list.
-    """
-    discovered: set[str] = set()
-    cursor: str | None = None
-
-    # Keyword filter for titles (case-insensitive)
-    keyword_lower = [k.lower() for k in POLITICAL_SERIES_KEYWORDS]
-
-    for _ in range(20):  # safety limit
-        page = fetch_series_page(base_url, cursor=cursor, category="Politics")
-        for series in page.get("series", []):
-            ticker = series.get("ticker", "")
-            title = series.get("title", "").lower()
-            if ticker and any(k in title for k in keyword_lower):
-                discovered.add(ticker)
-        cursor = page.get("cursor") or None
-        if not cursor:
-            break
-
-    # Combine with curated list (curated takes priority, but both are in the set)
-    all_tickers = list(discovered | set(CURATED_NEAR_TERM_SERIES))
-    return all_tickers
+def curated_political_series_tickers() -> list[str]:
+    return [*TRACKER_SERIES, *ELECTION_SERIES]
 
 
 def collect_markets_for_series(
@@ -332,6 +312,43 @@ def collect_markets_for_series(
     return [market for page in pages for market in page.get("markets", [])]
 
 
+def representative_tracker_market(markets: list[dict[str, Any]]) -> dict[str, Any]:
+    def sort_key(market: dict[str, Any]) -> tuple[float, float, str]:
+        volume = market.get("volume")
+        volume_score = float(volume) if isinstance(volume, (int, float)) else -1.0
+        center_price = first_non_empty(market.get("yes_midpoint_cents"), market.get("yes_ask_cents"), 50)
+        distance_from_center = abs(float(center_price) - 50.0)
+        return (-distance_from_center, volume_score, str(market.get("ticker") or ""))
+
+    representative = max(markets, key=sort_key)
+    if len(markets) == 1:
+        return representative
+
+    return {
+        **representative,
+        "tracker_components": [market["ticker"] for market in sorted(markets, key=lambda market: str(market.get("ticker") or ""))],
+    }
+
+
+def collapse_tracker_markets(markets: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    collapsed: list[dict[str, Any]] = []
+    tracker_groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
+
+    for market in markets:
+        if market.get("type") != "tracker":
+            collapsed.append(market)
+            continue
+
+        key = (
+            str(market.get("series_ticker") or ""),
+            str(market.get("event_ticker") or market.get("ticker") or ""),
+        )
+        tracker_groups.setdefault(key, []).append(market)
+
+    collapsed.extend(representative_tracker_market(group) for _, group in sorted(tracker_groups.items()))
+    return collapsed
+
+
 def build_snapshot(
     *,
     base_url: str,
@@ -345,26 +362,26 @@ def build_snapshot(
 
     all_markets_raw: list[dict[str, Any]] = []
 
-    # Electoral/polling series discovery + collection
+    # Curated election/tracker series collection only.
     political_tickers: list[str] = []
     if include_political:
-        political_tickers = iter_political_series_tickers(base_url)
-        print(f"Discovered {len(political_tickers)} electoral series to scan", file=__import__("sys").stderr)
+        political_tickers = curated_political_series_tickers()
+        print(f"Scanning {len(political_tickers)} curated election/tracker series", file=__import__("sys").stderr)
 
         for ticker in political_tickers:
             try:
                 markets = collect_markets_for_series(base_url, ticker, max_pages)
                 all_markets_raw.extend(markets)
                 time.sleep(SERIES_QUERY_DELAY)  # rate limit courtesy
-            except Exception:
-                pass  # skip series that error out (empty series, rate limits, etc.)
+            except (OSError, ValueError) as error:
+                print(f"Warning: failed to collect {ticker}: {error}", file=__import__("sys").stderr)
 
     # Deduplicate by ticker
-    normalized_markets = [
+    normalized_markets = collapse_tracker_markets([
         normalize_market(market)
         for market in all_markets_raw
         if market_closes_within_window(market, collected_at=collected_at, window_days=window_days)
-    ]
+    ])
 
     seen: set[str] = set()
     deduped: list[dict[str, Any]] = []
@@ -407,9 +424,9 @@ def main() -> int:
     args = parse_args()
     collected_at = datetime.now().astimezone()
 
-    # --series-only mode: just discover and save political tickers
+    # --series-only mode: just dump the curated tickers the collector will scan.
     if args.series_only:
-        political_tickers = iter_political_series_tickers(args.base_url)
+        political_tickers = curated_political_series_tickers()
         args.series_only.write_text("\n".join(sorted(political_tickers)) + "\n")
         print(f"Wrote {len(political_tickers)} political series tickers to {args.series_only}")
         return 0

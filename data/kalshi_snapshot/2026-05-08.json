@@ -1,0 +1,35 @@
+{
+  "collected_at": "2026-05-08T01:05:37.426996Z",
+  "source": {
+    "base_url": "https://api.elections.kalshi.com/trade-api/v2",
+    "endpoint": "/markets"
+  },
+  "filters": {
+    "window_days": 30,
+    "status": "open",
+    "include_political": true,
+    "electoral_series_count": 28,
+    "max_pages": 5
+  },
+  "markets": [
+    {
+      "ticker": "KXGENERICBALLOTVOTEHUB-26MAY08-T6",
+      "title": "Above 6%",
+      "event_ticker": "KXGENERICBALLOTVOTEHUB-26MAY08",
+      "series_ticker": "KXGENERICBALLOTVOTEHUB",
+      "category": null,
+      "close_time": "2026-05-08T13:59:00Z",
+      "expiration_time": "2026-05-08T14:00:00Z",
+      "yes_bid_cents": 10,
+      "yes_ask_cents": 13,
+      "no_bid_cents": 87,
+      "no_ask_cents": 90,
+      "yes_midpoint_cents": 12,
+      "no_midpoint_cents": 89,
+      "volume": 6755,
+      "open_interest": 1321.84,
+      "liquidity": 0,
+      "rules_text": "If the VoteHub 2026 generic ballot margin (D \u2212 R, time-weighted) is above 6% at 10:00 AM ET on May 8, 2026, then the market resolves to Yes."
+    }
+  ]
+}

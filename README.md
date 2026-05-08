@@ -1,6 +1,6 @@
 # Arbiter
 
-A private Kalshi intelligence dashboard that judges market prices against evidence, portfolio exposure, and disciplined fair-value estimates.
+A private Kalshi election intelligence dashboard that judges market prices against evidence and disciplined fair-value estimates.
 
 **Type:** Web app / personal trading research dashboard
 **Stack:** Next.js 16, React 19, TypeScript, Tailwind CSS 4
@@ -15,13 +15,13 @@ Arbiter is not a broad market screener. It is an edge filter.
 
 The daily workflow should:
 
-1. Scan Kalshi markets expiring in the next 30 days.
-2. Review Carlos's current Kalshi portfolio.
-3. Produce a financial-report-style daily brief.
-4. Focus on the 3-5 best opportunities only.
-5. Recommend “No trade today” when nothing clears the bar.
-6. Recommend hold/reduce/exit decisions for existing positions.
-7. Show current Kalshi price, Marcus fair value, edge, confidence, evidence links, and the reason behind the recommendation.
+1. Scan curated Kalshi election/tracker series over a 60-day collection window (plus watchlist bypasses).
+2. Produce a financial-report-style daily brief.
+3. Emit four report sections: `opportunities`, `onWatch`, `trackers`, and `passes`.
+4. Rank opportunities using priority score = `edge * confidence * timeWeight`.
+5. Focus on the 3-5 best opportunities only.
+6. Recommend “No trade today” when nothing clears the bar.
+7. Show current Kalshi price, Marcus fair value, edge, confidence, and evidence-backed rationale.
 
 No automatic trade execution belongs in V1.
 
@@ -34,7 +34,7 @@ No automatic trade execution belongs in V1.
 - F1 uses the existing specialized F1 pace workflow; do not reinvent it here.
 - Most markets should be passed. The absence of a good trade is a valid report.
 - Use executable prices when thinking about trades: buy at ask, sell/exit at bid.
-- Every recommendation needs a fair-value estimate, confidence level, evidence links, and a “what would change the view” note.
+- Every recommendation needs a fair-value estimate, confidence level, and evidence links.
 - Never expose credentials in logs, reports, the UI, or Git.
 
 ---
@@ -60,7 +60,7 @@ Adapted palette:
 ## Setup
 
 ```bash
-cd /Users/carlosmac/users/carlosmac/arbiter
+cd /Users/carlosmac/arbiter
 npm install
 cp .env.example .env
 npm run dev
@@ -85,7 +85,13 @@ npm test         # TypeScript + Python tests
 
 ## Public Kalshi Scanner
 
-The Session 3 scanner is public-only. It calls `GET /markets` with `status=open`, never uses credentials, filters to markets closing within the next 30 days by default, and writes a normalized snapshot to `data/kalshi_snapshot/YYYY-MM-DD.json`.
+The scanner is public-only and uses curated election intelligence lists. It calls `GET /markets` with `status=open`, never uses credentials, defaults to a 60-day window, and writes a normalized snapshot to `data/kalshi_snapshot/YYYY-MM-DD.json`.
+
+Curated series lists:
+
+- `TRACKER_SERIES`: `KXAPRPOTUS`, `KXGENERICBALLOTVOTEHUB`
+- `ELECTION_SERIES`: `KXMAYORLA`
+- `ELECTION_WATCHLIST`: `KXMAYORLA` (included even when outside the near-term window)
 
 ```bash
 npm run collect:kalshi-public
@@ -94,49 +100,25 @@ npm run collect:kalshi-public
 Useful options:
 
 ```bash
-python3 scripts/collect_kalshi_public_snapshot.py --window-days 14 --max-pages 2
+python3 scripts/collect_kalshi_public_snapshot.py --window-days 60 --max-pages 2
 python3 scripts/collect_kalshi_public_snapshot.py --fixture tests/fixtures/kalshi_public_markets_pages.json --output data/kalshi_snapshot/fixture.json
 ```
 
 ---
 
-## Portfolio Reader
-
-The Session 4 portfolio collector is read-only. It only calls `GET /portfolio/balance` and
-`GET /portfolio/positions`, signs requests with RSA-PSS using the full `/trade-api/v2/...` path,
-never prints credentials or private key contents, and falls back to clean JSON when local
-credentials are missing.
-
-```bash
-npm run collect:kalshi-portfolio
-```
-
-Useful options:
-
-```bash
-python3 scripts/collect_kalshi_portfolio.py --fixture tests/fixtures/kalshi_portfolio_fixture.json --output data/portfolio/fixture.json
-python3 scripts/collect_kalshi_portfolio.py --output data/portfolio/$(date +%F).json
-```
-
-Local-only environment variables:
-
-```bash
-KALSHI_BASE_URL=https://api.elections.kalshi.com/trade-api/v2
-KALSHI_API_KEY_ID=
-KALSHI_PRIVATE_KEY_PATH=
-```
-
-If `KALSHI_API_KEY_ID` or `KALSHI_PRIVATE_KEY_PATH` is missing, the collector still exits cleanly
-with `available: false`, an empty positions list, and warnings the dashboard can render safely.
-
----
-
 ## Daily report generator
 
-The analysis engine reads the saved public market snapshot plus optional portfolio and polling
-evidence inputs, applies conservative pass-first ranking rules, and writes a schema-valid daily
-report to `data/reports/generated/YYYY-MM-DD.json`. Political markets are polling-first: if
-matching RCP-style evidence is missing or stale, Arbiter passes them instead of inventing a view.
+The analysis engine reads the saved public market snapshot plus polling evidence, applies
+conservative pass-first ranking rules, and writes a schema-valid daily report to
+`data/reports/generated/YYYY-MM-DD.json`.
+
+Political markets are polling-first: if matching evidence is missing or stale, Arbiter passes them
+instead of inventing a view. The generated report is organized into:
+
+- `opportunities`
+- `onWatch`
+- `trackers`
+- `passes`
 
 ```bash
 npm run generate:report
@@ -145,17 +127,21 @@ npm run generate:report
 Useful options:
 
 ```bash
-node --import tsx scripts/generate_daily_report.ts --market-snapshot data/kalshi_snapshot/2026-05-06.json --portfolio-snapshot data/portfolio/2026-05-06.json
-node --import tsx scripts/generate_daily_report.ts --market-snapshot data/kalshi_snapshot/2026-05-06.json --portfolio-snapshot data/portfolio/2026-05-06.json --polling-evidence data/polling_evidence/sample.json
+node --import tsx scripts/generate_daily_report.ts --market-snapshot data/kalshi_snapshot/2026-05-06.json
+node --import tsx scripts/generate_daily_report.ts --market-snapshot data/kalshi_snapshot/2026-05-06.json --polling-evidence data/polling_evidence/sample.json
 node --import tsx scripts/generate_daily_report.ts --output data/reports/generated/manual.json --report-date 2026-05-06
 ```
 
 ## Daily runner + archive
 
-The daily runner orchestrates the public snapshot, safe portfolio snapshot, optional polling
-evidence, JSON report generation, markdown rendering, the latest dashboard pointer, and the local
-archive. If portfolio credentials are missing, the run still completes with a clean
-`available: false` portfolio snapshot instead of crashing.
+The daily runner orchestrates public snapshot collection, optional polling evidence, JSON report
+generation, markdown rendering, the latest dashboard pointer, and the local archive:
+
+1. `collect_kalshi_public_snapshot.py`
+2. `run_daily_report.ts`
+3. `generate_daily_report.ts`
+4. report JSON/markdown output
+5. dashboard rendering in `page.tsx`
 
 ```bash
 npm run run:daily-report
@@ -170,14 +156,12 @@ npm run run:daily-report -- --public-fixture tests/fixtures/kalshi_public_market
 Optional inputs:
 
 ```bash
-npm run run:daily-report -- --public-fixture tests/fixtures/kalshi_public_markets_pages.json --portfolio-fixture tests/fixtures/kalshi_portfolio_fixture.json
 npm run run:daily-report -- --polling-evidence data/polling_evidence/sample.json
 ```
 
 Files written by the runner:
 
 - `data/kalshi_snapshot/YYYY-MM-DD.json`
-- `data/portfolio/YYYY-MM-DD.json`
 - `data/reports/generated/YYYY-MM-DD.json`
 - `data/reports/generated/YYYY-MM-DD.md`
 - `data/reports/generated/latest.json`
@@ -186,7 +170,11 @@ Files written by the runner:
 - `reports/YYYY-MM-DD.md`
 
 The dashboard now prefers `data/reports/generated/latest.json` and uses `reports/*.json` to
-populate the Archive tab with real archived report cards when they exist.
+populate the site sections with real generated data:
+
+- `Opportunities`
+- `On Watch`
+- `Pulse Check`
 
 Suggested Hermes handoff after manual verification only:
 
@@ -209,7 +197,7 @@ Scope:
 - Scaffold Arbiter as a local web app.
 - Create README, AGENTS.md, `.env.example`, docs, and initial git commit.
 - Build the first static dashboard shell using mocked report JSON.
-- Tabs: Today, Opportunities, Portfolio, Evidence, Archive.
+- Tabs: Today, Opportunities, Evidence, Archive.
 - Use Virtual CFO-inspired indigo/electric-blue styling.
 - No Kalshi auth yet.
 - No cron yet.
@@ -239,10 +227,10 @@ Goal: Define the data contract before live data gets messy.
 
 Scope:
 - Create TypeScript/Python schema for daily report JSON.
-- Define entities: DailyReport, Opportunity, PositionReview, EvidenceLink, MarketSnapshot, PortfolioSnapshot, RecommendationAction.
+- Define entities: DailyReport, Opportunity, EvidenceLink, MarketSnapshot, RecommendationAction.
 - Add validation tests.
 - Replace ad-hoc mock data with schema-valid examples.
-- Add sample reports: `no-trade-day.json`, `political-edge-day.json`, `portfolio-exit-day.json`.
+- Add sample reports: `no-trade-day.json`, `political-edge-day.json`.
 
 Deliverables:
 - `data/reports/sample/*.json`
@@ -252,7 +240,7 @@ Deliverables:
 
 Acceptance criteria:
 - Invalid report fails validation with a useful message.
-- Dashboard handles missing evidence, no-trade days, and portfolio exits gracefully.
+- Dashboard handles missing evidence and no-trade days gracefully.
 - `npm test` or equivalent passes.
 - `npm run build` passes.
 
@@ -262,7 +250,7 @@ Stop point: stop once the UI and report contract are stable. No live API calls y
 
 ### Session 3 — Kalshi Public Market Scanner
 
-Goal: Collect open Kalshi markets expiring in the next 30 days without touching credentials.
+Goal: Collect curated open Kalshi election/tracker markets using a 60-day default window without touching credentials.
 
 Scope:
 - Build public Kalshi scanner script.
@@ -270,7 +258,7 @@ Scope:
 - Fetch open markets with close/expiration dates.
 - Normalize prices to cents/probabilities.
 - Capture ticker, title, event/series, category, close time, yes/no bid/ask, midpoint, volume/liquidity/open interest if available, and resolution text/rules where available.
-- Filter markets expiring in next 30 days.
+- Filter markets expiring in next 60 days (with watchlist overrides).
 - Save snapshots to `data/kalshi_snapshot/YYYY-MM-DD.json`.
 
 Deliverables:
@@ -290,31 +278,22 @@ Stop point: stop when public market snapshot works and is displayable in dashboa
 
 ---
 
-### Session 4 — Portfolio Reader + Risk View
+### Session 4 — Pipeline/Site overhaul baseline
 
-Goal: Add authenticated portfolio analysis without trade execution.
+Goal: Start the election/tracker split and align the site to intelligence-only output.
 
 Scope:
-- Read credentials only from `.env` or existing secure local convention.
-- Implement authenticated Kalshi portfolio calls.
-- Pull positions, current mark, cost basis if available, P/L, and exposure.
-- Build portfolio risk view: current positions, exposure by event/category, unrealized P/L, stale/thesis-review alerts, reduce/exit candidate placeholders.
-- No order placement.
+- Keep collector/report generation as the core data flow.
+- Remove legacy account-position collection from the daily run path.
+- Prepare dashboard sections for opportunities/on-watch/trackers.
 
 Deliverables:
-- `scripts/collect_kalshi_portfolio.py` or equivalent.
-- `data/portfolio/YYYY-MM-DD.json` output.
-- Portfolio tab connected to real/sanitized portfolio data.
-- `.env.example` with variable names only, no values.
+- Cleaner collector-to-report pipeline.
+- Dashboard sections aligned to generated election intelligence.
 
 Acceptance criteria:
-- Auth signing includes full `/trade-api/v2/...` path.
-- Credentials are never printed.
-- Missing credentials produce a clean error and dashboard fallback.
-- Portfolio tab works with both real data and fixture data.
-- No trading endpoint is called.
-
-Stop point: stop once dashboard can show the real portfolio snapshot or a clean “portfolio unavailable” state.
+- Daily pipeline runs without account-position dependencies.
+- Site renders Opportunities, On Watch, and Pulse Check from report JSON.
 
 ---
 
@@ -332,18 +311,17 @@ Scope:
 
 Deliverables:
 - `src/analysis/*` or equivalent.
-- Ranked daily report JSON generated from market + portfolio snapshots.
-- Tests for ranking, thresholds, no-trade day, and portfolio exit logic.
+- Ranked daily report JSON generated from market snapshots.
+- Tests for ranking, thresholds, and no-trade-day logic.
 - Dashboard Today tab reads generated report.
 
 Acceptance criteria:
 - Produces a daily report without manual editing.
 - Top view never shows more than 5 opportunities unless explicitly configured.
 - Can produce “No trade today.”
-- Can recommend exiting/reducing a held position if fair value is below executable exit price.
-- Every recommendation has a reason and confidence.
+ - Every recommendation has a reason and confidence.
 
-Stop point: stop when the dashboard shows a generated report from real Kalshi public data plus portfolio fixture/real data.
+Stop point: stop when the dashboard shows a generated report from real Kalshi public data.
 
 ---
 
@@ -381,11 +359,10 @@ Goal: Turn the system into a daily habit.
 Scope:
 - Create a daily runner script:
   1. collect public Kalshi snapshot
-  2. collect portfolio snapshot if credentials exist
-  3. collect domain evidence where possible
-  4. generate daily report JSON + markdown
-  5. update dashboard current report pointer
-  6. archive report
+  2. collect domain evidence where possible
+  3. generate daily report JSON + markdown
+  4. update dashboard current report pointer
+  5. archive report
 - Add Hermes cron job after one successful manual run.
 - Decide delivery target: dashboard only, Obsidian archive, current chat notification, or all three.
 - Recommended: dashboard + Obsidian + brief chat summary.
@@ -444,6 +421,7 @@ Stop point: stop when Carlos says it feels good enough for daily use.
 | Date | What happened |
 |------|---------------|
 | 2026-05-06 | Project scaffolded as Arbiter; roadmap added to README; GitHub repo created. |
+| 2026-05-07 | Pipeline overhauled: curated tracker/election split, on-watch + pulse-check sections, and priority scoring. |
 
 ## Skills Used
 

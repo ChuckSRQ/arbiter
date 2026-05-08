@@ -11,10 +11,35 @@ Operating rules for any agent working in this project.
 ## Project Context
 
 Name: Arbiter
-Type: Personal Kalshi intelligence dashboard
-Stack: Next.js 16, React 19, TypeScript, Tailwind CSS 4
+Overview: Personal Kalshi election intelligence dashboard
+Stack: Python collector + TypeScript engine + Next.js site
 License: MIT
 Created: 2026-05-06
+
+## Pipeline
+
+Primary flow:
+
+1. `scripts/collect_kalshi_public_snapshot.py`
+2. `scripts/run_daily_report.ts`
+3. `scripts/generate_daily_report.ts`
+4. report JSON in `data/reports/generated/*.json`
+5. site rendering in `src/app/page.tsx`
+
+## Key files
+
+- `scripts/collect_kalshi_public_snapshot.py` — curated Kalshi election/tracker collection (60-day default window).
+- `scripts/run_daily_report.ts` — daily orchestration and report/archive outputs.
+- `scripts/generate_daily_report.ts` — report generation from snapshot + polling evidence.
+- `src/analysis/engine.ts` — market classification, pass/opportunity logic, priority scoring.
+- `src/app/report-schema.ts` — report contract for `opportunities`, `onWatch`, `trackers`, `passes`.
+- `src/app/page.tsx` — site sections: Opportunities, On Watch, Pulse Check.
+
+## Design system
+
+- Dark blue: `#0D0F1A`, `#141828`
+- Amber: `#FCD34D`
+- Blue: `#60A5FA`
 
 ## Skills
 
@@ -29,31 +54,24 @@ Arbiter is an edge filter, not a market screener. The daily report should focus 
 
 1. Plan before implementing substantive changes.
 2. No hardcoded secrets, API keys, private keys, tokens, or credentials.
-3. No automatic trading in V1. Portfolio reading is allowed only through properly configured authenticated Kalshi access.
+3. No automatic trading in V1.
 4. Use Kalshi as the primary venue. Other markets are context only unless Carlos asks.
 5. Political markets are polling-first: RCP/polling averages and individual poll tables before narrative coverage.
 6. F1 markets use the specialized F1 workflow and F1ReplayTiming pace data.
 7. Prefer TDD for behavior changes and utility code.
 8. Keep reports honest: “pass” and “no trade” are valid outputs.
 
-## GitHub Workflow
-
-For future changes after the initial scaffold:
+## Dev commands
 
 ```bash
-git checkout main
-git pull origin main
-git checkout -b feat/description
-# make changes
-git add .
-git diff --cached --check
 npm run build
-npm run lint
-git commit -m "feat: description"
-git push -u origin HEAD
+npm start -- --port 4000
+python3 scripts/collect_kalshi_public_snapshot.py
 ```
 
-Carlos merges PRs through GitHub UI. Do not merge PRs automatically.
+## GitHub Workflow
+
+Never push directly to `main`. Always create a branch and open a PR.
 
 ## Off-Limits
 

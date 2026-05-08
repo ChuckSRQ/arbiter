@@ -1,16 +1,12 @@
 import {
+  type DashboardReportStatus,
   getTopOpportunities,
   mockDashboardReport,
 } from "./dashboard-data";
-import {
-  getPortfolioReviewCards,
-  defaultPortfolioSnapshot,
-  type PortfolioSnapshot,
-} from "./portfolio-data";
-import type { DailyReport, Opportunity, PassDecision } from "./report-schema";
-import type { PortfolioReviewCard } from "./portfolio-data";
+import { parseDailyReport } from "./report-schema";
+import type { DailyReport, OnWatchEntry, Opportunity, TrackerEntry } from "./report-schema";
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 // ─── Action badge styles ──────────────────────────────────────────────────────
 
@@ -102,14 +98,6 @@ function OpportunityCard({ opp }: { opp: Opportunity }) {
         <PriceBoxMarcus value={`${opp.marcusFairValue}¢`} />
       </div>
 
-      {/* Analysis */}
-      <div className="mt-4">
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#FCD34D]">Analysis</p>
-        <p className="mt-1.5 text-[13px] leading-[1.65] text-[#E8E4DC]">
-          {opp.whatWouldChange}
-        </p>
-      </div>
-
       {/* Source links */}
       {opp.evidenceLinks.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
@@ -132,98 +120,91 @@ function OpportunityCard({ opp }: { opp: Opportunity }) {
 
 // ─── No-trade card ─────────────────────────────────────────────────────────────
 
-function NoTradeCard({ report }: { report: DailyReport }) {
-  const passCount = report.passes?.length ?? 0;
+// ─── On-watch card ────────────────────────────────────────────────────────────
 
-  return (
-    <article className="flex flex-col items-center rounded-[20px] bg-[#141828] p-[28px] text-center">
-      <div className="inline-block rounded-full bg-[rgba(59,130,246,0.08)] px-4 py-1.5 mb-4 border border-[rgba(59,130,246,0.2)]">
-        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#60A5FA]">No trade today</span>
-      </div>
-      <h2 className="text-[22px] font-bold text-[#F1F5F9]">Nothing cleared the evidence bar.</h2>
-      <p className="mt-3 text-[14px] leading-[1.65] text-[#E8E4DC] max-w-md">
-        {report.summary}
-      </p>
-      {passCount > 0 && (
-        <span className="mt-4 inline-block rounded-full bg-[rgba(251,191,36,0.1)] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#FCD34D] border border-[rgba(251,191,36,0.3)]">
-          {passCount} market{passCount === 1 ? "" : "s"} passed
-        </span>
-      )}
-    </article>
-  );
-}
-
-// ─── Portfolio card ────────────────────────────────────────────────────────────
-
-function PortfolioCard({ pos }: { pos: PortfolioReviewCard }) {
-  const pnlStr = pos.pnl >= 0 ? `+$${pos.pnl.toLocaleString()}` : `-$${Math.abs(pos.pnl).toLocaleString()}`;
-  const pnlColor = pos.pnl >= 0 ? "text-[#6EE7B7]" : "text-[#FB7185]";
-
+function OnWatchCard({ entry }: { entry: OnWatchEntry }) {
+  const maxPrice = Math.max(...entry.marketFavorites.map(f => f.yesPrice));
+  
   return (
     <article className="flex flex-col rounded-[20px] bg-[#141828] p-[18px]">
-      {/* Badge row */}
+      {/* Header */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        <TickerBadge ticker={pos.ticker} />
-        <span className={`ml-auto inline-block rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${actionBadgeStyles[pos.action]}`}>
-          {pos.action}
+        <TickerBadge ticker={entry.ticker} />
+        <span className="inline-block rounded-[6px] bg-[rgba(59,130,246,0.08)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#60A5FA] border border-[rgba(59,130,246,0.2)]">
+          On Watch
         </span>
       </div>
 
       {/* Title */}
-      <h2 className="text-[18px] font-bold leading-tight text-[#F1F5F9]">{pos.title}</h2>
+      <h3 className="text-[18px] font-bold leading-tight text-[#F1F5F9]">{entry.title}</h3>
 
-      {/* Price row */}
-      <div className="mt-4 flex items-center justify-center gap-[10px]">
-        {/* Source */}
-        <div className="flex flex-col items-center rounded-[12px] bg-[#05081A] px-3 py-3 text-center border border-[rgba(59,130,246,0.55)]"
-          style={{ boxShadow: "0 0 14px rgba(59,130,246,0.12), inset 0 0 8px rgba(59,130,246,0.06)" }}>
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#60A5FA]">Source</span>
-          <span className="mt-1 text-[15px] font-bold text-[#93C5FD] truncate max-w-[80px]">{pos.sourceLabel}</span>
-        </div>
-        {/* P&L */}
-        <div className="flex flex-col items-center rounded-[12px] bg-[#05081A] px-3 py-3 text-center border border-[rgba(251,191,36,0.55)]"
-          style={{ boxShadow: "0 0 14px rgba(251,191,36,0.12), inset 0 0 8px rgba(251,191,36,0.06)" }}>
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#FCD34D]">P&L</span>
-          <span className={`mt-1 text-[20px] font-bold ${pnlColor}`}>{pnlStr}</span>
-        </div>
-        {/* Exposure */}
-        <div className="flex flex-col items-center rounded-[12px] bg-[#05081A] px-3 py-3 text-center border border-[rgba(59,130,246,0.55)]"
-          style={{ boxShadow: "0 0 14px rgba(59,130,246,0.12), inset 0 0 8px rgba(59,130,246,0.06)" }}>
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#60A5FA]">Exposure</span>
-          <span className="mt-1 text-[20px] font-bold text-[#93C5FD]">${pos.exposure.toLocaleString()}</span>
-        </div>
-      </div>
+      {/* Election date */}
+      <p className="mt-1 text-[13px] font-medium text-[#60A5FA]">{entry.electionDate.split("T")[0]}</p>
 
-      {/* Note */}
-      <p className="mt-4 text-[13px] leading-[1.65] text-[#E8E4DC]">{pos.note}</p>
-
-      {/* Evidence links */}
-      {pos.evidenceLinks.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {pos.evidenceLinks.map((link, i) => (
-            <a
-              key={i}
-              href={link.href}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-block rounded-[6px] bg-[rgba(59,130,246,0.08)] px-3 py-1.5 text-[11px] font-medium text-[#60A5FA] border border-[rgba(59,130,246,0.2)] transition hover:border-[rgba(59,130,246,0.5)] hover:text-[#93C5FD]"
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
+      {/* Polling data or placeholder */}
+      {entry.pollingSpread ? (
+        <p className="mt-2 text-[13px] text-[#E8E4DC]">{entry.pollingSpread}</p>
+      ) : (
+        <p className="mt-2 text-[13px] text-[#888]">No polling data</p>
       )}
+
+      {/* Candidates table */}
+      <div className="mt-4 space-y-2">
+        {entry.marketFavorites.map((fav, i) => (
+          <div key={i} className="flex items-center justify-between rounded-[8px] bg-[rgba(59,130,246,0.08)] px-3 py-2">
+            <span className={`text-[12px] font-medium ${fav.yesPrice === maxPrice ? "text-[#FCD34D]" : "text-[#E8E4DC]"}`}>
+              {fav.candidate}
+            </span>
+            <span className={`text-[13px] font-bold ${fav.yesPrice === maxPrice ? "text-[#FCD34D]" : "text-[#93C5FD]"}`}>
+              {fav.yesPrice}¢
+            </span>
+          </div>
+        ))}
+      </div>
     </article>
   );
 }
 
-// ─── Pass pill ─────────────────────────────────────────────────────────────────
+// ─── Tracker card ──────────────────────────────────────────────────────────────
 
-function PassPill({ pass }: { pass: PassDecision }) {
+function TrackerCard({ entry }: { entry: TrackerEntry }) {
   return (
-    <span className="inline-block rounded-[8px] bg-[#141828] px-3 py-2 text-[11px] text-[#60A5FA] border border-[rgba(59,130,246,0.2)]">
-      {pass.market.ticker}
-    </span>
+    <article className="flex flex-col rounded-[20px] bg-[#141828] p-[18px]">
+      {/* Header */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <span className="inline-block rounded-[6px] bg-[rgba(59,130,246,0.08)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#60A5FA] border border-[rgba(59,130,246,0.2)]">
+          Pulse Check
+        </span>
+      </div>
+
+      {/* Title */}
+      <h3 className="text-[16px] font-bold text-[#F1F5F9]">{entry.title}</h3>
+
+      {/* Current value and market price */}
+      <div className="mt-3 flex items-end gap-3">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#60A5FA]">Current</span>
+          <span className="text-[16px] font-bold text-[#E8E4DC]">{entry.currentValue}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#FCD34D]">Market</span>
+          <span className="text-[16px] font-bold text-[#FDE68A]">{entry.marketPrice}¢</span>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function NoTradeCard({ report }: { report: DailyReport }) {
+  const watchCount = report.watchlist?.length ?? 0;
+  const message = watchCount > 0
+    ? `No edge today. ${watchCount} elections on watch.`
+    : "No edge today.";
+
+  return (
+    <p className="text-[12px] font-semibold text-[#FCD34D]">
+      {message}
+    </p>
   );
 }
 
@@ -241,74 +222,94 @@ function LiveDot() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 type HomeProps = {
-  report?: DailyReport;
-  portfolioSnapshot?: PortfolioSnapshot;
+  report?: unknown;
+  reportStatus?: DashboardReportStatus;
+  portfolioSnapshot?: unknown;
 };
 
 export default function Home({
   report = mockDashboardReport,
-  portfolioSnapshot = defaultPortfolioSnapshot,
 }: HomeProps) {
-  const topOpps = getTopOpportunities(report);
-  const portfolioCards = getPortfolioReviewCards(report, portfolioSnapshot);
-  const passes = (report.passes ?? []).slice(0, 8);
+  const dailyReport = parseDailyReport(report);
+  const topOpps = getTopOpportunities(dailyReport);
+  const onWatchItems = [...(dailyReport.onWatch ?? [])].sort((left, right) => {
+    const leftTime = new Date(left.electionDate).getTime();
+    const rightTime = new Date(right.electionDate).getTime();
+    const leftValid = Number.isFinite(leftTime);
+    const rightValid = Number.isFinite(rightTime);
+
+    if (!leftValid && !rightValid) {
+      return left.title.localeCompare(right.title);
+    }
+    if (!leftValid) {
+      return 1;
+    }
+    if (!rightValid) {
+      return -1;
+    }
+    return leftTime - rightTime;
+  });
 
   return (
     <div className="min-h-[100dvh] bg-[#0D0F1A]">
       {/* Sticky header */}
       <header className="sticky top-0 z-50 bg-[#0D0F1A] border-b border-[rgba(59,130,246,0.15)]">
-        <div className="flex items-center justify-between px-[18px] py-3">
-          <h1 className="text-[22px] font-bold text-[#F1F5F9] tracking-tight">Arbiter</h1>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <LiveDot />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#FCD34D]">Live</span>
+        <div className="px-[18px] py-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-[22px] font-bold text-[#F1F5F9] tracking-tight">Arbiter</h1>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <LiveDot />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#FCD34D]">Live</span>
+              </div>
+              <span className="text-[11px] font-medium text-[#60A5FA]">{dailyReport.reportDate}</span>
             </div>
-            <span className="text-[11px] font-medium text-[#60A5FA]">{report.reportDate}</span>
           </div>
+          {topOpps.length === 0 && (
+            <div className="mt-2">
+              <NoTradeCard report={dailyReport} />
+            </div>
+          )}
         </div>
       </header>
 
       {/* Main content */}
-      <main className="px-4 py-6 lg:px-8 lg:py-8">
-
+      <main className="px-4 py-6 lg:px-8 lg:py-8 space-y-8">
         {/* Opportunities section */}
-        <section>
-          {topOpps.length > 0 ? (
+        {topOpps.length > 0 && (
+          <section>
+            <h2 className="text-[16px] font-bold text-[#F1F5F9] mb-4 uppercase tracking-[0.08em]">Opportunities</h2>
             <div className="grid gap-4 sm:grid-cols-2 min-[1200px]:grid-cols-3">
               {topOpps.map((opp) => (
                 <OpportunityCard key={opp.market.ticker} opp={opp} />
               ))}
             </div>
-          ) : (
-            <NoTradeCard report={report} />
-          )}
-        </section>
+          </section>
+        )}
 
-        {/* Portfolio section */}
-        {portfolioCards.length > 0 && (
-          <section className="mt-8">
-            <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.18em] text-[#60A5FA]">Portfolio</p>
+        {/* On-watch section */}
+        {onWatchItems.length > 0 && (
+          <section>
+            <h2 className="text-[16px] font-bold text-[#F1F5F9] mb-4 uppercase tracking-[0.08em]">On Watch</h2>
             <div className="grid gap-4 sm:grid-cols-2 min-[1200px]:grid-cols-3">
-              {portfolioCards.map((pos) => (
-                <PortfolioCard key={pos.ticker} pos={pos} />
+              {onWatchItems.map((entry) => (
+                <OnWatchCard key={entry.ticker} entry={entry} />
               ))}
             </div>
           </section>
         )}
 
-        {/* Pass entries */}
-        {passes.length > 0 && (
-          <section className="mt-8">
-            <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.18em] text-[#60A5FA]">Passed</p>
-            <div className="flex flex-wrap gap-2">
-              {passes.map((pass) => (
-                <PassPill key={pass.market.ticker} pass={pass} />
+        {/* Pulse check section */}
+        {dailyReport.trackers && dailyReport.trackers.length > 0 && (
+          <section>
+            <h2 className="text-[16px] font-bold text-[#F1F5F9] mb-4 uppercase tracking-[0.08em]">Pulse Check</h2>
+            <div className="grid gap-4 sm:grid-cols-2 min-[1200px]:grid-cols-3">
+              {dailyReport.trackers.map((tracker) => (
+                <TrackerCard key={tracker.seriesTicker} entry={tracker} />
               ))}
             </div>
           </section>
         )}
-
       </main>
     </div>
   );

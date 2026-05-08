@@ -15,7 +15,6 @@ import {
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDirectory, "..");
 const publicCollectorScript = resolve(scriptDirectory, "collect_kalshi_public_snapshot.py");
-const portfolioCollectorScript = resolve(scriptDirectory, "collect_kalshi_portfolio.py");
 const reportGeneratorScript = resolve(scriptDirectory, "generate_daily_report.ts");
 const tsxBinary = resolve(repoRoot, "node_modules", ".bin", "tsx");
 
@@ -57,10 +56,8 @@ function main(): void {
   const projectRoot = process.cwd();
   const reportDate = readFlag("--report-date") ?? todayDate();
   const publicFixture = readFlag("--public-fixture");
-  const portfolioFixture = readFlag("--portfolio-fixture");
   const pollingEvidencePath = readFlag("--polling-evidence") ?? defaultPollingEvidencePath(projectRoot);
   const marketSnapshotPath = resolve(projectRoot, "data", "kalshi_snapshot", `${reportDate}.json`);
-  const portfolioSnapshotPath = resolve(projectRoot, "data", "portfolio", `${reportDate}.json`);
   const reportJsonPath = resolve(GENERATED_REPORT_DIR, `${reportDate}.json`);
   const reportMarkdownPath = resolve(GENERATED_REPORT_DIR, `${reportDate}.md`);
   const latestMarkdownPath = resolve(GENERATED_REPORT_DIR, "latest.md");
@@ -73,18 +70,10 @@ function main(): void {
   }
   runCommand("python3", publicCollectorArgs);
 
-  const portfolioCollectorArgs = [portfolioCollectorScript, "--output", portfolioSnapshotPath];
-  if (portfolioFixture) {
-    portfolioCollectorArgs.push("--fixture", portfolioFixture);
-  }
-  runCommand("python3", portfolioCollectorArgs);
-
   const reportGeneratorArgs = [
     reportGeneratorScript,
     "--market-snapshot",
     marketSnapshotPath,
-    "--portfolio-snapshot",
-    portfolioSnapshotPath,
     "--output",
     reportJsonPath,
     "--report-date",
@@ -117,7 +106,6 @@ function main(): void {
   process.stdout.write(
     `${JSON.stringify({
       marketSnapshot: marketSnapshotPath,
-      portfolioSnapshot: portfolioSnapshotPath,
       reportJson: reportJsonPath,
       reportMarkdown: reportMarkdownPath,
       latestJson: LATEST_REPORT_PATH,

@@ -50,15 +50,16 @@ function main(): void {
   const cwd = process.cwd();
   const marketSnapshotPath =
     readFlag("--market-snapshot") ?? latestDatedFile(resolve(cwd, "data", "kalshi_snapshot"));
-  const portfolioSnapshotPath =
-    readFlag("--portfolio-snapshot") ?? resolve(cwd, "data", "portfolio", `${reportDateFromPath(marketSnapshotPath)}.json`);
+  const portfolioSnapshotPath = readFlag("--portfolio-snapshot");
   const reportDate = readFlag("--report-date") ?? reportDateFromPath(marketSnapshotPath);
   const outputPath =
     readFlag("--output") ?? resolve(cwd, "data", "reports", "generated", `${reportDate}.json`);
   const pollingEvidencePath = readFlag("--polling-evidence");
 
   const marketSnapshot = readJsonFile<PublicMarketSnapshotFile>(marketSnapshotPath);
-  const portfolioSnapshot = readJsonFile<PortfolioSnapshotInput>(portfolioSnapshotPath);
+  const portfolioSnapshot = portfolioSnapshotPath
+    ? readJsonFile<PortfolioSnapshotInput>(portfolioSnapshotPath)
+    : undefined;
   const pollingEvidence = pollingEvidencePath
     ? parsePollingEvidenceFile(readJsonFile<unknown>(pollingEvidencePath)).evidence
     : undefined;

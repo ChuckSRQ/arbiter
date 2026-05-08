@@ -71,7 +71,7 @@ function createPollingEvidence(overrides: Record<string, unknown> = {}) {
     source_url: "https://www.realclearpolling.com/",
     race: "Ohio Senate general",
     market_key: "ohio-senate-general",
-    market_type: "binary-general",
+    market_type: "binary-general" as const,
     polling_average: {
       updated_at: "2026-05-06T19:00:00Z",
       leader: "Sherrod Brown",
@@ -387,7 +387,7 @@ test("primary polling evidence includes a plurality and fragmentation warning", 
       createPollingEvidence({
         race: "Louisiana Senate GOP primary",
         market_key: "louisiana-senate-gop-primary",
-        market_type: "multi-candidate-primary",
+        market_type: "multi-candidate-primary" as const,
         polling_average: {
           updated_at: "2026-05-06T19:00:00Z",
           leader: "John Fleming",
