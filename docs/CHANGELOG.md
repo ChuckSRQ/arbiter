@@ -19,6 +19,11 @@
 - `docs/README.md` — updated MVP scope to mention polling + financial data. Added data sources list. Updated non-US elections note to include Ballotpedia.
 - `docs/bugs.md` — added OpenFEC rate limit limitation. Added RealClearPolling browser automation limitation. Updated wishlist with RealClearPolling (tertiary/reserve). Removed Polymarket (PredictIt not integrated).
 
+### Resolved
+- Verdict tag PASS styling: grey (#9CA3AF)
+- WhatsApp message: "Done" only, no summary
+- If 0 markets qualify: still show 3-5 briefs with full polling + analysis. Carlos decides, not Marcus.
+
 ---
 
 ## Rules

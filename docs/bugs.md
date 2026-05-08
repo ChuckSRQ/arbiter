@@ -76,15 +76,13 @@ Carlos will provide the Kalshi API key before collector.py is built.
 
 ---
 
-## Open Questions (Unresolved)
+## Open Questions (Resolved)
 
-| Question | Status | Blocking MVP? |
-|---|---|---|
-| Verdict tag PASS styling — blue? grey? muted? | Open | No |
-| WhatsApp message — just "done" or one-line summary? | Open | No |
-| If 0 markets qualify, show empty report or "no markets today"? | Open | No |
-| Phase 3 hosting — Vercel account + domain? | Open | Yes (Phase 3 only) |
-| Max markets per run — 5 hard cap or soft cap? | Open | No |
+| Question | Resolution |
+|---|---|
+| Verdict tag PASS styling | Grey (#9CA3AF or similar muted tone) |
+| WhatsApp message | "Done" — no summary, just confirmation |
+| If 0 markets qualify | Still show 3-5 briefs. Marcus writes full analysis on all political markets regardless of verdict. Carlos decides, not Marcus. |
 
 ---
 

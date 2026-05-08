@@ -79,11 +79,9 @@ discovered → analyzing → complete
 | Financial data | OpenFEC API — candidate receipts, disbursements, cash on hand, top donors, outside spend. DEMO_KEY works, no key required. |
 | Market filter | ≤60 days from expiry, political/election only, has polling |
 | Full briefs | Every qualifying market gets a full brief. No filtering by verdict. |
-| Verdict tag | TRADE (amber) or PASS (blue) — on its own line below election date |
-| Max markets per run | 5 (top 5 by absolute delta). If fewer, show what's available. |
-| State continuation | `state/analysis.json` tracks every market. Engine skips complete, resumes analyzing. |
-| WhatsApp | Only on completion or failure. Message: "Arbiter report ready — N markets analyzed" |
-| Design | Dark (#0D0F1A), blue (#60A5FA) + amber (#FCD34D), 1200px max-width |
+| Verdict tag | TRADE (amber) or PASS (grey) — on its own line below election date |
+| Report minimum | Always show 3-5 political briefs per day. If fewer markets qualify, show what's available. Even PASS verdicts show full polling + analysis. Carlos decides, not Marcus. |
+| WhatsApp ping | "Done" on completion — no summary, just confirmation |
 
 ---
 

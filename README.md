@@ -139,7 +139,7 @@ Each task is a self-contained 5-minute coding session. Do them in order.
 | 4 | Write Engine (financials) | `engine.py` | OpenFEC API — receipts, top donors, outside spend |
 | 5 | Write Generator | `generator.py` | Read complete markets → `output/index.html` |
 | 6 | First full run | — | Run pipeline end-to-end, verify output |
-| 7 | WhatsApp ping | `generator.py` | Send confirmation on completion |
+| 7 | WhatsApp ping | `generator.py` | Send "Done" on completion |
 | 8 | Hermes cron | — | Schedule 1:30PM ET, test with dry run |
 | 9 | Continuation logic | `engine.py` | Skip complete, resume analyzing on restart |
 | 10 | Error handling | `collector.py`, `engine.py` | Alert on failure, don't skip steps |
