@@ -141,9 +141,9 @@ Each task is a self-contained 5-minute coding session. Do them in order.
 | 5 | Write Generator | `generator.py` | Read complete markets → `output/index.html` **DONE** |
 | 6 | First full run | — | Run pipeline end-to-end, verify output **DONE** |
 | 7 | WhatsApp ping | `generator.py` | Send "Done" on completion **DONE** |
-| 8 | Hermes cron | — | Schedule 1:30PM ET, test with dry run |
+| 8 | Hermes cron | — | Schedule 1:30PM ET, test with dry run **DONE** |
 | 9 | Continuation logic | `engine.py` | Skip complete, resume analyzing on restart **DONE** |
-| 10 | Error handling | `collector.py`, `engine.py` | Alert on failure, don't skip steps |
+| 10 | Error handling | `collector.py`, `engine.py` | Alert on failure, don't skip steps **DONE** |
 
 *Arbiter stays local. No Vercel, no deployment — this is a local tool on Carlos's machine, served via localhost.*
 
