@@ -8,15 +8,16 @@
 
 | Agent | Role |
 |---|---|
-| **Marcus** | Analysis engine — polling research, fair value, verdict, full brief generation |
-| **Collector** | Python script — queries Kalshi API, surfaces qualifying markets |
-| **Generator** | Python script — takes Marcus output, renders `index.html` |
+| **Cron Runner** | Hermes script — runs the daily pipeline at 1:30PM ET and delivers stdout to WhatsApp |
+| **Collector** | `collector.py` — queries public Kalshi API, surfaces qualifying political markets |
+| **Marcus / Engine** | `engine.py` — polling + financial research, fair value, verdict, full brief generation |
+| **Generator** | `generator.py` — takes complete briefs, renders `output/index.html`, prints `Done` |
 
 ---
 
 ## Marcus
 
-Marcus is the reasoning layer. He does not scrape Kalshi, he does not generate HTML. He receives a market ticker and returns a structured brief.
+Marcus is implemented by `engine.py`, the reasoning layer. He does not scrape Kalshi markets and he does not generate HTML. He reads market state, fetches polling/financial evidence, computes fair value, and writes a structured brief back to state.
 
 **Marcus's inputs:**
 - Market ticker (e.g. `KXMAYORLA-26JUN02`)
@@ -46,7 +47,7 @@ Marcus is the reasoning layer. He does not scrape Kalshi, he does not generate H
 }
 ```
 
-**Verdict logic:** Delta ≥5c → TRADE. Delta <5c → PASS. This is Marcus's signal, not Carlos's decision.
+**Verdict logic:** Absolute delta ≥5c → TRADE. Absolute delta <5c → PASS. Positive delta means Marcus FV is above market price; negative delta means Marcus FV is below market price. This is Marcus's signal, not Carlos's decision.
 
 **Continuation:** Marcus reads `state/analysis.json` on startup. Markets marked `complete` are skipped. Markets marked `analyzing` are resumed. New markets enter `discovered` → `analyzing`. See `currentstate.md` for the full state machine.
 
@@ -70,7 +71,7 @@ Marcus is the reasoning layer. He does not scrape Kalshi, he does not generate H
 **Cross-market context (not trade venue):**
 | Source | Use | Method |
 |---|---|---|
-| **Kalshi** | Primary trade venue | kalshi_python_sync |
+| **Kalshi** | Primary trade venue | Public REST API for discovery; authenticated client only for future portfolio work |
 | **PredictIt** | Optional cross-check for mispricing | REST API — not yet integrated |
 
 **Data quality bar:** Marcus needs at least two independent sources before writing a brief. If VoteHub has approval numbers and Ballotpedia has the Senate race polling, that's enough. Don't chase a third source if two are solid.
@@ -91,7 +92,7 @@ Collector is a Python script (`collector.py`). It runs first, before Marcus.
 5. Writes market list to `state/analysis.json` (new markets as `discovered`)
 6. Returns ticker, title, expiry, market_price for each new market
 
-**API:** Uses `kalshi_python_sync` with Carlos's API key. Public endpoints for market data; authenticated for any portfolio calls later.
+**API:** Uses Kalshi's public elections API for market discovery. No authentication is required for the current collector path; credentials are stored externally for future authenticated work only.
 
 **Output:** Updates `state/analysis.json`. Does not talk to Marcus directly — writes state, Marcus reads it.
 
@@ -107,7 +108,7 @@ Generator is a Python script (`generator.py`). It runs last, after Marcus.
 1. Reads `state/analysis.json` for all markets with `status: complete`
 2. Renders `index.html` matching the design in `docs/artifact-reference/`
 3. Writes to `output/index.html`
-4. Sends WhatsApp ping to Carlos
+4. Prints `Done` on success; the Hermes cron job delivers stdout to WhatsApp
 
 **HTML design:** Dark theme, blue + amber accents, 1200px max-width, card-per-market layout. See `docs/artifact-reference/artifact.html` for the exact design spec.
 
@@ -121,13 +122,18 @@ Generator is a Python script (`generator.py`). It runs last, after Marcus.
 Daily Cron (1:30PM ET)
     │
     ▼
+~/.hermes/scripts/arbiter-daily.py
+    → Runs collector.py → engine.py → generator.py
+    → Exits non-zero on any failed step
+    │
+    ▼
 [1] collector.py
-    → Writes state/analysis.json
+    → Writes discovered markets to state/analysis.json
     │
     ▼
 [2] engine.py (Marcus)
     → For each market in discovered/analyzing:
-      → Fetch polling
+      → Fetch VoteHub polling + OpenFEC financials
       → Compute FV + delta + verdict
       → Write back to state/analysis.json
     │
@@ -135,7 +141,7 @@ Daily Cron (1:30PM ET)
 [3] generator.py
     → Reads complete markets from state/analysis.json
     → Renders output/index.html
-    → WhatsApp ping to Carlos
+    → Prints "Done"; Hermes delivers stdout to WhatsApp
 ```
 
 **State file:** `state/analysis.json` is the single source of truth. All three scripts read/write it.
@@ -148,6 +154,7 @@ Daily Cron (1:30PM ET)
 
 | File | Purpose |
 |---|---|
+| `~/.hermes/scripts/arbiter-daily.py` | Hermes cron pipeline runner |
 | `state/analysis.json` | Market state tracker |
 | `state.py` | State read/write/upsert/transition helpers |
 | `collector.py` | Kalshi market discovery |

@@ -8,7 +8,7 @@
 
 Arbiter is a daily report that surfaces Kalshi political/election markets expiring within 60 days, researched by Marcus with full polling-backed briefs.
 
-Carlos opens the report and sees 3-5 markets, each with:
+Carlos opens the report and sees every qualifying complete market (currently 9 live cards; target minimum is 3-5 when fewer markets qualify), each with:
 - The race and election date
 - Marcus's TRADE or PASS verdict
 - Market price vs Marcus's fair value
@@ -57,21 +57,21 @@ Carlos makes the final call. Marcus is the analyst, not the trader.
     │
     ▼
 collector.py
-  → Queries Kalshi API (authenticated with Carlos's key)
+  → Queries Kalshi public elections API (no auth required for discovery)
   → Returns markets expiring ≤60 days
   → Updates state/analysis.json
     │
     ▼
 engine.py (Marcus)
   → Reads state/analysis.json
-  → Per market: Wikipedia polling → fair value → delta → verdict
+  → Per market: VoteHub polling + OpenFEC financials → fair value → delta → verdict
   → Writes brief to state/analysis.json (status: complete)
     │
     ▼
 generator.py
   → Reads all complete markets
   → Renders output/index.html
-  → WhatsApp "Arbiter report ready" to Carlos
+  → Prints "Done"; Hermes cron delivers stdout to WhatsApp
 ```
 
 **State:** All scripts read/write `state/analysis.json`. Marcus skips `complete` markets, resumes `analyzing`, starts new `discovered` markets. The report always continues from where it left off.
@@ -106,9 +106,8 @@ arbiter/
 
 ### Prerequisites
 - Python 3.9+
-- `kalshi_python_sync` installed
-- Kalshi API key stored at `~/Documents/Obsidian Vault/credentials/Kalshi.md`
 - Hermes cron configured
+- Kalshi credentials stored externally at `~/Documents/Obsidian Vault/credentials/Kalshi.md` for future authenticated work (not needed for current public market discovery)
 
 ### Running locally
 ```bash
@@ -119,12 +118,12 @@ python3 collector.py
 python3 engine.py
 python3 generator.py
 
-# Or run the full pipeline
-bash run_pipeline.sh
+# Or run the full pipeline exactly like cron does
+python3 ~/.hermes/scripts/arbiter-daily.py
 ```
 
 ### Cron (after setup)
-Daily at 1:30PM ET via Hermes cron. No manual intervention needed.
+Daily at 1:30PM ET via Hermes cron job `799f5a1b57ba` (`Arbiter Daily Political Briefing`). It runs `~/.hermes/scripts/arbiter-daily.py` with `no_agent=true`, so there is no LLM overhead; stdout is delivered to WhatsApp.
 
 ---
 
