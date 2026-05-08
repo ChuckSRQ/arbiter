@@ -82,7 +82,8 @@ generator.py
 
 ```
 arbiter/
-├── collector.py       # Step 1: Kalshi market discovery
+├── state.py            # State read/write/upsert/transition helpers
+├── collector.py        # Step 1: Kalshi market discovery
 ├── engine.py           # Step 2: Marcus analysis
 ├── generator.py       # Step 3: HTML generation
 ├── state/
@@ -133,7 +134,7 @@ Each task is a self-contained 5-minute coding session. Do them in order.
 
 | # | Task | File | What |
 |---|---|---|---|
-| 1 | Define state schema | `state/analysis.json` | Schema + read/write helpers |
+| 1 | Define state schema | `state/analysis.json`, `state.py` | Schema + read/write/transition helpers **DONE** |
 | 2 | Write Collector | `collector.py` | Kalshi API, ≤60d markets, write to state |
 | 3 | Write Engine (polling) | `engine.py` | VoteHub API + Ballotpedia polling fetch, FV, verdict |
 | 4 | Write Engine (financials) | `engine.py` | OpenFEC API — receipts, top donors, outside spend |

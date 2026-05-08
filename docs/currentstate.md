@@ -39,11 +39,12 @@ discovered → analyzing → complete
 - `docs/CHANGELOG.md` — change log
 - `docs/bugs.md` — known limitations, resolved questions, pitfalls
 - `docs/artifact-reference/artifact.html` — design spec
-- `state/` — directory, empty
+- `state.py` — state read/write/upsert/transition helpers
+- `state/analysis.json` — empty schema
 - `output/` — directory, empty
 
 ### In Progress
-- Task 1: `state/analysis.json` + `state.py` helpers — not started
+- Task 2: `collector.py` — awaiting Kalshi API key
 
 ### Planned (not built)
 - `collector.py` — Kalshi API integration
@@ -56,9 +57,9 @@ discovered → analyzing → complete
 ## MVP Roadmap
 
 **Phase 1 — Core Pipeline (now)**
+- [x] `state/analysis.json` — schema + `state.py` read/write/transition helpers
 - [ ] `collector.py` — authenticated Kalshi API, ≤60d political markets, state write
 - [ ] `engine.py` — VoteHub API + Ballotpedia polling fetch, FV calculation, verdict, full brief JSON
-- [ ] `state/analysis.json` — schema + read/write functions
 - [ ] `generator.py` — index.html from brief JSON, artifact design
 - [ ] `output/index.html` — first generated report
 - [ ] WhatsApp ping on completion

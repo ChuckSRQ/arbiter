@@ -24,6 +24,10 @@
 - WhatsApp message: "Done" only, no summary
 - If 0 markets qualify: still show 3-5 briefs with full polling + analysis. Carlos decides, not Marcus.
 
+### Added
+- `state.py` — state read/write/upsert/transition helpers (Task 1 complete)
+- `state/analysis.json` — empty schema file
+
 ---
 
 ## Rules
