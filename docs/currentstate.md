@@ -4,9 +4,9 @@
 
 ---
 
-## Status: Planning
+## Status: Phase 1 — Core Pipeline
 
-The project is fully specced but not yet built. All documentation lives in `docs/`. No code has been written.
+Documentation complete. Code development starting. No Python written yet.
 
 ---
 
@@ -32,19 +32,23 @@ discovered → analyzing → complete
 
 ## What's Built vs What's Planned
 
-### Built (nothing yet)
-- `docs/agentzeroth-agents.md` — agent roles and handoffs
-- `docs/README.md` — project overview and MVP scope
-- `docs/CHANGELOG.md` — this file, empty template
+### Built
+- `docs/agents.md` — agent roles, handoffs, brief specification
+- `docs/README.md` — project overview and MVP scope (root)
+- `docs/currentstate.md` — project state + state machine
+- `docs/CHANGELOG.md` — change log
+- `docs/bugs.md` — known limitations, resolved questions, pitfalls
 - `docs/artifact-reference/artifact.html` — design spec
-- `state/` — directory, no files yet
-- `output/` — directory, no files yet
+- `state/` — directory, empty
+- `output/` — directory, empty
+
+### In Progress
+- Task 1: `state/analysis.json` + `state.py` helpers — not started
 
 ### Planned (not built)
 - `collector.py` — Kalshi API integration
-- `engine.py` — Marcus analysis with Wikipedia polling
+- `engine.py` — polling + financials analysis
 - `generator.py` — HTML report generator
-- `state/analysis.json` — market state tracker
 - `output/index.html` — the report
 
 ---
@@ -87,10 +91,8 @@ discovered → analyzing → complete
 
 ## What's Still Open
 
-- Verdict tag styling (amber for TRADE, what for PASS — blue? grey? muted?)
 - Wikipedia page URL structure for non-US elections (low priority, US-only for now)
-- Cron WhatsApp message format — just "done" or a one-line summary?
-- If 0 markets qualify, what does the report show?
+- How to handle 3-5 minimum when fewer than 3 markets qualify — show what's available, no padding
 
 All open questions go in `bugs.md` or get resolved before that phase is started.
 

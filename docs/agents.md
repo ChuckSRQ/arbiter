@@ -169,7 +169,7 @@ Every market that enters the pipeline gets a full brief. No filtering by verdict
 - `kalshi_badge`: ticker + market type (e.g. "KXLAXMAY26 / First Round Winner")
 - `race_title`: short name of the race
 - `election_date`: ISO date
-- `verdict_tag`: TRADE (amber) or PASS (blue) — below election date
+- `verdict_tag`: TRADE (amber) or PASS (grey) — below election date
 - `context`: 1-2 paragraph overview of the race — candidates, dynamics, key variables
 - `price_row`: Market price | Delta | Marcus FV (styled per artifact)
 - `analysis`: Marcus's full reasoning — what polls say, why market is mispriced or not, what he's watching
