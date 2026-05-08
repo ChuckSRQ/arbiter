@@ -18,6 +18,9 @@
 - `output/index.html` — generated sample report output
 
 ### Changed
+- `generator.py` — wrapped CLI execution in try/except; on success prints `Generated {path}` and `Done`, on failure prints `ERROR: generator failed — ...` and exits non-zero.
+- `README.md` — marked Task 6 (first full run), Task 7 (WhatsApp ping), and Task 9 (continuation logic) as **DONE** in roadmap table.
+- `docs/currentstate.md` — checked off Phase 1 "First full pipeline run verified" and "WhatsApp 'Done' ping", checked off Phase 2 continuation logic, and updated in-progress/planned status items.
 - `docs/agents.md` — expanded polling sources from Wikipedia-only to full table (VoteHub API primary, Ballotpedia secondary, RaceToTheWH, Wikipedia, Quinnipiac/Siena, MIT Election Lab, Dave Leip's Atlas). Added OpenFEC API for financial data. Added data quality bar (2 independent sources minimum).
 - `docs/currentstate.md` — updated polling source decision to reflect full source list. Added OpenFEC financial data decision.
 - `docs/README.md` — updated MVP scope to mention polling + financial data. Added data sources list. Updated non-US elections note to include Ballotpedia.
