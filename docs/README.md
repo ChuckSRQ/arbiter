@@ -28,10 +28,16 @@ Carlos makes the final call. Marcus is the analyst, not the trader.
 - WhatsApp ping to Carlos on completion
 - State continuation — Marcus resumes where he left off, doesn't restart
 
-**Data sources (all free unless noted):**
-- Polling: VoteHub API (primary), Ballotpedia (secondary), RaceToTheWH, Wikipedia (mayorals)
-- Financials: OpenFEC API (DEMO_KEY works, no key required)
-- Historical baselines: MIT Election Lab, Dave Leip's Atlas
+**Data sources (all free, no API key required unless noted):**
+- **VoteHub API** — presidential approval, generic ballot (REST, no key)
+- **Ballotpedia** — Senate, House, Governor, mayoral races
+- **RaceToTheWH** — Senate, House, Governor race averages
+- **Wikipedia** — mayorals, local races, historical context
+- **Quinnipiac / Siena** — state-specific high-quality polls
+- **MIT Election Lab + Dave Leip's Atlas** — historical baselines (download CSV)
+- **OpenFEC API** — candidate financials (receipts, disbursements, cash on hand, top donors, outside spend). DEMO_KEY works, no key required.
+
+**Data quality bar:** Marcus needs at least two independent sources before writing a brief. If VoteHub has approval numbers and Ballotpedia has the Senate race polling, that's enough.
 
 **Out of scope (roadmap):**
 - Vercel/GitHub Pages deployment — localhost only for now
