@@ -1,7 +1,7 @@
-"""Arbiter Collector — discovers qualifying Kalshi political markets.
+"""Arbiter Collector — discovers qualifying Kalshi election markets.
 
 Public API only (no auth needed for market discovery).
-Filters to pollable political series, ≤60 days from expiry.
+Filters to Kalshi Elections category markets trading out within the next 60 days.
 Writes results to state/analysis.json via state.py helpers.
 """
 
@@ -18,22 +18,15 @@ BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
 WINDOW_DAYS = 60
 REQUEST_DELAY = 0.35  # seconds between API calls to avoid 429
 
-# Series prefixes that have underlying polling data
-POLLABLE_PREFIXES = (
-    "KXAPRPOTUS",
-    "KXTRUMPAPPROVAL",
-    "KXGOVTAPPROVAL",
-    "KXGENERICBALLOT",
-    "KXMAYOR",
-    "SENATE",
-    "HOUSE",
-    "GOVPARTY",
-    "PRES",
-)
-
-# Specific series to exclude even if prefix matches
 EXCLUDED_SERIES = (
     "PRESADMIN",  # admin actions, not elections
+)
+
+EXCLUDED_TITLE_PATTERNS = (
+    r"approval rating",
+    r"generic ballot",
+    r"votehub.*margin",
+    r"margin.*bracket",
 )
 
 
@@ -62,44 +55,37 @@ def _api_get(path, params=None, retries=2):
             return None
 
 
-def _is_pollable(series_ticker):
-    """Check if a series has underlying polling data."""
-    if not series_ticker:
-        return False
-    if series_ticker in EXCLUDED_SERIES:
-        return False
-    return any(series_ticker.startswith(p) for p in POLLABLE_PREFIXES)
-
-
-def _derive_series_ticker(event_ticker):
-    """Derive series_ticker from event_ticker by stripping suffixes.
-
-    KXTRUMPTIME-26MAY09 -> KXTRUMPTIME
-    SENATEWI-28 -> SENATEWI
-    KXF1-26-KA -> KXF1
-    """
-    t = event_ticker
-    for _ in range(4):
-        t = re.sub(r"-[^-]+$", "", t)
-        # Check if what remains is a known series prefix base
-        # Stop stripping when no more hyphens
-        if "-" not in t:
-            break
-    return t
-
-
 def discover_series():
-    """Get all series from Kalshi, return only pollable political ones."""
-    data = _api_get("/series", {"limit": "500"})
-    if not data:
-        print("  Failed to fetch series list")
-        return []
+    """Get all election series from Kalshi events pagination."""
+    all_series = set()
+    cursor = None
 
-    all_series = [s.get("ticker", "") for s in data.get("series", [])]
-    pollable = [s for s in all_series if _is_pollable(s)]
+    while True:
+        params = {"category": "Elections", "limit": "500"}
+        if cursor:
+            params["cursor"] = cursor
 
-    print(f"  Found {len(all_series)} total series, {len(pollable)} pollable political")
-    return pollable
+        data = _api_get("/events", params)
+        if not data:
+            if not all_series:
+                print("  Failed to fetch election events")
+            break
+
+        events = data.get("events", [])
+        if not events:
+            break
+
+        for event in events:
+            series_ticker = event.get("series_ticker")
+            if series_ticker and series_ticker not in EXCLUDED_SERIES:
+                all_series.add(series_ticker)
+
+        cursor = data.get("cursor")
+        if not cursor:
+            break
+
+    print(f"  Found {len(all_series)} election series")
+    return sorted(all_series)
 
 
 def fetch_markets_for_series(series_ticker):
@@ -110,19 +96,42 @@ def fetch_markets_for_series(series_ticker):
     return data.get("markets", [])
 
 
+def _parse_datetime(value):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return None
+
+
 def _parse_close_date(market):
-    """Parse market close/expiry date. Prefers expected_expiration_time (election date)
-    over close_time (settlement date) for markets that use different dates."""
-    for field in ("expected_expiration_time", "close_time", "expiration_date", "expiry_date"):
-        val = market.get(field)
-        if val:
-            try:
-                # ISO format with or without timezone
-                val = val.replace("Z", "+00:00")
-                return datetime.fromisoformat(val)
-            except (ValueError, TypeError):
-                continue
+    """Parse the trading cutoff date for filtering."""
+    for field in (
+        "close_time",
+        "expiration_time",
+        "expected_expiration_time",
+        "expiration_date",
+        "expiry_date",
+    ):
+        parsed = _parse_datetime(market.get(field))
+        if parsed:
+            return parsed
     return None
+
+
+def _parse_event_date(market):
+    """Parse the election/event date when Kalshi exposes it separately."""
+    parsed = _parse_datetime(market.get("expected_expiration_time"))
+    if not parsed:
+        return None
+    return parsed.strftime("%Y-%m-%d")
+
+
+def _is_excluded_by_title(title):
+    """Block election-adjacent non-race markets inside the Elections category."""
+    text = (title or "").strip().lower()
+    return any(re.search(pattern, text) for pattern in EXCLUDED_TITLE_PATTERNS)
 
 
 def _get_market_price(market):
@@ -148,10 +157,10 @@ def collect():
     print(f"Collector starting — {now.strftime('%Y-%m-%d %H:%M UTC')}")
     print(f"Window: {WINDOW_DAYS} days (cutoff {cutoff.strftime('%Y-%m-%d')})")
 
-    # Discover pollable series
+    # Discover election series
     series_list = discover_series()
     if not series_list:
-        print("  No pollable series found. Check API connectivity.")
+        print("  No election series found. Check API connectivity.")
         return 0
 
     # Load state
@@ -170,34 +179,31 @@ def collect():
         for m in markets:
             ticker = m.get("ticker", "")
             title = m.get("title", "")
-            close = _parse_close_date(m)
 
-            # Skip if no close date
-            if not close:
+            if _is_excluded_by_title(title):
                 continue
 
-            # Make close timezone-aware if it isn't
-            if close.tzinfo is None:
-                close = close.replace(tzinfo=timezone.utc)
+            cutoff_date = _parse_close_date(m)
+
+            # Skip if no trading cutoff date
+            if not cutoff_date:
+                continue
+
+            # Make cutoff timezone-aware if it isn't
+            if cutoff_date.tzinfo is None:
+                cutoff_date = cutoff_date.replace(tzinfo=timezone.utc)
 
             # Skip if already expired (past) or outside future window
-            if close < now:
+            if cutoff_date < now:
                 continue
-            if close > cutoff:
+            if cutoff_date > cutoff:
                 continue
 
             # Skip if already in state
             if ticker in existing_tickers:
                 continue
 
-            # Derive series ticker from event_ticker
             event_ticker = m.get("event_ticker", "")
-            derived_series = _derive_series_ticker(event_ticker) if event_ticker else series_ticker
-
-            # Double-check pollable (derived series might differ)
-            if not _is_pollable(derived_series):
-                continue
-
             price = _get_market_price(m)
 
             market_data = {
@@ -206,15 +212,17 @@ def collect():
                 "race_title": title,  # engine.py will refine this
                 "candidate_name": m.get("yes_sub_title"),
                 "event_ticker": event_ticker,  # race key for grouping
-                "election_date": close.strftime("%Y-%m-%d"),
-                "series_ticker": series_ticker,
+                "event_date": _parse_event_date(m),
+                "series_ticker": m.get("series_ticker") or series_ticker,
                 "market_price": price,
             }
 
             upsert_market(state, market_data)
             existing_tickers.add(ticker)
             new_count += 1
-            print(f"  + {ticker} | {title[:50]} | {price}¢ | closes {close.strftime('%Y-%m-%d')}")
+            print(
+                f"  + {ticker} | {title[:50]} | {price}¢ | cutoff {cutoff_date.strftime('%Y-%m-%d')}"
+            )
 
     # Update last_run and save
     touch_last_run(state)

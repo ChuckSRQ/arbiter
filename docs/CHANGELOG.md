@@ -23,6 +23,9 @@
 - Tasks 8, 10 completed — Hermes cron job (1:30PM ET, `arbiter-daily.py`, WhatsApp delivery), error handling with failure alert
 
 ### Changed
+- `collector.py` — replaced hardcoded `/series` prefix gating with paginated `/events?category=Elections` discovery, switched expiry filtering to prefer `close_time` / `expiration_time`, and added title-based exclusions for approval-rating and generic-ballot markets.
+- `state.py`, `generator.py` — state now carries `event_date` only; trading cutoff stays collector-internal for filtering and report cards use `event_date` for display.
+- `README.md`, `docs/currentstate.md` — documented the Elections-category discovery flow, the event-date-only state fields, and the one-time state rebuild needed after this collector fix.
 - `generator.py` — complete market rendering now groups supported multi-contract races by `event_ticker` before paginating cards, so briefing-card count reflects races/cards instead of raw contracts.
 - `README.md`, `docs/currentstate.md`, `docs/CHANGELOG.md`, `docs/agents.md` — documented the race-level grouping behavior and mayoral analysis update.
 - `generator.py` — wrapped CLI execution in try/except; on success prints `Generated {path}` and `Done`, on failure prints `ERROR: generator failed — ...` and exits non-zero.

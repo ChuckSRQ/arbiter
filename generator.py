@@ -27,6 +27,10 @@ def _card_date(value):
     return f"{parsed.strftime('%B')} {parsed.day}, {parsed.year}"
 
 
+def _display_date(market):
+    return market.get("event_date") or market.get("election_date")
+
+
 def _cents(value):
     if value is None:
         return "—"
@@ -83,7 +87,7 @@ def _render_card(market):
   <div class="kalshi-badge">{escape((market.get("ticker") or "").upper())}</div>
   <div class="race-header">
     <div class="race-title">{escape(market.get("race_title") or market.get("title") or "Untitled Market")}</div>
-    <div class="election-date">{_card_date(market.get("election_date"))}</div>
+    <div class="election-date">{_card_date(_display_date(market))}</div>
     <div class="verdict-tag {verdict_class}">{verdict}</div>
   </div>
 
@@ -196,8 +200,8 @@ def _render_race_card(race_key, markets):
         else '\n  <div style="margin-top:10px"></div>'
     )
 
-    election_date_str = markets[0].get("election_date", "")
-    date_str = _card_date(election_date_str) if election_date_str else "Election date TBD"
+    display_date = _display_date(markets[0])
+    date_str = _card_date(display_date) if display_date else "Election date TBD"
 
     top_market = sorted_markets[0] if sorted_markets else None
     if top_market:
