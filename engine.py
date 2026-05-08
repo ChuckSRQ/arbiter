@@ -4,6 +4,7 @@ import json
 import re
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
@@ -14,6 +15,9 @@ APPROVAL_URL = (
 )
 GENERIC_URL = "https://api.votehub.com/polls?poll_type=generic-ballot&subject=2026"
 REQUEST_DELAY = 0.5
+OPENFEC_BASE_URL = "https://api.open.fec.gov/v1"
+OPENFEC_API_KEY = "DEMO_KEY"
+OPENFEC_REQUEST_DELAY = 0.5
 
 
 def _safe_float(value):
@@ -360,6 +364,120 @@ class VoteHubClient:
         return polls
 
 
+class OpenFECClient:
+    def __init__(self):
+        self._cache = {}
+        self._last_request_time = 0.0
+
+    def _get(self, path, params=None):
+        query_params = dict(params or {})
+        query_params["api_key"] = OPENFEC_API_KEY
+        query = urllib.parse.urlencode(query_params, doseq=True)
+        endpoint = path.lstrip("/")
+        url = "{}/{}?{}".format(OPENFEC_BASE_URL, endpoint, query)
+
+        if url in self._cache:
+            return self._cache[url]
+
+        elapsed = time.time() - self._last_request_time
+        if elapsed < OPENFEC_REQUEST_DELAY:
+            time.sleep(OPENFEC_REQUEST_DELAY - elapsed)
+
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+        finally:
+            self._last_request_time = time.time()
+
+        self._cache[url] = payload
+        return payload
+
+    def fetch_candidate_totals(self, candidate_id):
+        payload = self._get("/candidate/{}/totals/".format(candidate_id))
+        if not isinstance(payload, dict):
+            return {}
+        results = payload.get("results")
+        if isinstance(results, list) and results:
+            first = results[0]
+            if isinstance(first, dict):
+                return first
+        return {}
+
+
+def _openfec_source():
+    return {"label": "OpenFEC API", "url": OPENFEC_BASE_URL}
+
+
+def _append_source(sources, source):
+    out = list(sources or [])
+    for existing in out:
+        if (
+            isinstance(existing, dict)
+            and existing.get("label") == source.get("label")
+            and existing.get("url") == source.get("url")
+        ):
+            return out
+    out.append(source)
+    return out
+
+
+def _national_financials_note():
+    return {
+        "note": "National-level market — no candidate-specific financials apply",
+        "source": "OpenFEC",
+        "url": OPENFEC_BASE_URL,
+    }
+
+
+def _extract_candidate_id(market):
+    for key in ("candidate_id", "fec_candidate_id"):
+        candidate_id = market.get(key)
+        if isinstance(candidate_id, str):
+            clean = candidate_id.strip().upper()
+            if re.match(r"^[HSP]\d{5,8}$", clean):
+                return clean
+
+    for key in ("ticker", "title", "race_title"):
+        raw = market.get(key)
+        if not raw:
+            continue
+        match = re.search(r"\b([HSP]\d{5,8})\b", str(raw).upper())
+        if match:
+            return match.group(1)
+
+    return None
+
+
+def _fetch_candidate_financials(openfec_client, candidate_id):
+    totals = openfec_client.fetch_candidate_totals(candidate_id)
+    return {
+        "candidate_id": candidate_id,
+        "receipts": _safe_float(totals.get("receipts")),
+        "disbursements": _safe_float(totals.get("disbursements")),
+        "cash_on_hand": _safe_float(totals.get("cash_on_hand_end_period")),
+        "top_donors": [],
+        "source_url": "{}/candidate/{}/totals/?api_key={}".format(
+            OPENFEC_BASE_URL, candidate_id, OPENFEC_API_KEY
+        ),
+    }
+
+
+def _fetch_market_financials(market, openfec_client):
+    m_type = _market_type(market.get("ticker"))
+    if m_type in ("approval", "generic"):
+        return _national_financials_note()
+
+    candidate_id = _extract_candidate_id(market)
+    if not candidate_id:
+        return {
+            "note": "Candidate-specific OpenFEC data not yet mapped for this market",
+            "source": "OpenFEC",
+            "url": OPENFEC_BASE_URL,
+        }
+    return _fetch_candidate_financials(openfec_client, candidate_id)
+
+
 def run():
     state = read_state()
     pending = get_pending(state)
@@ -368,6 +486,7 @@ def run():
         return 0
 
     client = VoteHubClient()
+    openfec_client = OpenFECClient()
     completed = 0
 
     for market in pending:
@@ -415,6 +534,12 @@ def run():
             else:
                 fv, context, analysis, sources = _analyze_generic_market(market, polls)
                 _finalize_market(market, fv, context, analysis, sources)
+
+        try:
+            market["financials"] = _fetch_market_financials(market, openfec_client)
+        except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, ValueError):
+            market["financials"] = {"error": "OpenFEC fetch failed"}
+        market["sources"] = _append_source(market.get("sources"), _openfec_source())
 
         transition(state, ticker, "complete")
         write_state(state)

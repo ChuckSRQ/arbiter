@@ -41,12 +41,12 @@ discovered → analyzing → complete
 - `docs/artifact-reference/artifact.html` — design spec
 - `state.py` — state read/write/upsert/transition helpers
 - `collector.py` — Kalshi market discovery (public API, rate-limited, 0.35s delay)
-- `engine.py` — polling analysis engine (VoteHub fetch, FV heuristic, verdict, brief writing)
+- `engine.py` — polling + financials analysis engine (VoteHub fetch, OpenFEC financials, FV heuristic, verdict, brief writing)
 - `state/analysis.json` — populated market state with completed briefs
 - `output/` — directory, empty
 
 ### In Progress
-- Task 4: `engine.py` — financials analysis
+- Task 5: `generator.py` — report generation
 
 ### Planned (not built)
 - `engine.py` — polling + financials analysis
@@ -60,7 +60,7 @@ discovered → analyzing → complete
 **Phase 1 — Core Pipeline (now)**
 - [x] `state/analysis.json` — schema + `state.py` read/write/transition helpers
 - [x] `collector.py` — public Kalshi API, pollable series filter, ≤60d window, rate-limited
-- [x] `engine.py` — VoteHub API polling fetch, FV calculation, verdict, full brief JSON
+- [x] `engine.py` — VoteHub API polling fetch + OpenFEC financials, FV calculation, verdict, full brief JSON
 - [ ] `generator.py` — index.html from brief JSON, artifact design
 - [ ] `output/index.html` — first generated report
 - [ ] WhatsApp ping on completion
