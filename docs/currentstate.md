@@ -40,14 +40,14 @@ discovered → analyzing → complete
 - `docs/bugs.md` — known limitations, resolved questions, pitfalls
 - `docs/artifact-reference/artifact.html` — design spec
 - `state.py` — state read/write/upsert/transition helpers
+- `collector.py` — Kalshi market discovery (public API, rate-limited, 0.35s delay)
 - `state/analysis.json` — empty schema
 - `output/` — directory, empty
 
 ### In Progress
-- Task 2: `collector.py` — awaiting Kalshi API key
+- Task 3: `engine.py` — polling + financials analysis
 
 ### Planned (not built)
-- `collector.py` — Kalshi API integration
 - `engine.py` — polling + financials analysis
 - `generator.py` — HTML report generator
 - `output/index.html` — the report
@@ -58,7 +58,7 @@ discovered → analyzing → complete
 
 **Phase 1 — Core Pipeline (now)**
 - [x] `state/analysis.json` — schema + `state.py` read/write/transition helpers
-- [ ] `collector.py` — authenticated Kalshi API, ≤60d political markets, state write
+- [x] `collector.py` — public Kalshi API, pollable series filter, ≤60d window, rate-limited
 - [ ] `engine.py` — VoteHub API + Ballotpedia polling fetch, FV calculation, verdict, full brief JSON
 - [ ] `generator.py` — index.html from brief JSON, artifact design
 - [ ] `output/index.html` — first generated report
