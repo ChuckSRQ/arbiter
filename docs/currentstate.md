@@ -47,11 +47,10 @@ discovered → analyzing → complete
 - `output/index.html` — generated report output
 
 ### In Progress
-- Task 6: First full run — end-to-end pipeline verification
+- Task 8: Hermes cron scheduling + dry-run validation
 
 ### Planned (not built)
-- WhatsApp completion ping integration
-- Hermes cron scheduling + dry-run validation
+- Error handling with WhatsApp failure alert
 
 ---
 
@@ -63,11 +62,12 @@ discovered → analyzing → complete
 - [x] `engine.py` — VoteHub API polling fetch + OpenFEC financials, FV calculation, verdict, full brief JSON
 - [x] `generator.py` — index.html from brief JSON, artifact design
 - [x] `output/index.html` — first generated report
-- [ ] WhatsApp ping on completion
+- [x] First full pipeline run verified
+- [x] WhatsApp "Done" ping
 
 **Phase 2 — Localhost Cron**
 - [ ] Hermes cron job at 1:30PM ET
-- [ ] Continuation logic (don't restart analysis from scratch)
+- [x] Continuation logic (don't restart analysis from scratch)
 - [ ] Error handling with WhatsApp failure alert
 
 **Stays Local (no deployment planned)**

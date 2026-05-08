@@ -395,5 +395,10 @@ def generate():
 
 
 if __name__ == "__main__":
-    path = generate()
-    print(f"Generated {path}")
+    try:
+        path = generate()
+        print(f"Generated {path}")
+        print("Done")
+    except Exception as e:
+        print(f"ERROR: generator failed — {e}")
+        raise SystemExit(1)
