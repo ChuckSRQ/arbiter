@@ -4,6 +4,7 @@ import json
 import re
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
@@ -14,6 +15,9 @@ APPROVAL_URL = (
 )
 GENERIC_URL = "https://api.votehub.com/polls?poll_type=generic-ballot&subject=2026"
 REQUEST_DELAY = 0.5
+OPENFEC_BASE = "https://api.open.fec.gov/v1"
+OPENFEC_KEY = "DEMO_KEY"
+OPENFEC_REQUEST_DELAY = 0.5
 
 
 def _safe_float(value):
@@ -360,6 +364,151 @@ class VoteHubClient:
         return polls
 
 
+class OpenFECClient:
+    def __init__(self):
+        self._cache = {}
+        self._last_request_time = 0.0
+
+    def fetch_json(self, path, params=None):
+        query_params = dict(params or {})
+        query_params["api_key"] = OPENFEC_KEY
+        query = urllib.parse.urlencode(query_params, doseq=True)
+        endpoint = path.lstrip("/")
+        url = "{}/{}?{}".format(OPENFEC_BASE, endpoint, query)
+
+        if url in self._cache:
+            return self._cache[url]
+
+        elapsed = time.time() - self._last_request_time
+        if elapsed < OPENFEC_REQUEST_DELAY:
+            time.sleep(OPENFEC_REQUEST_DELAY - elapsed)
+
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+        except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError):
+            payload = None
+        finally:
+            self._last_request_time = time.time()
+
+        self._cache[url] = payload
+        return payload
+
+    def _get(self, path, params=None):
+        return self.fetch_json(path, params)
+
+    def fetch_totals(self, candidate_id):
+        payload = self.fetch_json("/candidate/{}/totals/".format(candidate_id))
+        if not isinstance(payload, dict):
+            return None
+
+        results = payload.get("results")
+        if isinstance(results, list) and results:
+            first = results[0]
+            if isinstance(first, dict):
+                return {
+                    "receipts": first.get("receipts"),
+                    "disbursements": first.get("disbursements"),
+                    "cash_on_hand_end_period": first.get("cash_on_hand_end_period"),
+                }
+        if all(key in payload for key in ("receipts", "disbursements", "cash_on_hand_end_period")):
+            return {
+                "receipts": payload.get("receipts"),
+                "disbursements": payload.get("disbursements"),
+                "cash_on_hand_end_period": payload.get("cash_on_hand_end_period"),
+            }
+        return None
+
+    def fetch_candidate_totals(self, candidate_id):
+        return self.fetch_totals(candidate_id)
+
+    def fetch_candidate_financials(self, candidate_id):
+        totals = self.fetch_totals(candidate_id)
+        if not totals:
+            return None
+
+        source_url = "{}/candidate/{}/totals/?api_key={}".format(
+            OPENFEC_BASE, candidate_id, OPENFEC_KEY
+        )
+        return {
+            "receipts": _safe_float(totals.get("receipts")),
+            "disbursements": _safe_float(totals.get("disbursements")),
+            "cash_on_hand": _safe_float(totals.get("cash_on_hand_end_period")),
+            "source": "OpenFEC",
+            "source_url": source_url,
+        }
+
+
+def _openfec_source():
+    return {"label": "OpenFEC API", "url": OPENFEC_BASE}
+
+
+def _append_source(sources, source):
+    out = list(sources or [])
+    for existing in out:
+        if (
+            isinstance(existing, dict)
+            and existing.get("label") == source.get("label")
+            and existing.get("url") == source.get("url")
+        ):
+            return out
+    out.append(source)
+    return out
+
+
+def _national_financials_note():
+    return {
+        "note": "National-level market — no candidate-specific financials apply",
+        "source": "OpenFEC",
+        "url": OPENFEC_BASE,
+    }
+
+
+def _extract_candidate_id(market):
+    for key in ("candidate_id", "fec_candidate_id"):
+        candidate_id = market.get(key)
+        if isinstance(candidate_id, str):
+            clean = candidate_id.strip().upper()
+            if re.match(r"^[HSP]\d{5,8}$", clean):
+                return clean
+
+    for key in ("ticker", "title", "race_title"):
+        raw = market.get(key)
+        if not raw:
+            continue
+        match = re.search(r"\b([HSP]\d{5,8})\b", str(raw).upper())
+        if match:
+            return match.group(1)
+
+    return None
+
+
+def _attach_financials(market, fec_client):
+    m_type = _market_type(market.get("ticker"))
+    if m_type in ("approval", "generic"):
+        market["financials"] = {
+            "note": "National-level market — no candidate-specific financials",
+            "source": "OpenFEC",
+            "url": OPENFEC_BASE,
+        }
+        market["sources"] = _append_source(market.get("sources"), _openfec_source())
+        return
+
+    candidate_id = _extract_candidate_id(market)
+    if not candidate_id:
+        market["financials"] = {"error": "OpenFEC fetch failed", "source": "OpenFEC"}
+        market["sources"] = _append_source(market.get("sources"), _openfec_source())
+        return
+
+    financials = fec_client.fetch_candidate_financials(candidate_id)
+    if not financials:
+        market["financials"] = {"error": "OpenFEC fetch failed", "source": "OpenFEC"}
+    else:
+        market["financials"] = financials
+    market["sources"] = _append_source(market.get("sources"), _openfec_source())
+
+
 def run():
     state = read_state()
     pending = get_pending(state)
@@ -368,6 +517,7 @@ def run():
         return 0
 
     client = VoteHubClient()
+    fec_client = OpenFECClient()
     completed = 0
 
     for market in pending:
@@ -415,6 +565,8 @@ def run():
             else:
                 fv, context, analysis, sources = _analyze_generic_market(market, polls)
                 _finalize_market(market, fv, context, analysis, sources)
+
+        _attach_financials(market, fec_client)
 
         transition(state, ticker, "complete")
         write_state(state)

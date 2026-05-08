@@ -13,6 +13,7 @@
 - `docs/CHANGELOG.md` — this file
 - `docs/artifact-reference/artifact.html` — design spec copied from `/Users/carlosmac/Desktop/artifact.html`
 - `engine.py` — Task 3 polling analysis engine with VoteHub fetch, fair value heuristic, verdicting, and state transitions (`discovered/analyzing` → `complete`)
+- `engine.py` — Task 4 OpenFEC financials integration with per-market `financials` population and OpenFEC source tracking
 
 ### Changed
 - `docs/agents.md` — expanded polling sources from Wikipedia-only to full table (VoteHub API primary, Ballotpedia secondary, RaceToTheWH, Wikipedia, Quinnipiac/Siena, MIT Election Lab, Dave Leip's Atlas). Added OpenFEC API for financial data. Added data quality bar (2 independent sources minimum).
@@ -21,6 +22,8 @@
 - `docs/bugs.md` — added OpenFEC rate limit limitation. Added RealClearPolling browser automation limitation. Updated wishlist with RealClearPolling (tertiary/reserve). Removed Polymarket (PredictIt not integrated).
 - `README.md` — marked Task 3 ("Write Engine (polling)") as DONE in roadmap table.
 - `docs/currentstate.md` — moved engine polling work into Built and checked off Phase 1 engine item.
+- `README.md` — marked Task 4 ("Write Engine (financials)") as DONE in roadmap table.
+- `docs/currentstate.md` — updated Phase 1 engine checklist item to include OpenFEC financials and moved in-progress focus to generator work.
 
 ### Resolved
 - Verdict tag PASS styling: grey (#9CA3AF)
