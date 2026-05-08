@@ -113,12 +113,52 @@ def _render_card(market):
 </div>"""
 
 
+def _chunked(items, size):
+    return [items[index : index + size] for index in range(0, len(items), size)]
+
+
 def generate():
     state = read_state()
     markets = get_complete(state)
     today = datetime.now()
+    market_pages = _chunked(markets, 3)
+    if not market_pages:
+        market_pages = [[]]
 
-    cards_html = "\n\n".join(_render_card(market) for market in markets)
+    page_count = len(market_pages)
+    tabs_html = ""
+    if page_count > 1:
+        tab_buttons = []
+        for index in range(page_count):
+            page_num = index + 1
+            is_active = "true" if index == 0 else "false"
+            tab_buttons.append(
+                f'<button class="brief-tab{" is-active" if index == 0 else ""}" '
+                f'type="button" role="tab" id="tab-page-{page_num}" '
+                f'aria-controls="panel-page-{page_num}" aria-selected="{is_active}" '
+                f'data-tab-target="panel-page-{page_num}">Page {page_num}</button>'
+            )
+        tabs_html = (
+            '<div class="brief-tabs" role="tablist" aria-label="Political brief pages">\n    '
+            + "\n    ".join(tab_buttons)
+            + "\n  </div>"
+        )
+
+    page_blocks = []
+    for index, page in enumerate(market_pages):
+        page_num = index + 1
+        cards_html = "\n        ".join(_render_card(market) for market in page)
+        if not cards_html:
+            cards_html = '<div class="empty-state">No complete briefs available.</div>'
+        page_blocks.append(
+            f'<section class="brief-page{" is-active" if index == 0 else ""}" '
+            f'id="panel-page-{page_num}" role="tabpanel" '
+            f'aria-labelledby="tab-page-{page_num}"{" hidden" if index != 0 else ""}>\n'
+            f'      <div class="cards-grid">\n        {cards_html}\n      </div>\n'
+            f'    </section>'
+        )
+    pages_html = "\n    ".join(page_blocks)
+
     html_doc = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -129,8 +169,6 @@ def generate():
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
 
   body {{
-    max-width: 1200px;
-    margin: 0 auto;
     background: #0D0F1A;
     color: #E8E4DC;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -138,15 +176,81 @@ def generate():
     overflow-y: auto;
   }}
 
+  .report-shell {{
+    max-width: 1460px;
+    margin: 0 auto;
+    padding: 0 12px 12px;
+  }}
+
+  .brief-tabs {{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 16px 0 10px;
+    flex-wrap: wrap;
+  }}
+
+  .brief-tab {{
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    background: rgba(59, 130, 246, 0.08);
+    color: #93C5FD;
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }}
+
+  .brief-tab.is-active {{
+    border-color: rgba(251, 191, 36, 0.5);
+    background: rgba(251, 191, 36, 0.12);
+    color: #FCD34D;
+  }}
+
+  .brief-page {{
+    margin-top: 12px;
+  }}
+
+  .cards-grid {{
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 400px));
+    gap: 18px;
+    justify-content: center;
+    justify-items: center;
+  }}
+
   .card {{
     background: linear-gradient(160deg, #141828 0%, #0D0F1A 60%);
     border: 1px solid rgba(59, 130, 246, 0.18);
     border-radius: 20px;
     padding: 18px;
-    margin: 12px;
+    width: min(100%, 400px);
+    margin: 0;
   }}
 
-  .card + .card {{ margin-top: 0; }}
+  .empty-state {{
+    font-size: 14px;
+    color: #94A3B8;
+    text-align: center;
+    padding: 20px;
+    border: 1px dashed rgba(59, 130, 246, 0.2);
+    border-radius: 12px;
+    width: min(100%, 400px);
+  }}
+
+  @media (max-width: 1260px) {{
+    .cards-grid {{
+      grid-template-columns: repeat(2, minmax(0, 400px));
+    }}
+  }}
+
+  @media (max-width: 860px) {{
+    .cards-grid {{
+      grid-template-columns: minmax(0, 400px);
+    }}
+  }}
 
   .section-label {{
     font-size: 11px;
@@ -381,9 +485,38 @@ def generate():
   <div class="header-date">{escape(_header_date(today))} &nbsp;·&nbsp; {len(markets)} elections tracked</div>
 </div>
 
-{cards_html}
+<main class="report-shell">
+  {tabs_html}
+  {pages_html}
+</main>
 
 <div class="footer">Arbiter &nbsp;·&nbsp; Not financial advice &nbsp;·&nbsp; cr: {today.strftime('%Y-%m-%d')}</div>
+
+<script>
+(() => {{
+  const tabs = Array.from(document.querySelectorAll('.brief-tab'));
+  const panels = Array.from(document.querySelectorAll('.brief-page'));
+  if (!tabs.length || tabs.length < 2) return;
+
+  const activate = (tab) => {{
+    const targetId = tab.getAttribute('data-tab-target');
+    tabs.forEach((item) => {{
+      const isActive = item === tab;
+      item.classList.toggle('is-active', isActive);
+      item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    }});
+    panels.forEach((panel) => {{
+      const isActive = panel.id === targetId;
+      panel.classList.toggle('is-active', isActive);
+      panel.hidden = !isActive;
+    }});
+  }};
+
+  tabs.forEach((tab) => {{
+    tab.addEventListener('click', () => activate(tab));
+  }});
+}})();
+</script>
 
 </body>
 </html>
