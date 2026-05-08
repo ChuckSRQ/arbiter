@@ -64,6 +64,9 @@ def _extract_recent_polls(payload):
 
 
 def _extract_metric(poll, keys):
+    def _normalize(value):
+        return str(value or "").lower().replace(" ", "").replace("_", "")
+
     for key in keys:
         value = _safe_float(poll.get(key))
         if value is not None:
@@ -84,6 +87,23 @@ def _extract_metric(poll, keys):
             for key in keys:
                 norm = key.lower().replace("_", "")
                 if norm in label.replace(" ", "") or norm in candidate.replace(" ", ""):
+                    value = _safe_float(entry.get("pct"))
+                    if value is not None:
+                        return value
+                    value = _safe_float(entry.get("value"))
+                    if value is not None:
+                        return value
+    for field in ("answers", "choices", "options"):
+        rows = poll.get(field)
+        if not isinstance(rows, list):
+            continue
+        for entry in rows:
+            if not isinstance(entry, dict):
+                continue
+            choice = _normalize(entry.get("choice"))
+            for key in keys:
+                norm = _normalize(key)
+                if norm in choice:
                     value = _safe_float(entry.get("pct"))
                     if value is not None:
                         return value
