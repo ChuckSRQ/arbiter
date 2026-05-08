@@ -129,14 +129,22 @@ Daily at 1:30PM ET via Hermes cron. No manual intervention needed.
 
 ## Road to MVP
 
-| Phase | What |
-|---|---|
-| MVP (now) | Collector + Engine + Generator + localhost HTML + WhatsApp |
-| Phase 2 | Deploy to Vercel, real URL |
-| Phase 3 | Add non-US election markets |
-| Phase 4 | Portfolio sync, trade recommendations |
+Each task is a self-contained 5-minute coding session. Do them in order.
 
-*Roadmap is not a commitment. Each phase requires explicit approval from Carlos.*
+| # | Task | File | What |
+|---|---|---|---|
+| 1 | Define state schema | `state/analysis.json` | Schema + read/write helpers |
+| 2 | Write Collector | `collector.py` | Kalshi API, ≤60d markets, write to state |
+| 3 | Write Engine (polling) | `engine.py` | VoteHub API + Ballotpedia polling fetch, FV, verdict |
+| 4 | Write Engine (financials) | `engine.py` | OpenFEC API — receipts, top donors, outside spend |
+| 5 | Write Generator | `generator.py` | Read complete markets → `output/index.html` |
+| 6 | First full run | — | Run pipeline end-to-end, verify output |
+| 7 | WhatsApp ping | `generator.py` | Send confirmation on completion |
+| 8 | Hermes cron | — | Schedule 1:30PM ET, test with dry run |
+| 9 | Continuation logic | `engine.py` | Skip complete, resume analyzing on restart |
+| 10 | Error handling | `collector.py`, `engine.py` | Alert on failure, don't skip steps |
+
+*Phase 2 (Vercel deploy) starts after all 10 are done. Each task requires explicit approval before moving to the next.*
 
 ---
 
