@@ -81,7 +81,8 @@ discovered → analyzing → complete
 | Decision | Resolution |
 |---|---|
 | Stack | Python + static HTML. No Next.js/DB for MVP. |
-| Polling source | Wikipedia first, then pollster sites, then Silver Bulletin |
+| Polling sources | VoteHub API (primary), Ballotpedia (secondary), RaceToTheWH, Wikipedia (mayorals), Quinnipiac/Siena (tertiary). Not locked to any single source. |
+| Financial data | OpenFEC API — candidate receipts, disbursements, cash on hand, top donors, outside spend. DEMO_KEY works, no key required. |
 | Market filter | ≤60 days from expiry, political/election only, has polling |
 | Full briefs | Every qualifying market gets a full brief. No filtering by verdict. |
 | Verdict tag | TRADE (amber) or PASS (blue) — on its own line below election date |

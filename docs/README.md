@@ -23,16 +23,21 @@ Carlos makes the final call. Marcus is the analyst, not the trader.
 **In scope for MVP:**
 - Daily cron at 1:30PM ET
 - Collector → Kalshi API, finds ≤60d election markets with polling
-- Marcus → full brief per market (Wikipedia polling primary source)
+- Marcus → full brief per market (polling + financial data)
 - Generator → `index.html` matching the artifact design, 1200px max-width
 - WhatsApp ping to Carlos on completion
 - State continuation — Marcus resumes where he left off, doesn't restart
+
+**Data sources (all free unless noted):**
+- Polling: VoteHub API (primary), Ballotpedia (secondary), RaceToTheWH, Wikipedia (mayorals)
+- Financials: OpenFEC API (DEMO_KEY works, no key required)
+- Historical baselines: MIT Election Lab, Dave Leip's Atlas
 
 **Out of scope (roadmap):**
 - Vercel/GitHub Pages deployment — localhost only for now
 - Trading, order placement, portfolio sync
 - Multiple page sections, filters, tabs
-- Non-US elections (until Wikipedia has reliable polling for them)
+- Non-US elections (until Ballotpedia/Wikipedia have reliable polling for them)
 - Any market without polling data (admin/government-action markets excluded)
 
 **MVP is the ceiling until explicitly expanded.** Do not add features that aren't in the spec. If something seems important, surface it in `docs/bugs.md` or `docs/currentstate.md` as a proposed addition.

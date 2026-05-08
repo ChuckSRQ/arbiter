@@ -21,7 +21,8 @@ Marcus is the reasoning layer. He does not scrape Kalshi, he does not generate H
 **Marcus's inputs:**
 - Market ticker (e.g. `KXMAYORLA-26JUN02`)
 - Market title, expiry date, market price (from Collector)
-- Polling data (from Wikipedia, pollster sites, Silver Bulletin as fallback)
+- Polling data (see sources below)
+- Financial data: candidate receipts, disbursements, top donors, outside spending (OpenFEC API)
 
 **Marcus's outputs (per market):**
 ```json
@@ -36,7 +37,9 @@ Marcus is the reasoning layer. He does not scrape Kalshi, he does not generate H
   "context": "Full analysis paragraph.",
   "analysis": "Full reasoning paragraph.",
   "sources": [
-    {"label": "Wikipedia polls", "url": "..."},
+    {"label": "VoteHub polling", "url": "..."},
+    {"label": "OpenFEC financials", "url": "..."},
+    {"label": "Ballotpedia", "url": "..."},
     {"label": "Kalshi market", "url": "..."}
   ],
   "status": "complete"
@@ -47,13 +50,32 @@ Marcus is the reasoning layer. He does not scrape Kalshi, he does not generate H
 
 **Continuation:** Marcus reads `state/analysis.json` on startup. Markets marked `complete` are skipped. Markets marked `analyzing` are resumed. New markets enter `discovered` → `analyzing`. See `currentstate.md` for the full state machine.
 
-**Polling sources (in priority order):**
-1. Wikipedia election polling pages
-2. Pollster websites directly
-3. Silver Bulletin (browser_navigate required — terminal HTTP blocked)
-4. RealClearPolling (web_search fallback)
+**Polling sources (in priority order — all free, no API key required unless noted):**
 
-*References: prediction-market-trading skill (`references/political-polling-market-analysis.md`), currentstate.md*
+| Priority | Source | Coverage | Method |
+|---|---|---|---|
+| 1 | **VoteHub API** | Presidential approval, generic ballot | REST (free, no key) |
+| 2 | **Ballotpedia** | Senate, House, Governor, mayoral races | browser_navigate |
+| 3 | **RaceToTheWH.com** | Senate, House, Governor averages | browser_navigate |
+| 4 | **Wikipedia** | Mayorals, local races, historical context | browser_navigate |
+| 5 | **Quinnipiac / Siena** | State-specific high-quality polls | web_extract |
+| 6 | **MIT Election Lab** | Historical results / fundamentals baseline | Download CSV |
+| 7 | **Dave Leip's Atlas** | Historical county/state results | browser_navigate |
+
+**Financial data:**
+| Source | Coverage | Method |
+|---|---|---|
+| **OpenFEC API** | Candidate receipts, disbursements, cash on hand, top donors, outside spend | REST (DEMO_KEY works, 1000 calls/hr limit) |
+
+**Cross-market context (not trade venue):**
+| Source | Use | Method |
+|---|---|---|
+| **Kalshi** | Primary trade venue | kalshi_python_sync |
+| **PredictIt** | Optional cross-check for mispricing | REST API — not yet integrated |
+
+**Data quality bar:** Marcus needs at least two independent sources before writing a brief. If VoteHub has approval numbers and Ballotpedia has the Senate race polling, that's enough. Don't chase a third source if two are solid.
+
+*References: prediction-market-trading skill, OpenFEC API docs, VoteHub API docs*
 
 ---
 
