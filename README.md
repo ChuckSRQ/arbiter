@@ -6,7 +6,7 @@
 
 ## What Is This
 
-Arbiter is a daily report that surfaces Kalshi political/election markets expiring within 60 days, researched by Marcus with full polling-backed briefs.
+Arbiter is a daily report that surfaces Kalshi election markets that stop trading within 60 days, researched by Marcus with full polling-backed briefs.
 
 Carlos opens the report and sees every qualifying complete market, with multi-contract candidate races collapsed into one race-level briefing card when the contracts share an `event_ticker`. Each card shows:
 - The race and election date
@@ -24,7 +24,7 @@ Carlos makes the final call. Marcus is the analyst, not the trader.
 
 **In scope for MVP:**
 - Daily cron at 1:30PM ET
-- Collector → Kalshi API, finds ≤60d election markets with polling
+- Collector → Kalshi Elections API, finds election markets whose trading cutoff is within 60 days
 - Marcus → full brief per market (polling + financial data)
 - Generator → `index.html` matching the artifact design, 1200px max-width
 - WhatsApp ping to Carlos on completion
@@ -59,9 +59,9 @@ Carlos makes the final call. Marcus is the analyst, not the trader.
     │
     ▼
 collector.py
-  → Queries Kalshi public elections API (no auth required for discovery)
-  → Returns markets expiring ≤60 days
-  → Stores candidate_name and event_ticker when Kalshi exposes them
+  → Queries Kalshi public `/events?category=Elections` API (no auth required for discovery)
+  → Filters on `close_time` / `expiration_time` so the 60-day window uses the real trading cutoff
+  → Stores `event_date` (election date when present), `candidate_name`, and `event_ticker`
   → Updates state/analysis.json
     │
     ▼
@@ -79,7 +79,7 @@ generator.py
   → Prints "Done"; Hermes cron delivers stdout to WhatsApp
 ```
 
-**State:** All scripts read/write `state/analysis.json`. Marcus skips `complete` markets, resumes `analyzing`, starts new `discovered` markets. The report always continues from where it left off. Candidate contracts retain market-level fields (`ticker`, `candidate_name`, `event_ticker`, price, FV, verdict) even when the HTML output groups them into a race card.
+**State:** All scripts read/write `state/analysis.json`. Marcus skips `complete` markets, resumes `analyzing`, starts new `discovered` markets. The report always continues from where it left off. Candidate contracts retain market-level fields (`ticker`, `candidate_name`, `event_ticker`, `event_date`, price, FV, verdict) even when the HTML output groups them into a race card.
 
 ---
 
@@ -118,6 +118,9 @@ arbiter/
 ```bash
 cd /Users/carlosmac/arbiter
 
+# One-time cleanup after the Elections-category expiry-filter fix
+rm -f state/analysis.json
+
 # Step by step
 python3 collector.py
 python3 engine.py
@@ -149,6 +152,7 @@ Each task is a self-contained 5-minute coding session. Do them in order.
 | 9 | Continuation logic | `engine.py` | Skip complete, resume analyzing on restart **DONE** |
 | 10 | Error handling | `collector.py`, `engine.py` | Alert on failure, don't skip steps **DONE** |
 | 11 | Race-level cards | `collector.py`, `engine.py`, `generator.py`, `state.py` | Group multi-contract races by `event_ticker`, analyze mayoral fields together, render one candidate-table card **DONE** |
+| 12 | Elections expiry filter fix | `collector.py`, `state.py`, `generator.py` | Discover via Elections events, use trading cutoff for the 60-day window, exclude approval/generic-ballot titles, persist `event_date` **DONE** |
 
 *Arbiter stays local. No Vercel, no deployment — this is a local tool on Carlos's machine, served via localhost.*
 
