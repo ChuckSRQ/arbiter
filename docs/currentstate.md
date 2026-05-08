@@ -6,7 +6,7 @@
 
 ## Status: Phase 1 — Core Pipeline
 
-Core pipeline is active. Collector and polling engine are implemented and writing complete briefs to state.
+Core pipeline is active. Collector, engine, and generator are implemented, and report output is generated from complete markets in state.
 
 ---
 
@@ -42,16 +42,16 @@ discovered → analyzing → complete
 - `state.py` — state read/write/upsert/transition helpers
 - `collector.py` — Kalshi market discovery (public API, rate-limited, 0.35s delay)
 - `engine.py` — polling + financials analysis engine (VoteHub fetch, OpenFEC financials, FV heuristic, verdict, brief writing)
+- `generator.py` — HTML report generator from complete market state
 - `state/analysis.json` — populated market state with completed briefs
-- `output/` — directory, empty
+- `output/index.html` — generated report output
 
 ### In Progress
-- Task 5: `generator.py` — report generation
+- Task 6: First full run — end-to-end pipeline verification
 
 ### Planned (not built)
-- `engine.py` — polling + financials analysis
-- `generator.py` — HTML report generator
-- `output/index.html` — the report
+- WhatsApp completion ping integration
+- Hermes cron scheduling + dry-run validation
 
 ---
 
@@ -61,8 +61,8 @@ discovered → analyzing → complete
 - [x] `state/analysis.json` — schema + `state.py` read/write/transition helpers
 - [x] `collector.py` — public Kalshi API, pollable series filter, ≤60d window, rate-limited
 - [x] `engine.py` — VoteHub API polling fetch + OpenFEC financials, FV calculation, verdict, full brief JSON
-- [ ] `generator.py` — index.html from brief JSON, artifact design
-- [ ] `output/index.html` — first generated report
+- [x] `generator.py` — index.html from brief JSON, artifact design
+- [x] `output/index.html` — first generated report
 - [ ] WhatsApp ping on completion
 
 **Phase 2 — Localhost Cron**

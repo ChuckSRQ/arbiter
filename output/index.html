@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=450, height=800">
+<title>Arbiter — Political Briefing</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: #0D0F1A;
+    color: #E8E4DC;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 16px;
+    overflow-y: auto;
+  }
+
+  .card {
+    background: linear-gradient(160deg, #141828 0%, #0D0F1A 60%);
+    border: 1px solid rgba(59, 130, 246, 0.18);
+    border-radius: 20px;
+    padding: 18px;
+    margin: 12px;
+  }
+
+  .card + .card { margin-top: 0; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: #60A5FA;
+    margin-bottom: 10px;
+  }
+
+  .race-header {
+    margin-bottom: 12px;
+  }
+
+  .race-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #F1F5F9;
+    line-height: 1.25;
+    margin-bottom: 4px;
+  }
+
+  .election-date {
+    font-size: 13px;
+    color: #60A5FA;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  .verdict-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    border-radius: 20px;
+    padding: 3px 10px;
+    margin-top: 4px;
+  }
+  .verdict-trade {
+    color: #FCD34D;
+    background: rgba(251, 191, 36, 0.12);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+  }
+  .verdict-pass {
+    color: #9CA3AF;
+    background: rgba(156, 163, 175, 0.12);
+    border: 1px solid rgba(156, 163, 175, 0.35);
+  }
+
+  .context {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #CBD5E1;
+    margin-bottom: 16px;
+  }
+
+  .price-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    align-items: stretch;
+  }
+
+  .price-box {
+    flex: 1;
+    background: rgba(5, 10, 25, 0.95);
+    border-radius: 12px;
+    padding: 12px 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .price-box.market-box {
+    border: 1px solid rgba(59, 130, 246, 0.55);
+    box-shadow: 0 0 14px rgba(59, 130, 246, 0.12), inset 0 0 8px rgba(59, 130, 246, 0.06);
+  }
+
+  .price-box.marcus-box {
+    border: 1px solid rgba(251, 191, 36, 0.55);
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.12), inset 0 0 8px rgba(251, 191, 36, 0.06);
+  }
+
+  .price-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #94A3B8;
+  }
+
+  .price-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #F1F5F9;
+  }
+
+  .price-value.market { color: #93C5FD; }
+  .price-value.marcus { color: #FDE68A; }
+
+  .delta-box {
+    flex: 0 0 auto;
+    background: rgba(5, 10, 25, 0.95);
+    border: 1px solid rgba(251, 191, 36, 0.6);
+    border-radius: 12px;
+    padding: 14px 18px;
+    text-align: center;
+    align-self: center;
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.18), inset 0 0 10px rgba(251, 191, 36, 0.08);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    min-width: 72px;
+  }
+
+  .delta-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #FCD34D;
+  }
+
+  .delta-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #FDE68A;
+  }
+
+  .reason-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #FCD34D;
+    margin-bottom: 6px;
+  }
+
+  .reason-text {
+    font-size: 15px;
+    line-height: 1.65;
+    color: #CBD5E1;
+    margin-bottom: 10px;
+  }
+
+  .source-link {
+    display: inline-block;
+    font-size: 12px;
+    color: #60A5FA;
+    text-decoration: none;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 6px;
+    padding: 5px 12px;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+
+  .kalshi-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #93C5FD;
+    margin-bottom: 10px;
+  }
+
+  .header-bar {
+    background: linear-gradient(90deg, #0D0F1A 0%, #141828 100%);
+    border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+    padding: 18px 18px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+  }
+
+  .header-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #F1F5F9;
+    letter-spacing: 0.06em;
+  }
+
+  .header-date {
+    font-size: 13px;
+    color: #64748B;
+    margin-top: 2px;
+  }
+
+  .watch-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    border-radius: 20px;
+    padding: 2px 9px;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #FCD34D;
+    margin-left: 8px;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 16px;
+    font-size: 10px;
+    color: #334155;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <div class="header-title">Arbiter Political Briefing <span class="watch-indicator">● Live</span></div>
+  <div class="header-date">Friday, May 8, 2026 &nbsp;·&nbsp; 9 elections tracked</div>
+</div>
+
+<div class="card">
+  <div class="kalshi-badge">KXGENERICBALLOTVOTEHUB-26MAY15-T5.8</div>
+  <div class="race-header">
+    <div class="race-title">Above 5.8%</div>
+    <div class="election-date">May 15, 2026</div>
+    <div class="verdict-tag verdict-trade">TRADE</div>
+  </div>
+
+  <div class="context">
+    VoteHub generic ballot polling (last 5 polls) shows Democrats at 44.4% and Republicans at 42.2%, a Democratic spread of 2.2 points on average. Recent spread readings vary by 3.0 points across the sample.
+  </div>
+
+  <div class="price-row">
+    <div class="price-box market-box">
+      <div class="price-label">Market</div>
+      <div class="price-value market">56c</div>
+    </div>
+    <div class="delta-box">
+      <div class="delta-label">Edge</div>
+      <div class="delta-value">-46</div>
+    </div>
+    <div class="price-box marcus-box">
+      <div class="price-label">Marcus</div>
+      <div class="price-value marcus">10c</div>
+    </div>
+  </div>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    Marcus applies the same bracket heuristic to the Democratic spread and estimates fair value at 10¢ for this binary market. Versus the current price of 56¢, the model implies a tradable edge.
+  </div>
+  <div style="margin-top:10px">
+    <a class="source-link" href="https://api.votehub.com/polls?poll_type=generic-ballot&amp;subject=2026" target="_blank" rel="noopener noreferrer">VoteHub generic ballot polls</a>
+    <a class="source-link" href="https://api.votehub.com" target="_blank" rel="noopener noreferrer">VoteHub API</a>
+    <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="kalshi-badge">KXAPRPOTUS-26MAY15-41.6</div>
+  <div class="race-header">
+    <div class="race-title">Will the President&#x27;s approval rating be above 41.6 according to RealClearPolitics?</div>
+    <div class="election-date">May 15, 2026</div>
+    <div class="verdict-tag verdict-trade">TRADE</div>
+  </div>
+
+  <div class="context">
+    VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.
+  </div>
+
+  <div class="price-row">
+    <div class="price-box market-box">
+      <div class="price-label">Market</div>
+      <div class="price-value market">2c</div>
+    </div>
+    <div class="delta-box">
+      <div class="delta-label">Edge</div>
+      <div class="delta-value">+33</div>
+    </div>
+    <div class="price-box marcus-box">
+      <div class="price-label">Marcus</div>
+      <div class="price-value marcus">35c</div>
+    </div>
+  </div>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35¢ under the heuristic model. Compared with the current market price of 2¢, the model signals a tradable edge.
+  </div>
+  <div style="margin-top:10px">
+    <a class="source-link" href="https://api.votehub.com/polls?poll_type=approval&amp;subject=donald-trump&amp;from_date=2026-04-01" target="_blank" rel="noopener noreferrer">VoteHub approval polls</a>
+    <a class="source-link" href="https://api.votehub.com" target="_blank" rel="noopener noreferrer">VoteHub API</a>
+    <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="kalshi-badge">KXAPRPOTUS-26MAY15-41.5</div>
+  <div class="race-header">
+    <div class="race-title">Will the President&#x27;s approval rating be between 41.4 and 41.6 according to RealClearPolitics?</div>
+    <div class="election-date">May 15, 2026</div>
+    <div class="verdict-tag verdict-trade">TRADE</div>
+  </div>
+
+  <div class="context">
+    VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.
+  </div>
+
+  <div class="price-row">
+    <div class="price-box market-box">
+      <div class="price-label">Market</div>
+      <div class="price-value market">2c</div>
+    </div>
+    <div class="delta-box">
+      <div class="delta-label">Edge</div>
+      <div class="delta-value">+33</div>
+    </div>
+    <div class="price-box marcus-box">
+      <div class="price-label">Marcus</div>
+      <div class="price-value marcus">35c</div>
+    </div>
+  </div>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35¢ under the heuristic model. Compared with the current market price of 2¢, the model signals a tradable edge.
+  </div>
+  <div style="margin-top:10px">
+    <a class="source-link" href="https://api.votehub.com/polls?poll_type=approval&amp;subject=donald-trump&amp;from_date=2026-04-01" target="_blank" rel="noopener noreferrer">VoteHub approval polls</a>
+    <a class="source-link" href="https://api.votehub.com" target="_blank" rel="noopener noreferrer">VoteHub API</a>
+    <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="kalshi-badge">KXAPRPOTUS-26MAY15-41.2</div>
+  <div class="race-header">
+    <div class="race-title">Will the President&#x27;s approval rating be between 41.1 and 41.3 according to RealClearPolitics?</div>
+    <div class="election-date">May 15, 2026</div>
+    <div class="verdict-tag verdict-trade">TRADE</div>
+  </div>
+
+  <div class="context">
+    VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.
+  </div>
+
+  <div class="price-row">
+    <div class="price-box market-box">
+      <div class="price-label">Market</div>
+      <div class="price-value market">2c</div>
+    </div>
+    <div class="delta-box">
+      <div class="delta-label">Edge</div>
+      <div class="delta-value">+33</div>
+    </div>
+    <div class="price-box marcus-box">
+      <div class="price-label">Marcus</div>
+      <div class="price-value marcus">35c</div>
+    </div>
+  </div>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35¢ under the heuristic model. Compared with the current market price of 2¢, the model signals a tradable edge.
+  </div>
+  <div style="margin-top:10px">
+    <a class="source-link" href="https://api.votehub.com/polls?poll_type=approval&amp;subject=donald-trump&amp;from_date=2026-04-01" target="_blank" rel="noopener noreferrer">VoteHub approval polls</a>
+    <a class="source-link" href="https://api.votehub.com" target="_blank" rel="noopener noreferrer">VoteHub API</a>
+    <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="kalshi-badge">KXAPRPOTUS-26MAY15-39.9</div>
+  <div class="race-header">
+    <div class="race-title">Will the President&#x27;s approval rating be below 39.9 according to RealClearPolitics?</div>
+    <div class="election-date">May 15, 2026</div>
+    <div class="verdict-tag verdict-trade">TRADE</div>
+  </div>
+
+  <div class="context">
+    VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.
+  </div>
+
+  <div class="price-row">
+    <div class="price-box market-box">
+      <div class="price-label">Market</div>
+      <div class="price-value market">4c</div>
+    </div>
+    <div class="delta-box">
+      <div class="delta-label">Edge</div>
+      <div class="delta-value">+31</div>
+    </div>
+    <div class="price-box marcus-box">
+      <div class="price-label">Marcus</div>
+      <div class="price-value marcus">35c</div>
+    </div>
+  </div>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35¢ under the heuristic model. Compared with the current market price of 4¢, the model signals a tradable edge.
+  </div>
+  <div style="margin-top:10px">
+    <a class="source-link" href="https://api.votehub.com/polls?poll_type=approval&amp;subject=donald-trump&amp;from_date=2026-04-01" target="_blank" rel="noopener noreferrer">VoteHub approval polls</a>
+    <a class="source-link" href="https://api.votehub.com" target="_blank" rel="noopener noreferrer">VoteHub API</a>
+    <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="kalshi-badge">KXAPRPOTUS-26MAY15-40.0</div>
+  <div class="race-header">
+    <div class="race-title">Will the President&#x27;s approval rating be between 39.9 and 40.1 according to RealClearPolitics?</div>
+    <div class="election-date">May 15, 2026</div>
+    <div class="verdict-tag verdict-trade">TRADE</div>
+  </div>
+
+  <div class="context">
+    VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.
+  </div>
+
+  <div class="price-row">
+    <div class="price-box market-box">
+      <div class="price-label">Market</div>
+      <div class="price-value market">15c</div>
+    </div>
+    <div class="delta-box">
+      <div class="delta-label">Edge</div>
+      <div class="delta-value">+20</div>
+    </div>
+    <div class="price-box marcus-box">
+      <div class="price-label">Marcus</div>
+      <div class="price-value marcus">35c</div>
+    </div>
+  </div>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35¢ under the heuristic model. Compared with the current market price of 15¢, the model signals a tradable edge.
+  </div>
+  <div style="margin-top:10px">
+    <a class="source-link" href="https://api.votehub.com/polls?poll_type=approval&amp;subject=donald-trump&amp;from_date=2026-04-01" target="_blank" rel="noopener noreferrer">VoteHub approval polls</a>
+    <a class="source-link" href="https://api.votehub.com" target="_blank" rel="noopener noreferrer">VoteHub API</a>
+    <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="kalshi-badge">KXAPRPOTUS-26MAY15-40.9</div>
+  <div class="race-header">
+    <div class="race-title">Will the President&#x27;s approval rating be between 40.8 and 41.0 according to RealClearPolitics?</div>
+    <div class="election-date">May 15, 2026</div>
+    <div class="verdict-tag verdict-trade">TRADE</div>
+  </div>
+
+  <div class="context">
+    VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.
+  </div>
+
+  <div class="price-row">
+    <div class="price-box market-box">
+      <div class="price-label">Market</div>
+      <div class="price-value market">17c</div>
+    </div>
+    <div class="delta-box">
+      <div class="delta-label">Edge</div>
+      <div class="delta-value">+18</div>
+    </div>
+    <div class="price-box marcus-box">
+      <div class="price-label">Marcus</div>
+      <div class="price-value marcus">35c</div>
+    </div>
+  </div>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35¢ under the heuristic model. Compared with the current market price of 17¢, the model signals a tradable edge.
+  </div>
+  <div style="margin-top:10px">
+    <a class="source-link" href="https://api.votehub.com/polls?poll_type=approval&amp;subject=donald-trump&amp;from_date=2026-04-01" target="_blank" rel="noopener noreferrer">VoteHub approval polls</a>
+    <a class="source-link" href="https://api.votehub.com" target="_blank" rel="noopener noreferrer">VoteHub API</a>
+    <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="kalshi-badge">KXAPRPOTUS-26MAY15-40.6</div>
+  <div class="race-header">
+    <div class="race-title">Will the President&#x27;s approval rating be between 40.5 and 40.7 according to RealClearPolitics?</div>
+    <div class="election-date">May 15, 2026</div>
+    <div class="verdict-tag verdict-trade">TRADE</div>
+  </div>
+
+  <div class="context">
+    VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.
+  </div>
+
+  <div class="price-row">
+    <div class="price-box market-box">
+      <div class="price-label">Market</div>
+      <div class="price-value market">20c</div>
+    </div>
+    <div class="delta-box">
+      <div class="delta-label">Edge</div>
+      <div class="delta-value">+15</div>
+    </div>
+    <div class="price-box marcus-box">
+      <div class="price-label">Marcus</div>
+      <div class="price-value marcus">35c</div>
+    </div>
+  </div>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35¢ under the heuristic model. Compared with the current market price of 20¢, the model signals a tradable edge.
+  </div>
+  <div style="margin-top:10px">
+    <a class="source-link" href="https://api.votehub.com/polls?poll_type=approval&amp;subject=donald-trump&amp;from_date=2026-04-01" target="_blank" rel="noopener noreferrer">VoteHub approval polls</a>
+    <a class="source-link" href="https://api.votehub.com" target="_blank" rel="noopener noreferrer">VoteHub API</a>
+    <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="kalshi-badge">KXAPRPOTUS-26MAY15-40.3</div>
+  <div class="race-header">
+    <div class="race-title">Will the President&#x27;s approval rating be between 40.2 and 40.4 according to RealClearPolitics?</div>
+    <div class="election-date">May 15, 2026</div>
+    <div class="verdict-tag verdict-trade">TRADE</div>
+  </div>
+
+  <div class="context">
+    VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.
+  </div>
+
+  <div class="price-row">
+    <div class="price-box market-box">
+      <div class="price-label">Market</div>
+      <div class="price-value market">21c</div>
+    </div>
+    <div class="delta-box">
+      <div class="delta-label">Edge</div>
+      <div class="delta-value">+14</div>
+    </div>
+    <div class="price-box marcus-box">
+      <div class="price-label">Marcus</div>
+      <div class="price-value marcus">35c</div>
+    </div>
+  </div>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35¢ under the heuristic model. Compared with the current market price of 21¢, the model signals a tradable edge.
+  </div>
+  <div style="margin-top:10px">
+    <a class="source-link" href="https://api.votehub.com/polls?poll_type=approval&amp;subject=donald-trump&amp;from_date=2026-04-01" target="_blank" rel="noopener noreferrer">VoteHub approval polls</a>
+    <a class="source-link" href="https://api.votehub.com" target="_blank" rel="noopener noreferrer">VoteHub API</a>
+    <a class="source-link" href="https://api.open.fec.gov/v1" target="_blank" rel="noopener noreferrer">OpenFEC API</a>
+  </div>
+</div>
+
+<div class="footer">Arbiter &nbsp;·&nbsp; Not financial advice &nbsp;·&nbsp; cr: 2026-05-08</div>
+
+</body>
+</html>
