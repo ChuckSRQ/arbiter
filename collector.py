@@ -111,8 +111,9 @@ def fetch_markets_for_series(series_ticker):
 
 
 def _parse_close_date(market):
-    """Parse market close/expiry date. Returns datetime or None."""
-    for field in ("close_time", "expiration_date", "expiry_date"):
+    """Parse market close/expiry date. Prefers expected_expiration_time (election date)
+    over close_time (settlement date) for markets that use different dates."""
+    for field in ("expected_expiration_time", "close_time", "expiration_date", "expiry_date"):
         val = market.get(field)
         if val:
             try:
@@ -203,6 +204,8 @@ def collect():
                 "ticker": ticker,
                 "title": title,
                 "race_title": title,  # engine.py will refine this
+                "candidate_name": m.get("yes_sub_title"),
+                "event_ticker": event_ticker,  # race key for grouping
                 "election_date": close.strftime("%Y-%m-%d"),
                 "series_ticker": series_ticker,
                 "market_price": price,

@@ -7,7 +7,11 @@
 ## [Unreleased] — MVP Development
 
 ### Added
-- `docs/README.md` — project overview, MVP scope, file structure, roadmap
+- `collector.py`, `state.py` — persist Kalshi `event_ticker` and `candidate_name` so multi-contract races can be grouped without losing individual contract tracking.
+- `engine.py` — mayoral race grouping and LA mayor candidate-field analysis keyed by `event_ticker`, with candidate-level Marcus FV, edge, and TRADE/PASS signals written back to each market.
+- `generator.py` — race-level briefing cards for grouped candidate races, including a candidate table instead of one separate card per contract.
+- `output/index.html` — regenerated report showing LA Mayor 2026 as one collapsed 10-candidate race card.
+- `README.md` — project overview, MVP scope, file structure, roadmap
 - `docs/agents.md` — agent roles, handoff protocol, brief specification
 - `docs/currentstate.md` — project state, state machine, decisions made
 - `docs/CHANGELOG.md` — this file
@@ -19,12 +23,14 @@
 - Tasks 8, 10 completed — Hermes cron job (1:30PM ET, `arbiter-daily.py`, WhatsApp delivery), error handling with failure alert
 
 ### Changed
+- `generator.py` — complete market rendering now groups supported multi-contract races by `event_ticker` before paginating cards, so briefing-card count reflects races/cards instead of raw contracts.
+- `README.md`, `docs/currentstate.md`, `docs/CHANGELOG.md`, `docs/agents.md` — documented the race-level grouping behavior and mayoral analysis update.
 - `generator.py` — wrapped CLI execution in try/except; on success prints `Generated {path}` and `Done`, on failure prints `ERROR: generator failed — ...` and exits non-zero.
 - `README.md` — marked Task 6 (first full run), Task 7 (WhatsApp ping), and Task 9 (continuation logic) as **DONE** in roadmap table.
 - `docs/currentstate.md` — checked off Phase 1 "First full pipeline run verified" and "WhatsApp 'Done' ping", checked off Phase 2 continuation logic, and updated in-progress/planned status items.
 - `docs/agents.md` — expanded polling sources from Wikipedia-only to full table (VoteHub API primary, Ballotpedia secondary, RaceToTheWH, Wikipedia, Quinnipiac/Siena, MIT Election Lab, Dave Leip's Atlas). Added OpenFEC API for financial data. Added data quality bar (2 independent sources minimum).
 - `docs/currentstate.md` — updated polling source decision to reflect full source list. Added OpenFEC financial data decision.
-- `docs/README.md` — updated MVP scope to mention polling + financial data. Added data sources list. Updated non-US elections note to include Ballotpedia.
+- `README.md` — updated MVP scope to mention polling + financial data. Added data sources list. Updated non-US elections note to include Ballotpedia.
 - `docs/bugs.md` — added OpenFEC rate limit limitation. Added RealClearPolling browser automation limitation. Updated wishlist with RealClearPolling (tertiary/reserve). Removed Polymarket (PredictIt not integrated).
 - `README.md` — marked Task 3 ("Write Engine (polling)") as DONE in roadmap table.
 - `docs/currentstate.md` — moved engine polling work into Built and checked off Phase 1 engine item.

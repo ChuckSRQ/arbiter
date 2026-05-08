@@ -113,6 +113,147 @@ def _render_card(market):
 </div>"""
 
 
+def _group_by_race(markets):
+    """Group markets by race_key for mayor races, otherwise return individual cards.
+
+    Mayor races (those with a race_key) are grouped into a single race-level card.
+    Non-mayor markets are returned one-per-group (individual card mode).
+    Returns list of groups; each group is a dict:
+      {'type': 'race', 'race_key': ..., 'markets': [...]} or
+      {'type': 'market', 'market': ...}
+    """
+    groups = []
+    seen_race_keys = {}
+
+    for market in markets:
+        race_key = market.get("race_key")
+        if race_key:
+            if race_key not in seen_race_keys:
+                seen_race_keys[race_key] = {
+                    "type": "race",
+                    "race_key": race_key,
+                    "markets": [],
+                }
+                groups.append(seen_race_keys[race_key])
+            seen_race_keys[race_key]["markets"].append(market)
+        else:
+            groups.append({"type": "market", "market": market})
+
+    return groups
+
+
+def _render_race_card(race_key, markets):
+    """Render a race-level card showing all candidate contracts."""
+    if not markets:
+        return ""
+
+    ref = markets[0]
+    context = ref.get("context") or ""
+    analysis = ref.get("analysis") or ""
+    sources = ref.get("sources") or []
+
+    sorted_markets = sorted(markets, key=lambda m: m.get("market_price") or 0, reverse=True)
+
+    rows_html = ""
+    for rank, m in enumerate(sorted_markets, 1):
+        ticker = m.get("ticker", "")
+        title = m.get("title", "")
+        candidate_name = (m.get("candidate_name") or "").strip()
+        if not candidate_name:
+            candidate_name = title
+            for prefix in ("Will ", " win the LA mayoral election?", " win Los Angeles mayor?"):
+                candidate_name = candidate_name.replace(prefix, "")
+            candidate_name = candidate_name.strip()
+        if not candidate_name:
+            candidate_name = ticker
+
+        price = m.get("market_price")
+        delta = m.get("delta")
+        fv = m.get("marcus_fv")
+        verdict = m.get("verdict") or "PASS"
+
+        price_str = f"{price}c" if price is not None else "—"
+        delta_int = int(round(delta)) if delta is not None else 0
+        delta_str = f"+{delta_int}" if delta_int > 0 else str(delta_int)
+        fv_str = f"{fv}c" if fv is not None else "—"
+
+        verdict_class = "verdict-trade" if verdict == "TRADE" else "verdict-pass"
+        delta_style = "" if abs(delta_int) >= 5 else ' style="color:#9CA3AF"'
+
+        rows_html += f"""      <tr class="candidate-row">
+        <td class="candidate-rank">{rank}</td>
+        <td class="candidate-name">{escape(candidate_name)}</td>
+        <td class="candidate-price">{price_str}</td>
+        <td class="candidate-delta"{delta_style}>{delta_str}</td>
+        <td class="candidate-fv">{fv_str}</td>
+        <td><span class="verdict-tag {verdict_class} verdict-sm">{verdict}</span></td>
+      </tr>"""
+
+    source_links = "\n    ".join(_source_anchor(src) for src in sources)
+    source_block = (
+        f'\n  <div style="margin-top:10px">\n    {source_links}\n  </div>'
+        if source_links
+        else '\n  <div style="margin-top:10px"></div>'
+    )
+
+    election_date_str = markets[0].get("election_date", "")
+    date_str = _card_date(election_date_str) if election_date_str else "Election date TBD"
+
+    top_market = sorted_markets[0] if sorted_markets else None
+    if top_market:
+        top_title = top_market.get("title", "")
+        top_name = (top_market.get("candidate_name") or "").strip()
+        if not top_name:
+            top_name = top_title
+            for prefix in ("Will ", " win the LA mayoral election?", " win Los Angeles mayor?"):
+                top_name = top_name.replace(prefix, "")
+            top_name = top_name.strip()
+        if not top_name:
+            top_name = top_market.get("ticker", "Unknown")
+        top_price = top_market.get("market_price", 0)
+        top_delta = top_market.get("delta", 0)
+        leading_signal = (
+            f"Leading: {top_name} at {top_price}c "
+            f"({'+' if top_delta >= 0 else ''}{int(round(top_delta))} edge)"
+        )
+    else:
+        leading_signal = ""
+
+    return f"""<div class="card race-card">
+  <div class="kalshi-badge">{escape(race_key.upper())}</div>
+  <div class="race-header">
+    <div class="race-title">{escape(ref.get("race_title") or ref.get("title", "Mayoral Race"))}</div>
+    <div class="election-date">{date_str} &nbsp;·&nbsp; {len(markets)} candidates</div>
+    <div class="leading-signal">{escape(leading_signal)}</div>
+  </div>
+
+  <div class="context">
+    {escape(context)}
+  </div>
+
+  <table class="candidates-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Candidate</th>
+        <th>Price</th>
+        <th>Edge</th>
+        <th>FV</th>
+        <th>Signal</th>
+      </tr>
+    </thead>
+    <tbody>
+{rows_html}
+    </tbody>
+  </table>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    {escape(analysis)}
+  </div>{source_block}
+</div>"""
+
+
 def _chunked(items, size):
     return [items[index : index + size] for index in range(0, len(items), size)]
 
@@ -120,8 +261,16 @@ def _chunked(items, size):
 def generate():
     state = read_state()
     markets = get_complete(state)
+    groups = _group_by_race(markets)
     today = datetime.now()
-    market_pages = _chunked(markets, 3)
+
+    def to_card(g):
+        if g["type"] == "race":
+            return _render_race_card(g["race_key"], g["markets"])
+        return _render_card(g["market"])
+
+    card_count = sum(1 for g in groups if g["type"] == "market") + len([g for g in groups if g["type"] == "race"])
+    market_pages = _chunked(groups, 3)
     if not market_pages:
         market_pages = [[]]
 
@@ -147,7 +296,7 @@ def generate():
     page_blocks = []
     for index, page in enumerate(market_pages):
         page_num = index + 1
-        cards_html = "\n        ".join(_render_card(market) for market in page)
+        cards_html = "\n        ".join(to_card(g) for g in page)
         if not cards_html:
             cards_html = '<div class="empty-state">No complete briefs available.</div>'
         page_blocks.append(
@@ -476,13 +625,91 @@ def generate():
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }}
+
+  .race-card {{
+    width: min(100%, 460px);
+  }}
+
+  .leading-signal {{
+    font-size: 12px;
+    color: #FCD34D;
+    font-weight: 600;
+    margin-top: 4px;
+    letter-spacing: 0.03em;
+  }}
+
+  .candidates-table {{
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 14px;
+    font-size: 14px;
+  }}
+
+  .candidates-table th {{
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #64748B;
+    padding: 4px 6px;
+    text-align: left;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+  }}
+
+  .candidates-table th:nth-child(n+3) {{
+    text-align: right;
+  }}
+
+  .candidate-row td {{
+    padding: 6px 6px;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.08);
+    color: #CBD5E1;
+  }}
+
+  .candidate-row:last-child td {{
+    border-bottom: none;
+  }}
+
+  .candidate-rank {{
+    color: #475569;
+    font-weight: 600;
+    font-size: 12px;
+    width: 20px;
+  }}
+
+  .candidate-name {{
+    font-weight: 600;
+    color: #E2E8F0;
+  }}
+
+  .candidate-price {{
+    text-align: right;
+    color: #93C5FD;
+    font-weight: 700;
+  }}
+
+  .candidate-delta {{
+    text-align: right;
+    color: #FDE68A;
+    font-weight: 700;
+  }}
+
+  .candidate-fv {{
+    text-align: right;
+    color: #94A3B8;
+  }}
+
+  .verdict-sm {{
+    font-size: 9px;
+    padding: 2px 7px;
+  }}
 </style>
 </head>
 <body>
 
 <div class="header-bar">
   <div class="header-title">Arbiter Political Briefing <span class="watch-indicator">● Live</span></div>
-  <div class="header-date">{escape(_header_date(today))} &nbsp;·&nbsp; {len(markets)} elections tracked</div>
+  <div class="header-date">{escape(_header_date(today))} &nbsp;·&nbsp; {card_count} races tracked</div>
 </div>
 
 <main class="report-shell">

@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-05-08T15:27:05.371448+00:00",
+  "last_run": "2026-05-08T19:01:48.192369+00:00",
   "markets": [
     {
       "ticker": "KXGENERICBALLOTVOTEHUB-26MAY15-T5.8",
@@ -7,15 +7,32 @@
       "race_title": "Above 5.8%",
       "election_date": "2026-05-15",
       "series_ticker": "KXGENERICBALLOTVOTEHUB",
-      "status": "discovered",
+      "status": "complete",
       "market_price": 56,
-      "marcus_fv": null,
-      "delta": null,
-      "verdict": null,
-      "context": null,
-      "analysis": null,
-      "sources": [],
-      "financials": null,
+      "marcus_fv": 10,
+      "delta": -46,
+      "verdict": "TRADE",
+      "context": "VoteHub generic ballot polling (last 5 polls) shows Democrats at 44.4% and Republicans at 42.2%, a Democratic spread of 2.2 points on average. Recent spread readings vary by 3.0 points across the sample.",
+      "analysis": "Marcus applies the same bracket heuristic to the Democratic spread and estimates fair value at 10\u00a2 for this binary market. Versus the current price of 56\u00a2, the model implies a tradable edge.",
+      "sources": [
+        {
+          "label": "VoteHub generic ballot polls",
+          "url": "https://api.votehub.com/polls?poll_type=generic-ballot&subject=2026"
+        },
+        {
+          "label": "VoteHub API",
+          "url": "https://api.votehub.com"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "note": "National-level market \u2014 no candidate-specific financials",
+        "source": "OpenFEC",
+        "url": "https://api.open.fec.gov/v1"
+      },
       "no_market_reason": null
     },
     {
@@ -24,15 +41,32 @@
       "race_title": "Will the President's approval rating be above 41.6 according to RealClearPolitics?",
       "election_date": "2026-05-15",
       "series_ticker": "KXAPRPOTUS",
-      "status": "discovered",
+      "status": "complete",
       "market_price": 2,
-      "marcus_fv": null,
-      "delta": null,
-      "verdict": null,
-      "context": null,
-      "analysis": null,
-      "sources": [],
-      "financials": null,
+      "marcus_fv": 35,
+      "delta": 33,
+      "verdict": "TRADE",
+      "context": "VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.",
+      "analysis": "This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35\u00a2 under the heuristic model. Compared with the current market price of 2\u00a2, the model signals a tradable edge.",
+      "sources": [
+        {
+          "label": "VoteHub approval polls",
+          "url": "https://api.votehub.com/polls?poll_type=approval&subject=donald-trump&from_date=2026-04-01"
+        },
+        {
+          "label": "VoteHub API",
+          "url": "https://api.votehub.com"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "note": "National-level market \u2014 no candidate-specific financials",
+        "source": "OpenFEC",
+        "url": "https://api.open.fec.gov/v1"
+      },
       "no_market_reason": null
     },
     {
@@ -41,15 +75,32 @@
       "race_title": "Will the President's approval rating be between 41.4 and 41.6 according to RealClearPolitics?",
       "election_date": "2026-05-15",
       "series_ticker": "KXAPRPOTUS",
-      "status": "discovered",
+      "status": "complete",
       "market_price": 2,
-      "marcus_fv": null,
-      "delta": null,
-      "verdict": null,
-      "context": null,
-      "analysis": null,
-      "sources": [],
-      "financials": null,
+      "marcus_fv": 35,
+      "delta": 33,
+      "verdict": "TRADE",
+      "context": "VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.",
+      "analysis": "This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35\u00a2 under the heuristic model. Compared with the current market price of 2\u00a2, the model signals a tradable edge.",
+      "sources": [
+        {
+          "label": "VoteHub approval polls",
+          "url": "https://api.votehub.com/polls?poll_type=approval&subject=donald-trump&from_date=2026-04-01"
+        },
+        {
+          "label": "VoteHub API",
+          "url": "https://api.votehub.com"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "note": "National-level market \u2014 no candidate-specific financials",
+        "source": "OpenFEC",
+        "url": "https://api.open.fec.gov/v1"
+      },
       "no_market_reason": null
     },
     {
@@ -58,15 +109,32 @@
       "race_title": "Will the President's approval rating be between 41.1 and 41.3 according to RealClearPolitics?",
       "election_date": "2026-05-15",
       "series_ticker": "KXAPRPOTUS",
-      "status": "discovered",
+      "status": "complete",
       "market_price": 2,
-      "marcus_fv": null,
-      "delta": null,
-      "verdict": null,
-      "context": null,
-      "analysis": null,
-      "sources": [],
-      "financials": null,
+      "marcus_fv": 35,
+      "delta": 33,
+      "verdict": "TRADE",
+      "context": "VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.",
+      "analysis": "This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35\u00a2 under the heuristic model. Compared with the current market price of 2\u00a2, the model signals a tradable edge.",
+      "sources": [
+        {
+          "label": "VoteHub approval polls",
+          "url": "https://api.votehub.com/polls?poll_type=approval&subject=donald-trump&from_date=2026-04-01"
+        },
+        {
+          "label": "VoteHub API",
+          "url": "https://api.votehub.com"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "note": "National-level market \u2014 no candidate-specific financials",
+        "source": "OpenFEC",
+        "url": "https://api.open.fec.gov/v1"
+      },
       "no_market_reason": null
     },
     {
@@ -75,15 +143,32 @@
       "race_title": "Will the President's approval rating be between 40.8 and 41.0 according to RealClearPolitics?",
       "election_date": "2026-05-15",
       "series_ticker": "KXAPRPOTUS",
-      "status": "discovered",
+      "status": "complete",
       "market_price": 17,
-      "marcus_fv": null,
-      "delta": null,
-      "verdict": null,
-      "context": null,
-      "analysis": null,
-      "sources": [],
-      "financials": null,
+      "marcus_fv": 35,
+      "delta": 18,
+      "verdict": "TRADE",
+      "context": "VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.",
+      "analysis": "This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35\u00a2 under the heuristic model. Compared with the current market price of 17\u00a2, the model signals a tradable edge.",
+      "sources": [
+        {
+          "label": "VoteHub approval polls",
+          "url": "https://api.votehub.com/polls?poll_type=approval&subject=donald-trump&from_date=2026-04-01"
+        },
+        {
+          "label": "VoteHub API",
+          "url": "https://api.votehub.com"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "note": "National-level market \u2014 no candidate-specific financials",
+        "source": "OpenFEC",
+        "url": "https://api.open.fec.gov/v1"
+      },
       "no_market_reason": null
     },
     {
@@ -92,15 +177,32 @@
       "race_title": "Will the President's approval rating be between 40.5 and 40.7 according to RealClearPolitics?",
       "election_date": "2026-05-15",
       "series_ticker": "KXAPRPOTUS",
-      "status": "discovered",
+      "status": "complete",
       "market_price": 20,
-      "marcus_fv": null,
-      "delta": null,
-      "verdict": null,
-      "context": null,
-      "analysis": null,
-      "sources": [],
-      "financials": null,
+      "marcus_fv": 35,
+      "delta": 15,
+      "verdict": "TRADE",
+      "context": "VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.",
+      "analysis": "This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35\u00a2 under the heuristic model. Compared with the current market price of 20\u00a2, the model signals a tradable edge.",
+      "sources": [
+        {
+          "label": "VoteHub approval polls",
+          "url": "https://api.votehub.com/polls?poll_type=approval&subject=donald-trump&from_date=2026-04-01"
+        },
+        {
+          "label": "VoteHub API",
+          "url": "https://api.votehub.com"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "note": "National-level market \u2014 no candidate-specific financials",
+        "source": "OpenFEC",
+        "url": "https://api.open.fec.gov/v1"
+      },
       "no_market_reason": null
     },
     {
@@ -109,15 +211,32 @@
       "race_title": "Will the President's approval rating be between 40.2 and 40.4 according to RealClearPolitics?",
       "election_date": "2026-05-15",
       "series_ticker": "KXAPRPOTUS",
-      "status": "discovered",
+      "status": "complete",
       "market_price": 21,
-      "marcus_fv": null,
-      "delta": null,
-      "verdict": null,
-      "context": null,
-      "analysis": null,
-      "sources": [],
-      "financials": null,
+      "marcus_fv": 35,
+      "delta": 14,
+      "verdict": "TRADE",
+      "context": "VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.",
+      "analysis": "This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35\u00a2 under the heuristic model. Compared with the current market price of 21\u00a2, the model signals a tradable edge.",
+      "sources": [
+        {
+          "label": "VoteHub approval polls",
+          "url": "https://api.votehub.com/polls?poll_type=approval&subject=donald-trump&from_date=2026-04-01"
+        },
+        {
+          "label": "VoteHub API",
+          "url": "https://api.votehub.com"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "note": "National-level market \u2014 no candidate-specific financials",
+        "source": "OpenFEC",
+        "url": "https://api.open.fec.gov/v1"
+      },
       "no_market_reason": null
     },
     {
@@ -126,15 +245,32 @@
       "race_title": "Will the President's approval rating be between 39.9 and 40.1 according to RealClearPolitics?",
       "election_date": "2026-05-15",
       "series_ticker": "KXAPRPOTUS",
-      "status": "discovered",
+      "status": "complete",
       "market_price": 15,
-      "marcus_fv": null,
-      "delta": null,
-      "verdict": null,
-      "context": null,
-      "analysis": null,
-      "sources": [],
-      "financials": null,
+      "marcus_fv": 35,
+      "delta": 20,
+      "verdict": "TRADE",
+      "context": "VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.",
+      "analysis": "This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35\u00a2 under the heuristic model. Compared with the current market price of 15\u00a2, the model signals a tradable edge.",
+      "sources": [
+        {
+          "label": "VoteHub approval polls",
+          "url": "https://api.votehub.com/polls?poll_type=approval&subject=donald-trump&from_date=2026-04-01"
+        },
+        {
+          "label": "VoteHub API",
+          "url": "https://api.votehub.com"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "note": "National-level market \u2014 no candidate-specific financials",
+        "source": "OpenFEC",
+        "url": "https://api.open.fec.gov/v1"
+      },
       "no_market_reason": null
     },
     {
@@ -143,15 +279,426 @@
       "race_title": "Will the President's approval rating be below 39.9 according to RealClearPolitics?",
       "election_date": "2026-05-15",
       "series_ticker": "KXAPRPOTUS",
-      "status": "discovered",
+      "status": "complete",
       "market_price": 4,
-      "marcus_fv": null,
-      "delta": null,
-      "verdict": null,
-      "context": null,
-      "analysis": null,
-      "sources": [],
-      "financials": null,
+      "marcus_fv": 35,
+      "delta": 31,
+      "verdict": "TRADE",
+      "context": "VoteHub approval polling (last 5 polls) shows average approval at 40.4% and disapproval at 56.6%. Recent approval readings span a 8.0-point range, indicating the current noise band.",
+      "analysis": "This market resolves on a binary threshold from the listed bracket, and Marcus maps the current polling level to an estimated fair value of 35\u00a2 under the heuristic model. Compared with the current market price of 4\u00a2, the model signals a tradable edge.",
+      "sources": [
+        {
+          "label": "VoteHub approval polls",
+          "url": "https://api.votehub.com/polls?poll_type=approval&subject=donald-trump&from_date=2026-04-01"
+        },
+        {
+          "label": "VoteHub API",
+          "url": "https://api.votehub.com"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "note": "National-level market \u2014 no candidate-specific financials",
+        "source": "OpenFEC",
+        "url": "https://api.open.fec.gov/v1"
+      },
+      "no_market_reason": null
+    },
+    {
+      "ticker": "KXMAYORLA-26-AMIL",
+      "title": "Who will win Los Angeles Mayoral Election?",
+      "race_title": "Who will win Los Angeles Mayoral Election?",
+      "election_date": "2026-06-02",
+      "series_ticker": "KXMAYORLA",
+      "status": "complete",
+      "market_price": 0,
+      "marcus_fv": 8,
+      "delta": 8,
+      "verdict": "TRADE",
+      "context": "LA Mayor race polling (Race to the WH average, April 2026) shows Karen Bass leading at 23%, followed by Nithya Raman (13%) and Spencer Pratt (12%). 42% of voters remain undecided. The primary is June 2, 2026 \u2014 10 candidate contracts active. Fundraising: Bass $28.5M, Miller $27.2M.",
+      "analysis": "Marcus evaluates the full race field. Leading candidate Karen Bass (FV 31\u00a2) is still below majority support, so the model treats this as a volatile top-two/runoff race rather than a clean incumbent lock. Contracts with large poll-to-price gaps represent edge. Note: 42% undecided/other voters make this race volatile \u2014 a runoff is likely (top two vote-getters advance to November).",
+      "sources": [
+        {
+          "label": "Race to the WH \u2014 LA Mayor polling",
+          "url": "https://www.racetothewh.com/mayor/losangeles"
+        },
+        {
+          "label": "UCLA Luskin Poll (March 2026)",
+          "url": "https://luskin.ucla.edu/volatility-ahead-in-la-mayors-race-ucla-luskin-poll-finds-40-of-voters-undecided"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "error": "OpenFEC fetch failed",
+        "source": "OpenFEC"
+      },
+      "no_market_reason": null,
+      "event_ticker": "KXMAYORLA-26",
+      "race_key": "KXMAYORLA-26",
+      "candidate_name": "Adam Miller"
+    },
+    {
+      "ticker": "KXMAYORLA-26-NRAM",
+      "title": "Who will win Los Angeles Mayoral Election?",
+      "race_title": "Who will win Los Angeles Mayoral Election?",
+      "election_date": "2026-06-02",
+      "series_ticker": "KXMAYORLA",
+      "status": "complete",
+      "market_price": 20,
+      "marcus_fv": 20,
+      "delta": 0,
+      "verdict": "PASS",
+      "context": "LA Mayor race polling (Race to the WH average, April 2026) shows Karen Bass leading at 23%, followed by Nithya Raman (13%) and Spencer Pratt (12%). 42% of voters remain undecided. The primary is June 2, 2026 \u2014 10 candidate contracts active. Fundraising: Bass $28.5M, Miller $27.2M.",
+      "analysis": "Marcus evaluates the full race field. Leading candidate Karen Bass (FV 31\u00a2) is still below majority support, so the model treats this as a volatile top-two/runoff race rather than a clean incumbent lock. Contracts with large poll-to-price gaps represent edge. Note: 42% undecided/other voters make this race volatile \u2014 a runoff is likely (top two vote-getters advance to November).",
+      "sources": [
+        {
+          "label": "Race to the WH \u2014 LA Mayor polling",
+          "url": "https://www.racetothewh.com/mayor/losangeles"
+        },
+        {
+          "label": "UCLA Luskin Poll (March 2026)",
+          "url": "https://luskin.ucla.edu/volatility-ahead-in-la-mayors-race-ucla-luskin-poll-finds-40-of-voters-undecided"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "error": "OpenFEC fetch failed",
+        "source": "OpenFEC"
+      },
+      "no_market_reason": null,
+      "event_ticker": "KXMAYORLA-26",
+      "race_key": "KXMAYORLA-26",
+      "candidate_name": "Nithya Raman"
+    },
+    {
+      "ticker": "KXMAYORLA-26-ABEU",
+      "title": "Who will win Los Angeles Mayoral Election?",
+      "race_title": "Who will win Los Angeles Mayoral Election?",
+      "election_date": "2026-06-02",
+      "series_ticker": "KXMAYORLA",
+      "status": "complete",
+      "market_price": 0,
+      "marcus_fv": 3,
+      "delta": 3,
+      "verdict": "PASS",
+      "context": "LA Mayor race polling (Race to the WH average, April 2026) shows Karen Bass leading at 23%, followed by Nithya Raman (13%) and Spencer Pratt (12%). 42% of voters remain undecided. The primary is June 2, 2026 \u2014 10 candidate contracts active. Fundraising: Bass $28.5M, Miller $27.2M.",
+      "analysis": "Marcus evaluates the full race field. Leading candidate Karen Bass (FV 31\u00a2) is still below majority support, so the model treats this as a volatile top-two/runoff race rather than a clean incumbent lock. Contracts with large poll-to-price gaps represent edge. Note: 42% undecided/other voters make this race volatile \u2014 a runoff is likely (top two vote-getters advance to November).",
+      "sources": [
+        {
+          "label": "Race to the WH \u2014 LA Mayor polling",
+          "url": "https://www.racetothewh.com/mayor/losangeles"
+        },
+        {
+          "label": "UCLA Luskin Poll (March 2026)",
+          "url": "https://luskin.ucla.edu/volatility-ahead-in-la-mayors-race-ucla-luskin-poll-finds-40-of-voters-undecided"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "error": "OpenFEC fetch failed",
+        "source": "OpenFEC"
+      },
+      "no_market_reason": null,
+      "event_ticker": "KXMAYORLA-26",
+      "race_key": "KXMAYORLA-26",
+      "candidate_name": "Austin Beutner"
+    },
+    {
+      "ticker": "KXMAYORLA-26-SPRA",
+      "title": "Who will win Los Angeles Mayoral Election?",
+      "race_title": "Who will win Los Angeles Mayoral Election?",
+      "election_date": "2026-06-02",
+      "series_ticker": "KXMAYORLA",
+      "status": "complete",
+      "market_price": 26,
+      "marcus_fv": 16,
+      "delta": -10,
+      "verdict": "TRADE",
+      "context": "LA Mayor race polling (Race to the WH average, April 2026) shows Karen Bass leading at 23%, followed by Nithya Raman (13%) and Spencer Pratt (12%). 42% of voters remain undecided. The primary is June 2, 2026 \u2014 10 candidate contracts active. Fundraising: Bass $28.5M, Miller $27.2M.",
+      "analysis": "Marcus evaluates the full race field. Leading candidate Karen Bass (FV 31\u00a2) is still below majority support, so the model treats this as a volatile top-two/runoff race rather than a clean incumbent lock. Contracts with large poll-to-price gaps represent edge. Note: 42% undecided/other voters make this race volatile \u2014 a runoff is likely (top two vote-getters advance to November).",
+      "sources": [
+        {
+          "label": "Race to the WH \u2014 LA Mayor polling",
+          "url": "https://www.racetothewh.com/mayor/losangeles"
+        },
+        {
+          "label": "UCLA Luskin Poll (March 2026)",
+          "url": "https://luskin.ucla.edu/volatility-ahead-in-la-mayors-race-ucla-luskin-poll-finds-40-of-voters-undecided"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "error": "OpenFEC fetch failed",
+        "source": "OpenFEC"
+      },
+      "no_market_reason": null,
+      "event_ticker": "KXMAYORLA-26",
+      "race_key": "KXMAYORLA-26",
+      "candidate_name": "Spencer Pratt"
+    },
+    {
+      "ticker": "KXMAYORLA-26-RHUA",
+      "title": "Who will win Los Angeles Mayoral Election?",
+      "race_title": "Who will win Los Angeles Mayoral Election?",
+      "election_date": "2026-06-02",
+      "series_ticker": "KXMAYORLA",
+      "status": "complete",
+      "market_price": 1,
+      "marcus_fv": 8,
+      "delta": 7,
+      "verdict": "TRADE",
+      "context": "LA Mayor race polling (Race to the WH average, April 2026) shows Karen Bass leading at 23%, followed by Nithya Raman (13%) and Spencer Pratt (12%). 42% of voters remain undecided. The primary is June 2, 2026 \u2014 10 candidate contracts active. Fundraising: Bass $28.5M, Miller $27.2M.",
+      "analysis": "Marcus evaluates the full race field. Leading candidate Karen Bass (FV 31\u00a2) is still below majority support, so the model treats this as a volatile top-two/runoff race rather than a clean incumbent lock. Contracts with large poll-to-price gaps represent edge. Note: 42% undecided/other voters make this race volatile \u2014 a runoff is likely (top two vote-getters advance to November).",
+      "sources": [
+        {
+          "label": "Race to the WH \u2014 LA Mayor polling",
+          "url": "https://www.racetothewh.com/mayor/losangeles"
+        },
+        {
+          "label": "UCLA Luskin Poll (March 2026)",
+          "url": "https://luskin.ucla.edu/volatility-ahead-in-la-mayors-race-ucla-luskin-poll-finds-40-of-voters-undecided"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "error": "OpenFEC fetch failed",
+        "source": "OpenFEC"
+      },
+      "no_market_reason": null,
+      "event_ticker": "KXMAYORLA-26",
+      "race_key": "KXMAYORLA-26",
+      "candidate_name": "Rae Huang"
+    },
+    {
+      "ticker": "KXMAYORLA-26-VWAL",
+      "title": "Who will win Los Angeles Mayoral Election?",
+      "race_title": "Who will win Los Angeles Mayoral Election?",
+      "election_date": "2026-06-02",
+      "series_ticker": "KXMAYORLA",
+      "status": "complete",
+      "market_price": 0,
+      "marcus_fv": 3,
+      "delta": 3,
+      "verdict": "PASS",
+      "context": "LA Mayor race polling (Race to the WH average, April 2026) shows Karen Bass leading at 23%, followed by Nithya Raman (13%) and Spencer Pratt (12%). 42% of voters remain undecided. The primary is June 2, 2026 \u2014 10 candidate contracts active. Fundraising: Bass $28.5M, Miller $27.2M.",
+      "analysis": "Marcus evaluates the full race field. Leading candidate Karen Bass (FV 31\u00a2) is still below majority support, so the model treats this as a volatile top-two/runoff race rather than a clean incumbent lock. Contracts with large poll-to-price gaps represent edge. Note: 42% undecided/other voters make this race volatile \u2014 a runoff is likely (top two vote-getters advance to November).",
+      "sources": [
+        {
+          "label": "Race to the WH \u2014 LA Mayor polling",
+          "url": "https://www.racetothewh.com/mayor/losangeles"
+        },
+        {
+          "label": "UCLA Luskin Poll (March 2026)",
+          "url": "https://luskin.ucla.edu/volatility-ahead-in-la-mayors-race-ucla-luskin-poll-finds-40-of-voters-undecided"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "error": "OpenFEC fetch failed",
+        "source": "OpenFEC"
+      },
+      "no_market_reason": null,
+      "event_ticker": "KXMAYORLA-26",
+      "race_key": "KXMAYORLA-26",
+      "candidate_name": "Vincent Wali"
+    },
+    {
+      "ticker": "KXMAYORLA-26-GVIO",
+      "title": "Who will win Los Angeles Mayoral Election?",
+      "race_title": "Who will win Los Angeles Mayoral Election?",
+      "election_date": "2026-06-02",
+      "series_ticker": "KXMAYORLA",
+      "status": "complete",
+      "market_price": 0,
+      "marcus_fv": 3,
+      "delta": 3,
+      "verdict": "PASS",
+      "context": "LA Mayor race polling (Race to the WH average, April 2026) shows Karen Bass leading at 23%, followed by Nithya Raman (13%) and Spencer Pratt (12%). 42% of voters remain undecided. The primary is June 2, 2026 \u2014 10 candidate contracts active. Fundraising: Bass $28.5M, Miller $27.2M.",
+      "analysis": "Marcus evaluates the full race field. Leading candidate Karen Bass (FV 31\u00a2) is still below majority support, so the model treats this as a volatile top-two/runoff race rather than a clean incumbent lock. Contracts with large poll-to-price gaps represent edge. Note: 42% undecided/other voters make this race volatile \u2014 a runoff is likely (top two vote-getters advance to November).",
+      "sources": [
+        {
+          "label": "Race to the WH \u2014 LA Mayor polling",
+          "url": "https://www.racetothewh.com/mayor/losangeles"
+        },
+        {
+          "label": "UCLA Luskin Poll (March 2026)",
+          "url": "https://luskin.ucla.edu/volatility-ahead-in-la-mayors-race-ucla-luskin-poll-finds-40-of-voters-undecided"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "error": "OpenFEC fetch failed",
+        "source": "OpenFEC"
+      },
+      "no_market_reason": null,
+      "event_ticker": "KXMAYORLA-26",
+      "race_key": "KXMAYORLA-26",
+      "candidate_name": "Gina Viola"
+    },
+    {
+      "ticker": "KXMAYORLA-26-RCAR",
+      "title": "Who will win Los Angeles Mayoral Election?",
+      "race_title": "Who will win Los Angeles Mayoral Election?",
+      "election_date": "2026-06-02",
+      "series_ticker": "KXMAYORLA",
+      "status": "complete",
+      "market_price": 0,
+      "marcus_fv": 3,
+      "delta": 3,
+      "verdict": "PASS",
+      "context": "LA Mayor race polling (Race to the WH average, April 2026) shows Karen Bass leading at 23%, followed by Nithya Raman (13%) and Spencer Pratt (12%). 42% of voters remain undecided. The primary is June 2, 2026 \u2014 10 candidate contracts active. Fundraising: Bass $28.5M, Miller $27.2M.",
+      "analysis": "Marcus evaluates the full race field. Leading candidate Karen Bass (FV 31\u00a2) is still below majority support, so the model treats this as a volatile top-two/runoff race rather than a clean incumbent lock. Contracts with large poll-to-price gaps represent edge. Note: 42% undecided/other voters make this race volatile \u2014 a runoff is likely (top two vote-getters advance to November).",
+      "sources": [
+        {
+          "label": "Race to the WH \u2014 LA Mayor polling",
+          "url": "https://www.racetothewh.com/mayor/losangeles"
+        },
+        {
+          "label": "UCLA Luskin Poll (March 2026)",
+          "url": "https://luskin.ucla.edu/volatility-ahead-in-la-mayors-race-ucla-luskin-poll-finds-40-of-voters-undecided"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "error": "OpenFEC fetch failed",
+        "source": "OpenFEC"
+      },
+      "no_market_reason": null,
+      "event_ticker": "KXMAYORLA-26",
+      "race_key": "KXMAYORLA-26",
+      "candidate_name": "Rick Caruso"
+    },
+    {
+      "ticker": "KXMAYORLA-26-KBAS",
+      "title": "Who will win Los Angeles Mayoral Election?",
+      "race_title": "Who will win Los Angeles Mayoral Election?",
+      "election_date": "2026-06-02",
+      "series_ticker": "KXMAYORLA",
+      "status": "complete",
+      "market_price": 49,
+      "marcus_fv": 31,
+      "delta": -18,
+      "verdict": "TRADE",
+      "context": "LA Mayor race polling (Race to the WH average, April 2026) shows Karen Bass leading at 23%, followed by Nithya Raman (13%) and Spencer Pratt (12%). 42% of voters remain undecided. The primary is June 2, 2026 \u2014 10 candidate contracts active. Fundraising: Bass $28.5M, Miller $27.2M.",
+      "analysis": "Marcus evaluates the full race field. Leading candidate Karen Bass (FV 31\u00a2) is still below majority support, so the model treats this as a volatile top-two/runoff race rather than a clean incumbent lock. Contracts with large poll-to-price gaps represent edge. Note: 42% undecided/other voters make this race volatile \u2014 a runoff is likely (top two vote-getters advance to November).",
+      "sources": [
+        {
+          "label": "Race to the WH \u2014 LA Mayor polling",
+          "url": "https://www.racetothewh.com/mayor/losangeles"
+        },
+        {
+          "label": "UCLA Luskin Poll (March 2026)",
+          "url": "https://luskin.ucla.edu/volatility-ahead-in-la-mayors-race-ucla-luskin-poll-finds-40-of-voters-undecided"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "error": "OpenFEC fetch failed",
+        "source": "OpenFEC"
+      },
+      "no_market_reason": null,
+      "event_ticker": "KXMAYORLA-26",
+      "race_key": "KXMAYORLA-26",
+      "candidate_name": "Karen Bass"
+    },
+    {
+      "ticker": "KXMAYORLA-26-AALN",
+      "title": "Who will win Los Angeles Mayoral Election?",
+      "race_title": "Who will win Los Angeles Mayoral Election?",
+      "election_date": "2026-06-02",
+      "series_ticker": "KXMAYORLA",
+      "status": "complete",
+      "market_price": 0,
+      "marcus_fv": 3,
+      "delta": 3,
+      "verdict": "PASS",
+      "context": "LA Mayor race polling (Race to the WH average, April 2026) shows Karen Bass leading at 23%, followed by Nithya Raman (13%) and Spencer Pratt (12%). 42% of voters remain undecided. The primary is June 2, 2026 \u2014 10 candidate contracts active. Fundraising: Bass $28.5M, Miller $27.2M.",
+      "analysis": "Marcus evaluates the full race field. Leading candidate Karen Bass (FV 31\u00a2) is still below majority support, so the model treats this as a volatile top-two/runoff race rather than a clean incumbent lock. Contracts with large poll-to-price gaps represent edge. Note: 42% undecided/other voters make this race volatile \u2014 a runoff is likely (top two vote-getters advance to November).",
+      "sources": [
+        {
+          "label": "Race to the WH \u2014 LA Mayor polling",
+          "url": "https://www.racetothewh.com/mayor/losangeles"
+        },
+        {
+          "label": "UCLA Luskin Poll (March 2026)",
+          "url": "https://luskin.ucla.edu/volatility-ahead-in-la-mayors-race-ucla-luskin-poll-finds-40-of-voters-undecided"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "error": "OpenFEC fetch failed",
+        "source": "OpenFEC"
+      },
+      "no_market_reason": null,
+      "event_ticker": "KXMAYORLA-26",
+      "race_key": "KXMAYORLA-26",
+      "candidate_name": "Asaad Alnajjar"
+    },
+    {
+      "ticker": "KXGENERICBALLOT-26APR03-T5.3",
+      "title": "Will the VoteHub 2026 generic ballot margin (D \u2212 R), time-weighted be above 5.3 on Apr 3, 2026 at 10:00 AM ET?",
+      "race_title": "Will the VoteHub 2026 generic ballot margin (D \u2212 R), time-weighted be above 5.3 on Apr 3, 2026 at 10:00 AM ET?",
+      "election_date": "2026-07-02",
+      "series_ticker": "KXGENERICBALLOT",
+      "status": "complete",
+      "market_price": 0,
+      "marcus_fv": 10,
+      "delta": 10,
+      "verdict": "TRADE",
+      "context": "VoteHub generic ballot polling (last 5 polls) shows Democrats at 44.4% and Republicans at 42.2%, a Democratic spread of 2.2 points on average. Recent spread readings vary by 3.0 points across the sample.",
+      "analysis": "Marcus applies the same bracket heuristic to the Democratic spread and estimates fair value at 10\u00a2 for this binary market. Versus the current price of 0\u00a2, the model implies a tradable edge.",
+      "sources": [
+        {
+          "label": "VoteHub generic ballot polls",
+          "url": "https://api.votehub.com/polls?poll_type=generic-ballot&subject=2026"
+        },
+        {
+          "label": "VoteHub API",
+          "url": "https://api.votehub.com"
+        },
+        {
+          "label": "OpenFEC API",
+          "url": "https://api.open.fec.gov/v1"
+        }
+      ],
+      "financials": {
+        "note": "National-level market \u2014 no candidate-specific financials",
+        "source": "OpenFEC",
+        "url": "https://api.open.fec.gov/v1"
+      },
       "no_market_reason": null
     }
   ]
