@@ -1,42 +1,53 @@
 @import "tailwindcss";
 
 :root {
-  --background: #090b22;
-  --foreground: #f7f1e6;
+  --color-primary: #0D0F1A;
+  --color-secondary: #141828;
+  --color-surface: #05081A;
+  --color-blue: #3B82F6;
+  --color-blue-light: #93C5FD;
+  --color-blue-label: #60A5FA;
+  --color-amber: #FBBF24;
+  --color-amber-light: #FDE68A;
+  --color-amber-label: #FCD34D;
+  --color-body: #E8E4DC;
+  --color-heading: #F1F5F9;
+  --color-green: #6EE7B7;
+  --color-red: #FB7185;
+  --rounded-lg: 20px;
+  --rounded-md: 12px;
+  --rounded-sm: 6px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html {
-  background: var(--background);
+  background: var(--color-primary);
   scroll-behavior: smooth;
 }
 
 body {
-  margin: 0;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  background-image:
-    radial-gradient(circle at top, rgba(59, 130, 196, 0.2), transparent 38%),
-    linear-gradient(180deg, #11163d 0%, #090b22 45%, #070819 100%);
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
+  background: var(--color-primary);
+  color: var(--color-body);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100dvh;
 }
 
 ::selection {
   background: rgba(59, 130, 196, 0.35);
   color: #fff8ec;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
 }
