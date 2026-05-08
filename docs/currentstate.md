@@ -53,7 +53,7 @@ discovered → analyzing → complete
 
 **Phase 1 — Core Pipeline (now)**
 - [ ] `collector.py` — authenticated Kalshi API, ≤60d political markets, state write
-- [ ] `engine.py` — Wikipedia polling fetch, FV calculation, verdict, full brief JSON
+- [ ] `engine.py` — VoteHub API + Ballotpedia polling fetch, FV calculation, verdict, full brief JSON
 - [ ] `state/analysis.json` — schema + read/write functions
 - [ ] `generator.py` — index.html from brief JSON, artifact design
 - [ ] `output/index.html` — first generated report
@@ -64,15 +64,9 @@ discovered → analyzing → complete
 - [ ] Continuation logic (don't restart analysis from scratch)
 - [ ] Error handling with WhatsApp failure alert
 
-**Phase 3 — Deployment (roadmap only, not in MVP)**
-- [ ] Vercel deploy of `output/` as static site
-- [ ] Real URL instead of localhost
-- [ ] Cron-triggered deploy via Vercel CLI
-
-**Phase 4 — Expanded Scope (roadmap only, requires approval)**
-- [ ] Non-US election markets
-- [ ] Portfolio sync (Kalshi positions alongside briefs)
-- [ ] Trade recommendation engine
+**Stays Local (no deployment planned)**
+- No Vercel, no GitHub Pages, no cloud hosting
+- Arbiter runs on Carlos's machine via localhost
 
 ---
 
@@ -96,10 +90,9 @@ discovered → analyzing → complete
 ## What's Still Open
 
 - Verdict tag styling (amber for TRADE, what for PASS — blue? grey? muted?)
-- Wikipedia page URL structure for non-US elections (low priority for MVP)
+- Wikipedia page URL structure for non-US elections (low priority, US-only for now)
 - Cron WhatsApp message format — just "done" or a one-line summary?
 - If 0 markets qualify, what does the report show?
-- Phase 3 hosting details (Vercel account, domain, etc.)
 
 All open questions go in `bugs.md` or get resolved before that phase is started.
 

@@ -39,8 +39,8 @@ Carlos makes the final call. Marcus is the analyst, not the trader.
 
 **Data quality bar:** Marcus needs at least two independent sources before writing a brief. If VoteHub has approval numbers and Ballotpedia has the Senate race polling, that's enough.
 
-**Out of scope (roadmap):**
-- Vercel/GitHub Pages deployment — localhost only for now
+**Out of scope:**
+- Vercel, GitHub Pages, or any cloud deployment — this stays local on Carlos's machine
 - Trading, order placement, portfolio sync
 - Multiple page sections, filters, tabs
 - Non-US elections (until Ballotpedia/Wikipedia have reliable polling for them)
@@ -144,7 +144,7 @@ Each task is a self-contained 5-minute coding session. Do them in order.
 | 9 | Continuation logic | `engine.py` | Skip complete, resume analyzing on restart |
 | 10 | Error handling | `collector.py`, `engine.py` | Alert on failure, don't skip steps |
 
-*Phase 2 (Vercel deploy) starts after all 10 are done. Each task requires explicit approval before moving to the next.*
+*Arbiter stays local. No Vercel, no deployment — this is a local tool on Carlos's machine, served via localhost.*
 
 ---
 
