@@ -107,7 +107,7 @@ arbiter/
 ### Prerequisites
 - Python 3.9+
 - `kalshi_python_sync` installed
-- Kalshi API key (stored in `~/Documents/Obsidian Vault/credentials/Kalshi.md`)
+- Kalshi API key stored at `~/Documents/Obsidian Vault/credentials/Kalshi.md`
 - Hermes cron configured
 
 ### Running locally
