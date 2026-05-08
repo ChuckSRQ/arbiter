@@ -1,0 +1,107 @@
+# Current State
+
+*Where the project is right now, the state machine, and the roadmap.*
+
+---
+
+## Status: Planning
+
+The project is fully specced but not yet built. All documentation lives in `docs/`. No code has been written.
+
+---
+
+## State Machine
+
+Every market in `state/analysis.json` moves through states:
+
+```
+discovered → analyzing → complete
+                         ↳ stale (if new polling data arrives)
+```
+
+| State | Meaning | Engine action |
+|---|---|---|
+| `discovered` | Market found by Collector, not yet analyzed | Move to `analyzing`, start research |
+| `analyzing` | Marcus is working on it | Continue research, don't skip |
+| `complete` | Brief written, market on report | Skip on next cron run |
+| `stale` | Market was complete but new polling may change FV | Re-enter `analyzing` for delta recalculation |
+
+**Market exits the pipeline at `complete` (or `stale`).** The report only shows `complete` markets.
+
+---
+
+## What's Built vs What's Planned
+
+### Built (nothing yet)
+- `docs/agentzeroth-agents.md` — agent roles and handoffs
+- `docs/README.md` — project overview and MVP scope
+- `docs/CHANGELOG.md` — this file, empty template
+- `docs/artifact-reference/artifact.html` — design spec
+- `state/` — directory, no files yet
+- `output/` — directory, no files yet
+
+### Planned (not built)
+- `collector.py` — Kalshi API integration
+- `engine.py` — Marcus analysis with Wikipedia polling
+- `generator.py` — HTML report generator
+- `state/analysis.json` — market state tracker
+- `output/index.html` — the report
+
+---
+
+## MVP Roadmap
+
+**Phase 1 — Core Pipeline (now)**
+- [ ] `collector.py` — authenticated Kalshi API, ≤60d political markets, state write
+- [ ] `engine.py` — Wikipedia polling fetch, FV calculation, verdict, full brief JSON
+- [ ] `state/analysis.json` — schema + read/write functions
+- [ ] `generator.py` — index.html from brief JSON, artifact design
+- [ ] `output/index.html` — first generated report
+- [ ] WhatsApp ping on completion
+
+**Phase 2 — Localhost Cron**
+- [ ] Hermes cron job at 1:30PM ET
+- [ ] Continuation logic (don't restart analysis from scratch)
+- [ ] Error handling with WhatsApp failure alert
+
+**Phase 3 — Deployment (roadmap only, not in MVP)**
+- [ ] Vercel deploy of `output/` as static site
+- [ ] Real URL instead of localhost
+- [ ] Cron-triggered deploy via Vercel CLI
+
+**Phase 4 — Expanded Scope (roadmap only, requires approval)**
+- [ ] Non-US election markets
+- [ ] Portfolio sync (Kalshi positions alongside briefs)
+- [ ] Trade recommendation engine
+
+---
+
+## Decisions Made
+
+| Decision | Resolution |
+|---|---|
+| Stack | Python + static HTML. No Next.js/DB for MVP. |
+| Polling source | Wikipedia first, then pollster sites, then Silver Bulletin |
+| Market filter | ≤60 days from expiry, political/election only, has polling |
+| Full briefs | Every qualifying market gets a full brief. No filtering by verdict. |
+| Verdict tag | TRADE (amber) or PASS (blue) — on its own line below election date |
+| Max markets per run | 5 (top 5 by absolute delta). If fewer, show what's available. |
+| State continuation | `state/analysis.json` tracks every market. Engine skips complete, resumes analyzing. |
+| WhatsApp | Only on completion or failure. Message: "Arbiter report ready — N markets analyzed" |
+| Design | Dark (#0D0F1A), blue (#60A5FA) + amber (#FCD34D), 1200px max-width |
+
+---
+
+## What's Still Open
+
+- Verdict tag styling (amber for TRADE, what for PASS — blue? grey? muted?)
+- Wikipedia page URL structure for non-US elections (low priority for MVP)
+- Cron WhatsApp message format — just "done" or a one-line summary?
+- If 0 markets qualify, what does the report show?
+- Phase 3 hosting details (Vercel account, domain, etc.)
+
+All open questions go in `bugs.md` or get resolved before that phase is started.
+
+---
+
+*See agents.md for the technical handoff protocol. See README.md for project overview.*

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=450, height=800">
+<title>Arbiter — Political Briefing</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 450px;
+    height: 800px;
+    background: #0D0F1A;
+    color: #E8E4DC;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 16px;
+    overflow-y: auto;
+  }
+
+  .card {
+    background: linear-gradient(160deg, #141828 0%, #0D0F1A 60%);
+    border: 1px solid rgba(59, 130, 246, 0.18);
+    border-radius: 20px;
+    padding: 18px;
+    margin: 12px;
+  }
+
+  .card + .card { margin-top: 0; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: #60A5FA;
+    margin-bottom: 10px;
+  }
+
+  .race-header {
+    margin-bottom: 12px;
+  }
+
+  .race-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #F1F5F9;
+    line-height: 1.25;
+    margin-bottom: 4px;
+  }
+
+  .election-date {
+    font-size: 13px;
+    color: #60A5FA;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  .context {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #CBD5E1;
+    margin-bottom: 16px;
+  }
+
+  .price-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    align-items: stretch;
+  }
+
+  .price-box {
+    flex: 1;
+    background: rgba(5, 10, 25, 0.95);
+    border-radius: 12px;
+    padding: 12px 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .price-box.market-box {
+    border: 1px solid rgba(59, 130, 246, 0.55);
+    box-shadow: 0 0 14px rgba(59, 130, 246, 0.12), inset 0 0 8px rgba(59, 130, 246, 0.06);
+  }
+
+  .price-box.marcus-box {
+    border: 1px solid rgba(251, 191, 36, 0.55);
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.12), inset 0 0 8px rgba(251, 191, 36, 0.06);
+  }
+
+  .price-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #94A3B8;
+  }
+
+  .price-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #F1F5F9;
+  }
+
+  .price-value.market { color: #93C5FD; }
+  .price-value.marcus { color: #FDE68A; }
+
+  .delta-box {
+    flex: 0 0 auto;
+    background: rgba(5, 10, 25, 0.95);
+    border: 1px solid rgba(251, 191, 36, 0.6);
+    border-radius: 12px;
+    padding: 14px 18px;
+    text-align: center;
+    align-self: center;
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.18), inset 0 0 10px rgba(251, 191, 36, 0.08);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    min-width: 72px;
+  }
+
+  .delta-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #FCD34D;
+  }
+
+  .delta-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #FDE68A;
+  }
+
+  .reason-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #FCD34D;
+    margin-bottom: 6px;
+  }
+
+  .reason-text {
+    font-size: 15px;
+    line-height: 1.65;
+    color: #CBD5E1;
+    margin-bottom: 10px;
+  }
+
+  .source-link {
+    display: inline-block;
+    font-size: 12px;
+    color: #60A5FA;
+    text-decoration: none;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 6px;
+    padding: 5px 12px;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+
+  .kalshi-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #93C5FD;
+    margin-bottom: 10px;
+  }
+
+  .header-bar {
+    background: linear-gradient(90deg, #0D0F1A 0%, #141828 100%);
+    border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+    padding: 18px 18px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+  }
+
+  .header-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #F1F5F9;
+    letter-spacing: 0.06em;
+  }
+
+  .header-date {
+    font-size: 13px;
+    color: #64748B;
+    margin-top: 2px;
+  }
+
+  .watch-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    border-radius: 20px;
+    padding: 2px 9px;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #FCD34D;
+    margin-left: 8px;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 16px;
+    font-size: 10px;
+    color: #334155;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <div class="header-title">Arbiter Political Briefing <span class="watch-indicator">● Live</span></div>
+  <div class="header-date">Thursday, May 7, 2026 &nbsp;·&nbsp; 3 elections tracked</div>
+</div>
+
+<!-- Election 1 -->
+<div class="card">
+  <div class="kalshi-badge">KXLAXMAY26 &nbsp;/&nbsp; First Round Winner</div>
+  <div class="race-header">
+    <div class="race-title">Los Angeles Mayoral Primary</div>
+    <div class="election-date">June 2, 2026</div>
+  </div>
+
+  <div class="context">
+    Karen Bass is running for re-election in a 17-candidate nonpartisan primary. Her wildfire response in January 2025 left her politically weakened. Spencer Pratt, a reality TV figure who lost his home in the Palisades fire, has surged on TikTok and X over the past two weeks with a plain-spoken, anti-establishment message. Polling from March shows Bass at ~24%, Pratt at 10-14%, and Raman at 9-17% — but 40% of voters remain undecided with ballots now mailed. The first post-debate poll will be the critical near-term signal.
+  </div>
+
+  <div class="price-row">
+    <div class="price-box market-box">
+      <div class="price-label">Market</div>
+      <div class="price-value market">57c</div>
+    </div>
+    <div class="delta-box">
+      <div class="delta-label">Edge</div>
+      <div class="delta-value">+8</div>
+    </div>
+    <div class="price-box marcus-box">
+      <div class="price-label">Marcus</div>
+      <div class="price-value marcus">65c</div>
+    </div>
+  </div>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    Market prices Bass first-round win at 57c. My FV: 65c. The 40% undecided with ballots just mailed is the key variable — Pratt's online momentum hasn't reached LA polling yet. If Pratt breaks 20%+ post-debate, market reprices. Bass's 56% unfavorable is structural underweighting. Watching post-debate polling as the highest-signal near-term data point.
+  </div>
+
+  <div style="margin-top:10px">
+    <div class="source-link" href="#">UCLA / Mar / n=1,000 LV</div>
+    <div class="source-link" href="#">Berkeley IGS / Mar / n=800</div>
+    <div class="source-link" href="#">Emerson / Mar / n=500 LV</div>
+    <div class="source-link" href="#">Kalshi ↗</div>
+  </div>
+</div>
+
+<!-- Election 2 -->
+<div class="card">
+  <div class="kalshi-badge">KXALSN26 &nbsp;/&nbsp; Senate Seat</div>
+  <div class="race-header">
+    <div class="race-title">Alabama U.S. Senate</div>
+    <div class="election-date">November 2, 2026</div>
+  </div>
+
+  <div class="context">
+    Alabama's special election for the Tuberville seat. No date formally set but expected November 2. Katie Britt (appointed) hasn't announced whether she runs in the special or for a full term. The Alabama Democratic bench is thin. This race won't have a market until the field is set — likely August at earliest.
+  </div>
+
+  <div class="price-row">
+    <div class="price-box market-box">
+      <div class="price-label">Market</div>
+      <div class="price-value market">—</div>
+    </div>
+    <div class="delta-box">
+      <div class="delta-label">Edge</div>
+      <div class="delta-value" style="color:#64748B">N/A</div>
+    </div>
+    <div class="price-box marcus-box">
+      <div class="price-label">Marcus</div>
+      <div class="price-value marcus">—</div>
+    </div>
+  </div>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    No market yet. Waiting on Britt's decision and Democratic field. Alabama R+28 means any Republican is heavily favored regardless. Not actionable until August. Monitoring Britt's decision timeline closely.
+  </div>
+
+  <div style="margin-top:10px">
+    <div class="source-link" href="#">Alabama Sec. of State ↗</div>
+  </div>
+</div>
+
+<!-- Election 3 -->
+<div class="card">
+  <div class="kalshi-badge">KXNYGOV26 &nbsp;/&nbsp; Incumbent Win</div>
+  <div class="race-header">
+    <div class="race-title">New York Governor</div>
+    <div class="election-date">November 3, 2026</div>
+  </div>
+
+  <div class="context">
+    Kathy Hochul is running for a second full term. Polling consistently shows her leading the Democratic primary by 14+ points over progressive challenger Suozzi. The Republican field is three minor candidates polling in single digits. New York's D+12 partisan lean makes the general election highly favorable for the Democratic nominee regardless.
+  </div>
+
+  <div class="price-row">
+    <div class="price-box market-box">
+      <div class="price-label">Market</div>
+      <div class="price-value market">78c</div>
+    </div>
+    <div class="delta-box">
+      <div class="delta-label">Edge</div>
+      <div class="delta-value">+4</div>
+    </div>
+    <div class="price-box marcus-box">
+      <div class="price-label">Marcus</div>
+      <div class="price-value marcus">82c</div>
+    </div>
+  </div>
+
+  <div class="reason-label">Analysis</div>
+  <div class="reason-text">
+    78c feels low for an incumbent governor at 14pt polling lead in a D+12 state. Market may be discounting from generic ballot headwinds nationally. My FV: 82c. Risk: if Suozzi wins the Democratic nomination with an independent progressive line, race dynamics shift. Watching NY LV cross-tabs for sign of Suozzi movement.
+  </div>
+
+  <div style="margin-top:10px">
+    <div class="source-link" href="#">Siena College / Apr / n=800 LV</div>
+    <div class="source-link" href="#">Quinnipiac NY / Mar / n=1,200</div>
+    <div class="source-link" href="#">Kalshi ↗</div>
+  </div>
+</div>
+
+<div class="footer">Arbiter &nbsp;·&nbsp; Not financial advice &nbsp;·&nbsp; cr: 2026-05-07</div>
+
+</body>
+</html>
