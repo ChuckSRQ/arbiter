@@ -61,9 +61,9 @@ def _api_get(path, params=None, retries=2):
             return None
 
 
-def discover_elections():
-    """Get all elections from Kalshi's Elections category."""
-    all_elections = set()
+def discover_series():
+    """Get election series tickers from Kalshi's Elections category."""
+    all_series = set()
     cursor = None
 
     while True:
@@ -71,27 +71,32 @@ def discover_elections():
         if cursor:
             params["cursor"] = cursor
 
-        data = _api_get("/series", params)
+        data = _api_get("/events", params)
         if not data:
-            if not all_elections:
+            if not all_series:
                 print("  Failed to fetch elections")
             break
 
-        elections_list = data.get("series", [])
-        if not elections_list:
+        events = data.get("events", [])
+        if not events:
             break
 
-        for s in elections_list:
-            ticker = s.get("ticker", "")
+        for event in events:
+            ticker = event.get("series_ticker", "")
             if ticker and ticker not in EXCLUDED_SERIES:
-                all_elections.add(ticker)
+                all_series.add(ticker)
 
         cursor = data.get("cursor")
         if not cursor:
             break
 
-    print(f"  Found {len(all_elections)} elections")
-    return sorted(all_elections)
+    print(f"  Found {len(all_series)} elections")
+    return sorted(all_series)
+
+
+def discover_elections():
+    """Backward-compatible alias for the election series discovery helper."""
+    return discover_series()
 
 
 def fetch_markets_for_series(series_ticker):
@@ -212,7 +217,7 @@ def collect():
     print(f"Window: {WINDOW_DAYS} days (cutoff {cutoff.strftime('%Y-%m-%d')})")
 
     # Discover elections
-    elections = discover_elections()
+    elections = discover_series()
     if not elections:
         print("  No elections found. Check API connectivity.")
         return 0

@@ -68,6 +68,76 @@ def _source_anchor(source):
     )
 
 
+def _humanize_forecast_text(value):
+    text = str(value or "").strip().replace("_", " ")
+    return text or None
+
+
+def _forecast_probability_text(value):
+    try:
+        return f"{int(round(float(value) * 100.0))}%"
+    except (TypeError, ValueError):
+        return "—"
+
+
+def _forecast_band_text(forecast):
+    if not isinstance(forecast, dict):
+        return "—"
+    low = _forecast_probability_text(forecast.get("p25"))
+    high = _forecast_probability_text(forecast.get("p75"))
+    if low == "—" or high == "—":
+        return "—"
+    return f"{low.rstrip('%')}-{high}"
+
+
+def _render_forecast_block(forecast):
+    if not isinstance(forecast, dict):
+        return ""
+
+    median = _forecast_probability_text(forecast.get("p50"))
+    band = _forecast_band_text(forecast)
+    confidence = _humanize_forecast_text(forecast.get("confidence"))
+    data_quality = _humanize_forecast_text(forecast.get("data_quality"))
+    meta = []
+    if confidence:
+        meta.append(f"{confidence.capitalize()} confidence")
+    if data_quality:
+        meta.append(data_quality.capitalize())
+    meta_html = " · ".join(escape(item) for item in meta) if meta else "No quality label"
+
+    return f"""
+  <div class="forecast-block">
+    <div class="forecast-kicker">Forecast</div>
+    <div class="forecast-main">{escape(median)} median</div>
+    <div class="forecast-band">{escape(band)}</div>
+    <div class="forecast-meta">{meta_html}</div>
+  </div>"""
+
+
+def _render_candidate_forecast(forecast):
+    if not isinstance(forecast, dict):
+        return '<div class="candidate-forecast-empty">—</div>'
+
+    median = _forecast_probability_text(forecast.get("p50"))
+    band = _forecast_band_text(forecast)
+    confidence = _humanize_forecast_text(forecast.get("confidence"))
+    data_quality = _humanize_forecast_text(forecast.get("data_quality"))
+    meta_parts = []
+    if confidence:
+        meta_parts.append(confidence.capitalize())
+    if data_quality:
+        meta_parts.append(data_quality.capitalize())
+    meta_html = " · ".join(escape(part) for part in meta_parts) if meta_parts else "No label"
+
+    return (
+        '<div class="candidate-forecast">'
+        f'<div class="candidate-forecast-main">{escape(median)} median</div>'
+        f'<div class="candidate-forecast-band">{escape(band)}</div>'
+        f'<div class="candidate-forecast-meta">{meta_html}</div>'
+        "</div>"
+    )
+
+
 def _render_card(market):
     try:
         delta = int(round(float(market.get("delta") or 0)))
@@ -108,7 +178,7 @@ def _render_card(market):
       <div class="price-label">Marcus</div>
       <div class="price-value marcus">{_cents(market.get("marcus_fv"))}</div>
     </div>
-  </div>
+  </div>{_render_forecast_block(market.get("forecast"))}
 
   <div class="reason-label">Analysis</div>
   <div class="reason-text">
@@ -180,6 +250,7 @@ def _render_race_card(race_key, markets):
         delta_int = int(round(delta)) if delta is not None else 0
         delta_str = f"+{delta_int}" if delta_int > 0 else str(delta_int)
         fv_str = f"{fv}c" if fv is not None else "—"
+        forecast_html = _render_candidate_forecast(m.get("forecast"))
 
         verdict_class = "verdict-trade" if verdict == "TRADE" else "verdict-pass"
         delta_style = "" if abs(delta_int) >= 5 else ' style="color:#9CA3AF"'
@@ -189,8 +260,8 @@ def _render_race_card(race_key, markets):
         <td class="candidate-name">{escape(candidate_name)}</td>
         <td class="candidate-price">{price_str}</td>
         <td class="candidate-delta"{delta_style}>{delta_str}</td>
-        <td class="candidate-fv">{fv_str}</td>
-        <td><span class="verdict-tag {verdict_class} verdict-sm">{verdict}</span></td>
+        <td class="candidate-fv-cell"><div class="candidate-fv">{fv_str}</div><div class="candidate-signal"><span class="verdict-tag {verdict_class} verdict-sm">{verdict}</span></div></td>
+        <td class="candidate-forecast-cell">{forecast_html}</td>
       </tr>"""
 
     source_links = "\n    ".join(_source_anchor(src) for src in sources)
@@ -242,8 +313,8 @@ def _render_race_card(race_key, markets):
         <th>Candidate</th>
         <th>Price</th>
         <th>Edge</th>
-        <th>FV</th>
-        <th>Signal</th>
+        <th>Marcus</th>
+        <th>Forecast</th>
       </tr>
     </thead>
     <tbody>
@@ -525,6 +596,42 @@ def generate():
     min-width: 72px;
   }}
 
+  .forecast-block {{
+    background: rgba(5, 10, 25, 0.92);
+    border: 1px solid rgba(59, 130, 246, 0.22);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin: -2px 0 14px;
+  }}
+
+  .forecast-kicker {{
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #60A5FA;
+    margin-bottom: 5px;
+  }}
+
+  .forecast-main {{
+    font-size: 17px;
+    font-weight: 700;
+    color: #FDE68A;
+  }}
+
+  .forecast-band {{
+    font-size: 13px;
+    color: #E2E8F0;
+    margin-top: 2px;
+  }}
+
+  .forecast-meta {{
+    font-size: 12px;
+    color: #93C5FD;
+    margin-top: 4px;
+    line-height: 1.5;
+  }}
+
   .delta-label {{
     font-size: 12px;
     font-weight: 700;
@@ -660,7 +767,9 @@ def generate():
     border-bottom: 1px solid rgba(59, 130, 246, 0.15);
   }}
 
-  .candidates-table th:nth-child(n+3) {{
+  .candidates-table th:nth-child(3),
+  .candidates-table th:nth-child(4),
+  .candidates-table th:nth-child(5) {{
     text-align: right;
   }}
 
@@ -699,8 +808,44 @@ def generate():
   }}
 
   .candidate-fv {{
-    text-align: right;
     color: #94A3B8;
+    text-align: right;
+  }}
+
+  .candidate-fv-cell {{
+    text-align: right;
+  }}
+
+  .candidate-signal {{
+    margin-top: 4px;
+  }}
+
+  .candidate-forecast-cell {{
+    min-width: 116px;
+  }}
+
+  .candidate-forecast {{
+    text-align: left;
+  }}
+
+  .candidate-forecast-main {{
+    color: #FDE68A;
+    font-weight: 700;
+    font-size: 12px;
+  }}
+
+  .candidate-forecast-band {{
+    color: #E2E8F0;
+    font-size: 11px;
+    margin-top: 2px;
+  }}
+
+  .candidate-forecast-meta,
+  .candidate-forecast-empty {{
+    color: #93C5FD;
+    font-size: 10px;
+    margin-top: 3px;
+    line-height: 1.4;
   }}
 
   .verdict-sm {{

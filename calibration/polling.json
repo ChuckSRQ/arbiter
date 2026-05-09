@@ -1,0 +1,9 @@
+{
+  "sample_size_exponent": 0.5,
+  "recency_half_life_days": 14.0,
+  "likely_voter_weight": 1.0,
+  "registered_voter_weight": 0.92,
+  "adult_weight": 0.85,
+  "pollster_quality_floor": 0.8,
+  "internal_poll_discount": 0.9
+}
