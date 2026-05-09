@@ -59,7 +59,8 @@ Carlos makes the final call. Marcus is the analyst, not the trader.
     │
     ▼
 collector.py
-  → Queries Kalshi public `/events?category=Elections` API (no auth required for discovery)
+  → Queries Kalshi Elections API via `/series?category=Elections` (no auth required for discovery)
+  → For each election, fetches all candidate contracts via `/markets?series_ticker=`
   → Filters on `close_time` / `expiration_time` so the 60-day window uses the real trading cutoff
   → Stores `event_date` (election date when present), `candidate_name`, and `event_ticker`
   → Updates state/analysis.json

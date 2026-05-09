@@ -6,10 +6,12 @@ Writes results to state/analysis.json via state.py helpers.
 """
 
 import json
+import random
 import re
 import time
 import urllib.request
 import urllib.error
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
 
 from state import read_state, write_state, upsert_market, touch_last_run
@@ -17,9 +19,13 @@ from state import read_state, write_state, upsert_market, touch_last_run
 BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
 WINDOW_DAYS = 60
 REQUEST_DELAY = 0.35  # seconds between API calls to avoid 429
+WORKER_COUNT = 10  # concurrent workers for fetching series markets
 
 EXCLUDED_SERIES = (
-    "PRESADMIN",  # admin actions, not elections
+    "PRESADMIN",    # admin actions, not elections
+    "KXAPRPOTUS",   # presidential approval rating — not an election
+    "KXGENERICBALLOT",        # generic ballot — not an election
+    "KXGENERICBALLOTVOTEHUB", # generic ballot — not an election
 )
 
 EXCLUDED_TITLE_PATTERNS = (
@@ -55,9 +61,9 @@ def _api_get(path, params=None, retries=2):
             return None
 
 
-def discover_series():
-    """Get all election series from Kalshi events pagination."""
-    all_series = set()
+def discover_elections():
+    """Get all elections from Kalshi's Elections category."""
+    all_elections = set()
     cursor = None
 
     while True:
@@ -65,27 +71,27 @@ def discover_series():
         if cursor:
             params["cursor"] = cursor
 
-        data = _api_get("/events", params)
+        data = _api_get("/series", params)
         if not data:
-            if not all_series:
-                print("  Failed to fetch election events")
+            if not all_elections:
+                print("  Failed to fetch elections")
             break
 
-        events = data.get("events", [])
-        if not events:
+        elections_list = data.get("series", [])
+        if not elections_list:
             break
 
-        for event in events:
-            series_ticker = event.get("series_ticker")
-            if series_ticker and series_ticker not in EXCLUDED_SERIES:
-                all_series.add(series_ticker)
+        for s in elections_list:
+            ticker = s.get("ticker", "")
+            if ticker and ticker not in EXCLUDED_SERIES:
+                all_elections.add(ticker)
 
         cursor = data.get("cursor")
         if not cursor:
             break
 
-    print(f"  Found {len(all_series)} election series")
-    return sorted(all_series)
+    print(f"  Found {len(all_elections)} elections")
+    return sorted(all_elections)
 
 
 def fetch_markets_for_series(series_ticker):
@@ -149,6 +155,54 @@ def _get_market_price(market):
     return None
 
 
+def _fetch_and_filter_series(series_ticker):
+    """Fetch and filter markets for one series. Runs in worker thread."""
+    # Rate-limit jitter
+    time.sleep(random.uniform(0, 0.1))
+
+    markets = fetch_markets_for_series(series_ticker)
+    if not markets:
+        return []
+
+    results = []
+    now = datetime.now(timezone.utc)
+    cutoff = now + timedelta(days=WINDOW_DAYS)
+
+    for m in markets:
+        ticker = m.get("ticker", "")
+        title = m.get("title", "")
+
+        if _is_excluded_by_title(title):
+            continue
+
+        cutoff_date = _parse_close_date(m)
+        if not cutoff_date:
+            continue
+        if cutoff_date.tzinfo is None:
+            cutoff_date = cutoff_date.replace(tzinfo=timezone.utc)
+        if cutoff_date < now:
+            continue
+        if cutoff_date > cutoff:
+            continue
+
+        event_ticker = m.get("event_ticker", "")
+        price = _get_market_price(m)
+
+        results.append({
+            "ticker": ticker,
+            "title": title,
+            "race_title": title,
+            "candidate_name": m.get("yes_sub_title"),
+            "event_ticker": event_ticker,
+            "event_date": _parse_event_date(m),
+            "series_ticker": m.get("series_ticker") or series_ticker,
+            "market_price": price,
+            "cutoff_date_str": cutoff_date.strftime("%Y-%m-%d"),
+        })
+
+    return results
+
+
 def collect():
     """Main collection loop. Returns number of new markets discovered."""
     now = datetime.now(timezone.utc)
@@ -157,10 +211,10 @@ def collect():
     print(f"Collector starting — {now.strftime('%Y-%m-%d %H:%M UTC')}")
     print(f"Window: {WINDOW_DAYS} days (cutoff {cutoff.strftime('%Y-%m-%d')})")
 
-    # Discover election series
-    series_list = discover_series()
-    if not series_list:
-        print("  No election series found. Check API connectivity.")
+    # Discover elections
+    elections = discover_elections()
+    if not elections:
+        print("  No elections found. Check API connectivity.")
         return 0
 
     # Load state
@@ -168,61 +222,46 @@ def collect():
     existing_tickers = {m["ticker"] for m in state["markets"]}
     new_count = 0
 
-    # Fetch markets for each series
-    for i, series_ticker in enumerate(series_list):
-        if i > 0:
-            time.sleep(REQUEST_DELAY)
-        markets = fetch_markets_for_series(series_ticker)
-        if not markets:
+    # Remove candidates from excluded elections
+    removed_count = 0
+    state["markets"] = [
+        m for m in state["markets"]
+        if (m.get("series_ticker") or m.get("event_ticker") or m.get("ticker", "")) not in EXCLUDED_SERIES
+    ]
+    removed_count = len(existing_tickers) - len({m["ticker"] for m in state["markets"]})
+    if removed_count:
+        print(f"  Removed {removed_count} candidates from excluded elections")
+
+    # Fetch candidates for each election concurrently
+    print(f"  Fetching candidates for {len(elections)} elections with {WORKER_COUNT} workers...")
+
+    all_markets = []
+    with ThreadPoolExecutor(max_workers=WORKER_COUNT) as executor:
+        futures = {
+            executor.submit(_fetch_and_filter_series, election_ticker): election_ticker
+            for election_ticker in elections
+        }
+        for future in as_completed(futures):
+            series_ticker = futures[future]
+            try:
+                results = future.result()
+                all_markets.extend(results)
+            except Exception as e:
+                print(f"    Error fetching {series_ticker}: {e}")
+
+    # Process results in main thread (state mutations only here)
+    for market_data in all_markets:
+        ticker = market_data["ticker"]
+        if ticker in existing_tickers:
             continue
-
-        for m in markets:
-            ticker = m.get("ticker", "")
-            title = m.get("title", "")
-
-            if _is_excluded_by_title(title):
-                continue
-
-            cutoff_date = _parse_close_date(m)
-
-            # Skip if no trading cutoff date
-            if not cutoff_date:
-                continue
-
-            # Make cutoff timezone-aware if it isn't
-            if cutoff_date.tzinfo is None:
-                cutoff_date = cutoff_date.replace(tzinfo=timezone.utc)
-
-            # Skip if already expired (past) or outside future window
-            if cutoff_date < now:
-                continue
-            if cutoff_date > cutoff:
-                continue
-
-            # Skip if already in state
-            if ticker in existing_tickers:
-                continue
-
-            event_ticker = m.get("event_ticker", "")
-            price = _get_market_price(m)
-
-            market_data = {
-                "ticker": ticker,
-                "title": title,
-                "race_title": title,  # engine.py will refine this
-                "candidate_name": m.get("yes_sub_title"),
-                "event_ticker": event_ticker,  # race key for grouping
-                "event_date": _parse_event_date(m),
-                "series_ticker": m.get("series_ticker") or series_ticker,
-                "market_price": price,
-            }
-
-            upsert_market(state, market_data)
-            existing_tickers.add(ticker)
-            new_count += 1
-            print(
-                f"  + {ticker} | {title[:50]} | {price}¢ | cutoff {cutoff_date.strftime('%Y-%m-%d')}"
-            )
+        upsert_market(state, market_data)
+        existing_tickers.add(ticker)
+        new_count += 1
+        print(
+            f"  + {ticker} | {market_data['title'][:50]} | "
+            f"{market_data['market_price']}¢ | "
+            f"cutoff {market_data.get('cutoff_date_str', '')}"
+        )
 
     # Update last_run and save
     touch_last_run(state)

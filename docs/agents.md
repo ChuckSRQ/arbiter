@@ -88,12 +88,13 @@ For supported multi-contract races, Marcus analyzes the full candidate field tog
 Collector is a Python script (`collector.py`). It runs first, before Marcus.
 
 **What it does:**
-1. Queries Kalshi API for all political/election markets
-2. Filters to markets expiring within 60 days
-3. Further filters to markets with polling-accessible races (excludes DOGE, tariff, admin-action markets)
-4. Compares against `state/analysis.json` — identifies new markets vs existing
-5. Writes market list to `state/analysis.json` (new markets as `discovered`)
-6. Returns ticker, title, expiry, market_price, `event_ticker`, and candidate name when available for each new market
+1. Queries the Kalshi Elections API to find all election races
+2. For each election, fetches all candidate contracts
+3. Filters to candidate contracts whose trading cutoff falls within 60 days
+4. Filters out elections without accessible polling (DOGE, tariff, admin-action)
+5. Compares against `state/analysis.json` — identifies new candidates vs ones already tracked
+6. Writes candidate list to `state/analysis.json` (new candidates as `discovered`)
+7. Returns ticker, title, expiry, market_price, `event_ticker`, and candidate name for each
 
 **API:** Uses Kalshi's public elections API for market discovery. No authentication is required for the current collector path; credentials are stored externally for future authenticated work only.
 
@@ -132,18 +133,18 @@ Daily Cron (1:30PM ET)
     │
     ▼
 [1] collector.py
-    → Writes discovered markets to state/analysis.json
+    → Writes discovered candidates to state/analysis.json
     │
     ▼
 [2] engine.py (Marcus)
-    → For each market, or supported grouped race, in discovered/analyzing:
+    → For each candidate, or supported grouped race, in discovered/analyzing:
       → Fetch VoteHub polling + OpenFEC financials
       → Compute FV + delta + verdict
       → Write back to state/analysis.json
     │
     ▼
 [3] generator.py
-    → Reads complete markets from state/analysis.json
+    → Reads complete candidates from state/analysis.json
     → Groups supported candidate-contract races by event_ticker
     → Renders output/index.html
     → Prints "Done"; Hermes delivers stdout to WhatsApp
