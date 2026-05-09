@@ -159,6 +159,18 @@ Each task is a self-contained 5-minute coding session. Do them in order.
 
 ---
 
+## Forecast Model Reporting (Post-MVP)
+
+Phases 1-5 of the forecast-model architecture are now in place. Arbiter still keeps the existing top-level report fields (`marcus_fv`, `delta`, `verdict`, `context`, `analysis`, `sources`, `financials`, `status`) for compatibility, but completed entries can now also carry a nested `forecast` block generated from the shared stdlib-only `forecast/` package.
+
+Phase 5 wires those forecast blocks into the live report path without creating a second model flow. Approval and generic-ballot threshold markets now get conservative binary forecast summaries when VoteHub polling is usable, LA Mayor grouped candidate cards now carry top-two-compatible forecast blocks built from the hardcoded field polling inputs, and the HTML cards render median probability, range, confidence, and data quality inside the existing dark-navy portrait-card layout.
+
+OpenFEC financial data remains part of congressional readiness inputs inside the forecast layer. This is still market-specific briefing infrastructure only: there is no national-map UI, unsupported market types without a polling source still omit forecast blocks, and live presidential/congressional report wiring beyond today's supported inputs remains deferred.
+
+Latest verification: `python3 -m unittest discover -s tests -p 'test*.py'` → `Ran 35 tests in 0.127s` / `OK`; `python3 -m py_compile collector.py state.py engine.py generator.py forecast/*.py` → success.
+
+---
+
 ## Design Reference
 
 The report matches `docs/artifact-reference/artifact.html`:

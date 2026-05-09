@@ -4,9 +4,13 @@
 
 ---
 
-## Status: Phase 1 Complete — MVP Running
+## Status: MVP Running + Forecast Phase 5 Reporting Integrated
 
-Core pipeline complete. All 10 original MVP tasks done. Daily cron fires at 1:30PM ET. Race-level grouping for multi-contract candidate markets is now implemented for mayoral races, and collector discovery now comes directly from Kalshi's Elections category with trading-cutoff date filtering.
+Core pipeline complete. All 10 original MVP tasks done. Daily cron fires at 1:30PM ET. Race-level grouping for multi-contract candidate markets is now implemented for mayoral races, collector discovery now comes directly from Kalshi's Elections category with trading-cutoff date filtering, and the forecast-model now runs all the way through the report path: completed market entries can carry nested forecast blocks, engine briefs now mention uncertainty when a forecast exists, and the HTML cards render median/range/confidence/data-quality summaries without changing the existing portrait-card layout.
+
+### Latest verification
+- `python3 -m unittest discover -s tests -p 'test*.py'` → `Ran 35 tests in 0.127s` / `OK`
+- `python3 -m py_compile collector.py state.py engine.py generator.py forecast/*.py` → success
 
 ---
 
@@ -41,8 +45,11 @@ discovered → analyzing → complete
 - `docs/artifact-reference/artifact.html` — design spec
 - `state.py` — state read/write/upsert/transition helpers
 - `collector.py` — Kalshi market discovery via `/events?category=Elections` (public API, rate-limited, 0.35s delay) with title-based exclusions, trading-cutoff filtering, and `event_ticker` / `candidate_name` / `event_date` capture for candidate-contract races
-- `engine.py` — polling + financials analysis engine (VoteHub fetch, OpenFEC financials, FV heuristic, verdict, brief writing) with grouped mayoral race analysis
-- `generator.py` — HTML report generator from complete market state; groups supported multi-contract races into one race card with a candidate table
+- `engine.py` — polling + financials analysis engine (VoteHub fetch, OpenFEC financials, FV heuristic, verdict, brief writing) with grouped mayoral race analysis plus nested forecast-block integration and uncertainty-aware brief text
+- `generator.py` — HTML report generator from complete market state; groups supported multi-contract races into one race card with a candidate table and renders compact forecast summaries on market/race cards
+- `forecast/polling.py` — pure-Python polling-average engine for normalized polls with configurable sample-size, recency, population, pollster-quality, and sponsor/internal weights plus metadata hooks (`poll_count`, `as_of_date`, `data_quality`, `total_weight`)
+- `forecast/adapters.py` — forecast adapters for binary head-to-head, multicandidate plurality, top-two, presidential-state, and congressional races, including conservative fundamentals blending and low-confidence markers when fundamentals dominate
+- `forecast/electoral.py` — exact Electoral College helper for deterministic presidential state-map probability summaries in the forecast layer only
 - `~/.hermes/scripts/arbiter-daily.py` — Hermes cron pipeline runner (collector → engine → generator, non-zero failure alerts)
 - `state/analysis.json` — populated market state with completed briefs
 - `output/index.html` — generated report output
@@ -55,6 +62,13 @@ discovered → analyzing → complete
 
 ### Post-MVP candidates
 - Broader polling-source coverage beyond VoteHub/approval/generic ballot when reliable free sources are available
+
+### Forecast model roadmap
+- **Phase 1 complete:** `forecast/` package added with shared race/candidate/poll/forecast dataclasses, race classification helpers, and stdlib-only calibration loading from `calibration/`.
+- **Phase 2 complete:** weighted polling averages now compute from normalized polls using sample size, recency decay, population type, pollster quality, and mild sponsor/internal discounts while returning metadata hooks for later state/cache reuse.
+- **Phase 3 complete:** supported race adapters now turn polling averages into binary win probabilities, multicandidate plurality win probabilities, and top-two advance probabilities while preserving top-level `marcus_fv`, `delta`, and `verdict` compatibility.
+- **Phase 4 complete:** the forecast layer now supports `presidential_state` and `congressional`, conservative fundamentals fallbacks for sparse/no-poll races, OpenFEC-style financial inputs, lower-confidence/data-quality markers when fundamentals dominate, and a deterministic Electoral College helper.
+- **Phase 5 complete:** `engine.py` now attaches forecast blocks where supported, market briefs mention uncertainty concisely, and `generator.py` renders median/range/confidence/data-quality details without changing the existing card grid or grouped-race output.
 
 ---
 
@@ -109,7 +123,10 @@ discovered → analyzing → complete
 
 - Existing `state/analysis.json` snapshots produced before the Elections-category expiry-filter fix should be rebuilt once so title exclusions and date fields are clean.
 - Wikipedia page URL structure for non-US elections (low priority, US-only for now)
-- Senate, House, and Governor races still need dedicated race-level analysis before they should be grouped like mayorals.
+- Unsupported `other` markets still omit forecast blocks instead of inventing unsupported probabilities; they remain covered by the existing PASS/no-source fallback.
+- LA Mayor forecast blocks currently represent a top-two-compatible snapshot built from the hardcoded field polling, while top-level `marcus_fv` stays on the existing market heuristic for compatibility with today's grouped card flow.
+- Senate, House, Governor, and presidential state markets still need live polling/source wiring in the engine before the Phase 4 readiness layer can power those report cards end to end.
+- National-map rendering remains intentionally out of scope; the Electoral College helper is forecast-layer-only support for later market briefs.
 
 All open questions go in `bugs.md` or get resolved before that phase is started.
 

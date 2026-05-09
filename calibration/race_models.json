@@ -1,0 +1,17 @@
+{
+  "binary_head_to_head": {
+    "lead_scale": 3.25
+  },
+  "multicandidate_plurality": {
+    "simulation_spread": 5.0
+  },
+  "top_two_advance": {
+    "simulation_spread": 5.5
+  },
+  "congressional": {
+    "fundamentals_weight": 0.35
+  },
+  "presidential_state": {
+    "state_partisanship_weight": 0.4
+  }
+}

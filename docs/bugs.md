@@ -6,12 +6,48 @@
 
 ## Known Limitations
 
+### Threshold-market forecasts are intentionally conservative
+Phase 5 now writes `forecast` blocks into supported completed entries and renders them in the report, but approval/generic-ballot contracts still use a synthetic YES/NO polling transform because those Kalshi markets resolve on thresholds, not direct candidate-vs-candidate outcomes.
+
+**Impact:** The nested forecast block is useful as an uncertainty-aware briefing aid, but it should be read as a conservative directional probability layer rather than as a second precision model for threshold contracts.
+
+**Workaround:** Keep using the existing top-level `marcus_fv`, `delta`, and verdict fields as the primary trading signal; treat the forecast block as supporting range/confidence context.
+
+---
+
+### LA Mayor forecast block is a top-two snapshot, not a final win model
+Grouped mayor race cards now carry forecast blocks built from the existing hardcoded LA field polling, but the current adapter path is intentionally a top-two-compatible snapshot because that is the practical fit for the sparse public field data.
+
+**Impact:** Top-level mayor `marcus_fv` remains on the existing grouped-race heuristic for report compatibility, while the nested forecast block captures who looks strongest to advance under current sparse polling.
+
+**Workaround:** Read the forecast block as a structured uncertainty cue for the candidate field, not as a replacement for the current market heuristic until fuller live mayoral source wiring is added.
+
+---
+
+### No national map/report UI by design
+Phase 4 adds only forecast-layer readiness for presidential state markets. The new Electoral College helper remains intentionally backend-only after Phase 5.
+
+**Impact:** None. Arbiter remains a market-specific briefing tool, not a national dashboard.
+
+**Workaround:** Keep any presidential summary logic inside `forecast/` helpers until a later phase explicitly expands product scope.
+
+---
+
 ### Wikipedia polling for non-US elections
 Wikipedia has reliable polling tables for US federal/state elections. For UK general elections, Canadian provincial races, etc. — polling tables exist but structure varies and may not cover every race Marcus needs.
 
-**Impact:** MVP is US-only. Non-US markets are Phase 4 roadmap.
+**Impact:** MVP is US-only. Non-US markets are still outside the approved forecast/reporting phases.
 
 **Workaround:** Ballotpedia covers some international races. If neither has coverage, note "no recent polling" and Marcus estimates from fundamentals.
+
+---
+
+### Unsupported `other` markets still omit forecast blocks
+If a market still falls into the no-polling-source fallback path, Arbiter completes the brief and preserves state continuity, but it does not fabricate a nested forecast block.
+
+**Impact:** Some markets will still render without forecast metadata until a real polling/source path exists for that contract type.
+
+**Workaround:** Keep the current PASS/no-source fallback for those cards and only add new forecast coverage when a real source path is implemented.
 
 ---
 
@@ -96,7 +132,7 @@ Carlos will provide the Kalshi API key before collector.py is built.
 
 4. **Don't commit API keys or credentials to git.** Store in `~/Documents/Obsidian Vault/credentials/Kalshi.md`. Reference the path in env vars.
 
-5. **Don't overengineer.** MVP only. Phase 2, 3, 4 are roadmap — not committed until Carlos approves them.
+5. **Don't overengineer.** MVP only. Remaining forecast work stays scoped to the approved roadmap.
 
 ---
 
@@ -107,7 +143,7 @@ Carlos will provide the Kalshi API key before collector.py is built.
 - Email delivery alternative to WhatsApp
 - RealClearPolling integration (Playwright) — only if Ballotpedia + RaceToTheWH have a coverage gap
 
-These belong in `currentstate.md` as Phase 4 candidates, not in MVP.
+These belong in `currentstate.md` as future candidates, not in MVP.
 
 ---
 

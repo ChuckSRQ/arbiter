@@ -8,6 +8,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
+from forecast import Candidate, Poll, PollResult, Race, adapt_race_forecast, compute_polling_average
 from state import get_pending, read_state, transition, write_state
 
 APPROVAL_URL = (
@@ -194,7 +195,53 @@ def _market_type(ticker):
     return "other"
 
 
-def _finalize_market(market, marcus_fv, context, analysis, sources):
+def _forecast_probability_text(value):
+    try:
+        return f"{int(round(float(value) * 100.0))}%"
+    except (TypeError, ValueError):
+        return None
+
+
+def _forecast_band_text(forecast):
+    if not isinstance(forecast, dict):
+        return None
+    low = _forecast_probability_text(forecast.get("p25"))
+    high = _forecast_probability_text(forecast.get("p75"))
+    if not low or not high:
+        return None
+    return f"{low.rstrip('%')}-{high}"
+
+
+def _humanize_forecast_text(value):
+    text = str(value or "").strip().replace("_", " ")
+    return text or None
+
+
+def _forecast_summary_text(forecast, *, label="Forecast"):
+    if not isinstance(forecast, dict):
+        return ""
+
+    parts = []
+    median = _forecast_probability_text(forecast.get("p50"))
+    band = _forecast_band_text(forecast)
+    confidence = _humanize_forecast_text(forecast.get("confidence"))
+    data_quality = _humanize_forecast_text(forecast.get("data_quality"))
+
+    if median:
+        parts.append(f"{median} median")
+    if band:
+        parts.append(f"{band} middle band")
+    if confidence:
+        parts.append(f"{confidence} confidence")
+    if data_quality:
+        parts.append(data_quality)
+
+    if not parts:
+        return ""
+    return f"{label}: {', '.join(parts)}."
+
+
+def _finalize_market(market, marcus_fv, context, analysis, sources, forecast=None, forecast_note=None):
     price = market.get("market_price")
     if price is None:
         price = 50
@@ -203,7 +250,15 @@ def _finalize_market(market, marcus_fv, context, analysis, sources):
     market["delta"] = delta
     market["verdict"] = "TRADE" if abs(delta) >= 5 else "PASS"
     market["context"] = context
-    market["analysis"] = analysis
+    resolved_analysis = str(analysis or "").strip()
+    if forecast:
+        market["forecast"] = forecast
+        note = str(forecast_note or _forecast_summary_text(forecast)).strip()
+        if note:
+            resolved_analysis = f"{resolved_analysis} {note}".strip()
+    else:
+        market.pop("forecast", None)
+    market["analysis"] = resolved_analysis
     market["sources"] = sources
 
 
@@ -213,10 +268,105 @@ def _build_insufficient_note(polls_found):
     return ""
 
 
+def _synthetic_yes_support(metric_value, condition):
+    kind = condition.get("kind")
+    if kind == "above":
+        signal = float(metric_value) - float(condition["threshold"])
+    elif kind == "below":
+        signal = float(condition["threshold"]) - float(metric_value)
+    elif kind == "between":
+        midpoint = (float(condition["low"]) + float(condition["high"])) / 2.0
+        band = abs(float(condition["high"]) - float(condition["low"])) / 2.0
+        signal = band - abs(float(metric_value) - midpoint)
+    else:
+        signal = 0.0
+    return max(10.0, min(90.0, 50.0 + (signal * 4.0)))
+
+
+def _poll_date_value(poll, *keys):
+    for key in keys:
+        value = poll.get(key)
+        if value:
+            return str(value)
+    return None
+
+
+def _poll_sample_size(poll):
+    for key in ("sample_size", "sample", "samplesize", "n"):
+        value = _safe_float(poll.get(key))
+        if value is not None and value > 0:
+            return int(round(value))
+    return None
+
+
+def _build_binary_threshold_forecast(market, measurements, condition, *, pollster_fallback):
+    if not measurements or condition.get("kind") == "unknown":
+        return None
+
+    ticker = market.get("ticker") or "YES"
+    yes_name = (market.get("candidate_name") or "Yes").strip() or "Yes"
+    no_name = f"Not {yes_name}" if yes_name != "Yes" else "No"
+    normalized_polls = []
+    latest_poll_date = None
+
+    for raw_poll, metric_value in measurements:
+        yes_support = _synthetic_yes_support(metric_value, condition)
+        poll_date = _poll_date_value(
+            raw_poll,
+            "end_date",
+            "date",
+            "field_date",
+            "updated_at",
+            "created_at",
+            "start_date",
+        )
+        if poll_date and (latest_poll_date is None or poll_date > latest_poll_date):
+            latest_poll_date = poll_date
+        normalized_polls.append(
+            Poll(
+                pollster=str(raw_poll.get("pollster") or raw_poll.get("source") or pollster_fallback),
+                results=[
+                    PollResult(candidate_name=yes_name, support_pct=yes_support),
+                    PollResult(candidate_name=no_name, support_pct=100.0 - yes_support),
+                ],
+                start_date=_poll_date_value(raw_poll, "start_date"),
+                end_date=poll_date,
+                sample_size=_poll_sample_size(raw_poll),
+                population=raw_poll.get("population"),
+                sponsor=raw_poll.get("sponsor") or raw_poll.get("source"),
+                is_internal=bool(raw_poll.get("internal") or raw_poll.get("is_internal")),
+            )
+        )
+
+    if not normalized_polls:
+        return None
+
+    race = Race(
+        title=market.get("race_title") or market.get("title") or ticker,
+        race_id=ticker,
+        event_date=market.get("event_date") or market.get("election_date"),
+        event_ticker=market.get("event_ticker"),
+        series_ticker=market.get("series_ticker"),
+        candidates=[
+            Candidate(name=yes_name, contract_ticker=ticker, market_price=market.get("market_price")),
+            Candidate(name=no_name, contract_ticker=f"{ticker}-NO"),
+        ],
+    )
+    polling_average = compute_polling_average(normalized_polls, as_of_date=latest_poll_date)
+    forecast = dict(adapt_race_forecast(race, polling_average, race_type="binary_head_to_head")[ticker]["forecast"])
+    inputs = dict(forecast.get("inputs") or {})
+    inputs["threshold_market"] = 1.0
+    forecast["inputs"] = inputs
+    if forecast.get("confidence") == "high":
+        forecast["confidence"] = "medium"
+    return forecast
+
+
 def _analyze_approval_market(market, polls):
     condition = _parse_market_condition(market.get("title"))
     approve_values = []
     disapprove_values = []
+    forecast_measurements = []
     for poll in polls:
         approve = _extract_metric(poll, ("approve", "approval", "approve_pct", "approval_pct"))
         disapprove = _extract_metric(
@@ -224,6 +374,7 @@ def _analyze_approval_market(market, polls):
         )
         if approve is not None:
             approve_values.append(approve)
+            forecast_measurements.append((poll, approve))
         if disapprove is not None:
             disapprove_values.append(disapprove)
 
@@ -265,13 +416,20 @@ def _analyze_approval_market(market, polls):
         {"label": "VoteHub approval polls", "url": APPROVAL_URL},
         {"label": "VoteHub API", "url": "https://api.votehub.com"},
     ]
-    return fv, context, analysis, sources
+    forecast = _build_binary_threshold_forecast(
+        market,
+        forecast_measurements,
+        condition,
+        pollster_fallback="VoteHub approval",
+    )
+    return fv, context, analysis, sources, forecast
 
 
 def _analyze_generic_market(market, polls):
     condition = _parse_market_condition(market.get("title"))
     dem_values = []
     rep_values = []
+    forecast_measurements = []
     for poll in polls:
         dem = _extract_metric(
             poll,
@@ -299,6 +457,8 @@ def _analyze_generic_market(market, polls):
             dem_values.append(dem)
         if rep is not None:
             rep_values.append(rep)
+        if dem is not None and rep is not None:
+            forecast_measurements.append((poll, dem - rep))
 
     polls_found = min(len(dem_values), len(rep_values)) or max(len(dem_values), len(rep_values))
     if dem_values and rep_values:
@@ -336,7 +496,13 @@ def _analyze_generic_market(market, polls):
         {"label": "VoteHub generic ballot polls", "url": GENERIC_URL},
         {"label": "VoteHub API", "url": "https://api.votehub.com"},
     ]
-    return fv, context, analysis, sources
+    forecast = _build_binary_threshold_forecast(
+        market,
+        forecast_measurements,
+        condition,
+        pollster_fallback="VoteHub generic ballot",
+    )
+    return fv, context, analysis, sources, forecast
 
 
 # LA Mayor 2026 race data — hardcoded from public polling
@@ -469,7 +635,51 @@ def _analyze_mayor_race(market, all_markets_in_race):
         {"label": "Race to the WH — LA Mayor polling", "url": LA_MAYOR_SOURCE_URL},
         {"label": "UCLA Luskin Poll (March 2026)", "url": "https://luskin.ucla.edu/volatility-ahead-in-la-mayors-race-ucla-luskin-poll-finds-40-of-voters-undecided"},
     ]
-    return race_fv, context, analysis, sources
+    poll_results = [
+        PollResult(candidate_name=name, support_pct=float(candidate_polls.get(name, 1.0)))
+        for name in ticker_to_candidate.values()
+    ]
+    other_support = float(candidate_polls.get("Other", 0.0))
+    if other_support > 0:
+        poll_results.append(PollResult(candidate_name="Other", support_pct=other_support))
+
+    race = Race(
+        title=market.get("race_title") or market.get("title") or "Los Angeles mayor election",
+        race_id=market.get("event_ticker") or market.get("series_ticker") or market.get("ticker"),
+        office="Mayor",
+        geography="Los Angeles",
+        event_date=market.get("event_date") or market.get("election_date"),
+        event_ticker=market.get("event_ticker"),
+        series_ticker=market.get("series_ticker"),
+        format_hint="top-two",
+        candidates=[
+            Candidate(
+                name=ticker_to_candidate.get(m.get("ticker", ""), m.get("ticker", "")),
+                contract_ticker=m.get("ticker", ""),
+                market_price=m.get("market_price"),
+            )
+            for m in all_markets_in_race
+        ],
+    )
+    polling_average = compute_polling_average(
+        [
+            Poll(
+                pollster="Race to the WH / UCLA Luskin",
+                results=poll_results,
+                end_date="2026-04-15",
+                sample_size=1200,
+                population="likely voters",
+                sponsor="Race to the WH",
+            )
+        ],
+        as_of_date="2026-04-15",
+    )
+    forecast_entries = adapt_race_forecast(race, polling_average, race_type="top_two_advance")
+    forecast_by_ticker = {
+        ticker: dict(entry.get("forecast") or {})
+        for ticker, entry in forecast_entries.items()
+    }
+    return race_fv, context, analysis, sources, forecast_by_ticker
 
 
 class VoteHubClient:
@@ -685,13 +895,30 @@ def run():
         write_state(state)
 
         # Analyze the full race
-        race_fv, context, analysis, sources = _analyze_mayor_race(race_markets[0], race_markets)
+        race_fv, context, analysis, sources, forecast_by_ticker = _analyze_mayor_race(
+            race_markets[0],
+            race_markets,
+        )
 
         # Finalize every market in the race so the group has one coherent analysis
         for market in race_markets:
             ticker = market.get("ticker")
             fv = race_fv.get(ticker, 5)
-            _finalize_market(market, fv, context, analysis, sources)
+            forecast = forecast_by_ticker.get(ticker)
+            candidate_name = (market.get("candidate_name") or ticker or "this candidate").strip()
+            forecast_note = _forecast_summary_text(
+                forecast,
+                label=f"Top-two forecast for {candidate_name}",
+            )
+            _finalize_market(
+                market,
+                fv,
+                context,
+                analysis,
+                sources,
+                forecast=forecast,
+                forecast_note=forecast_note,
+            )
             market["race_key"] = race_key  # used by generator to group
             _attach_financials(market, fec_client)
             if market.get("status") == "analyzing":
@@ -746,11 +973,11 @@ def run():
                 sources = [{"label": "VoteHub endpoint", "url": source_url}]
                 _finalize_market(market, price, context, analysis, sources)
             elif m_type == "approval":
-                fv, context, analysis, sources = _analyze_approval_market(market, polls)
-                _finalize_market(market, fv, context, analysis, sources)
+                fv, context, analysis, sources, forecast = _analyze_approval_market(market, polls)
+                _finalize_market(market, fv, context, analysis, sources, forecast=forecast)
             else:
-                fv, context, analysis, sources = _analyze_generic_market(market, polls)
-                _finalize_market(market, fv, context, analysis, sources)
+                fv, context, analysis, sources, forecast = _analyze_generic_market(market, polls)
+                _finalize_market(market, fv, context, analysis, sources, forecast=forecast)
 
         _attach_financials(market, fec_client)
 
