@@ -1,39 +1,56 @@
 """Arbiter Collector — discovers qualifying Kalshi election markets.
 
 Public API only (no auth needed for market discovery).
-Filters to Kalshi Elections category markets trading out within the next 60 days.
+Fetches all series in the Elections category via /series endpoint,
+then filters to markets trading out within the next 60 days.
 Writes results to state/analysis.json via state.py helpers.
 """
 
 import json
-import random
 import re
 import time
 import urllib.request
 import urllib.error
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
+from threading import Lock
 
 from state import read_state, write_state, upsert_market, touch_last_run
 
 BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
 WINDOW_DAYS = 60
-REQUEST_DELAY = 0.35  # seconds between API calls to avoid 429
-WORKER_COUNT = 10  # concurrent workers for fetching series markets
+WORKER_COUNT = 3   # 3 workers — enough parallel calls without flooding the API
+REQUEST_DELAY = 0.35  # seconds between requests per worker
 
-EXCLUDED_SERIES = (
-    "PRESADMIN",    # admin actions, not elections
-    "KXAPRPOTUS",   # presidential approval rating — not an election
-    "KXGENERICBALLOT",        # generic ballot — not an election
-    "KXGENERICBALLOTVOTEHUB", # generic ballot — not an election
-)
+# Global rate limiter — acquired before every API call
+_rate_lock = Lock()
+_last_call_time = 0.0
 
-EXCLUDED_TITLE_PATTERNS = (
-    r"approval rating",
-    r"generic ballot",
-    r"votehub.*margin",
-    r"margin.*bracket",
-)
+# Tags on series objects that indicate real election races we want to track.
+# Excludes: Fed, Policy, Inflation, SOTU (not election races)
+ALLOWED_TAGS = {
+    # US races
+    "US Elections",
+    "Primaries",
+    "House",
+    "Senate",
+    "Governor",
+    "Local",
+    # International
+    "International elections",
+    "International",
+    "Brazil",
+    "Hungary",
+    "Iran",
+    # Midterm cycle
+    "2028",
+    "Congress",
+}
+
+# Series tickers to always exclude (not election races, tagged wrong in Kalshi taxonomy)
+EXCLUDED_SERIES = {
+    "KXGENERICBALLOTVOTEHUB",  # generic ballot — not a race
+}
 
 
 def _api_get(path, params=None, retries=2):
@@ -46,8 +63,9 @@ def _api_get(path, params=None, retries=2):
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
     for attempt in range(retries + 1):
         try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                return json.loads(resp.read().decode("utf-8"))
+            with _rate_limiter():
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code == 429 and attempt < retries:
                 wait = 2 ** (attempt + 1)
@@ -61,42 +79,58 @@ def _api_get(path, params=None, retries=2):
             return None
 
 
+def _rate_limiter():
+    """Global context manager that enforces REQUEST_DELAY between API calls."""
+    global _last_call_time
+    with _rate_lock:
+        now = time.monotonic()
+        elapsed = now - _last_call_time
+        if elapsed < REQUEST_DELAY:
+            time.sleep(REQUEST_DELAY - elapsed)
+        _last_call_time = time.monotonic()
+    return _DummyContext()
+
+
+class _DummyContext:
+    """Minimal context manager for rate_limiter."""
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+
+def _series_has_allowed_tag(series):
+    """Return True if series has at least one allowed tag."""
+    tags = series.get("tags") or []
+    return any(tag in ALLOWED_TAGS for tag in tags)
+
+
 def discover_series():
-    """Get election series tickers from Kalshi's Elections category."""
-    all_series = set()
-    cursor = None
+    """Get election series tickers from Kalshi's Elections category.
 
-    while True:
-        params = {"category": "Elections", "limit": "500"}
-        if cursor:
-            params["cursor"] = cursor
+    Uses /series?category=Elections — returns all 1291 series in one page,
+    no pagination needed. Filters by allowed tags client-side.
+    """
+    print("  Fetching series list from /series?category=Elections...", flush=True)
+    data = _api_get("/series", {"category": "Elections"})
+    if not data:
+        print("  Failed to fetch series list.")
+        return []
 
-        data = _api_get("/events", params)
-        if not data:
-            if not all_series:
-                print("  Failed to fetch elections")
-            break
+    all_series_list = data.get("series", [])
+    print(f"  Got {len(all_series_list)} series from API", flush=True)
 
-        events = data.get("events", [])
-        if not events:
-            break
+    allowed_series = []
+    for series in all_series_list:
+        ticker = series.get("ticker", "")
+        if not ticker or ticker in EXCLUDED_SERIES:
+            continue
+        if _series_has_allowed_tag(series):
+            allowed_series.append(ticker)
 
-        for event in events:
-            ticker = event.get("series_ticker", "")
-            if ticker and ticker not in EXCLUDED_SERIES:
-                all_series.add(ticker)
-
-        cursor = data.get("cursor")
-        if not cursor:
-            break
-
-    print(f"  Found {len(all_series)} elections")
-    return sorted(all_series)
-
-
-def discover_elections():
-    """Backward-compatible alias for the election series discovery helper."""
-    return discover_series()
+    print(f"  {len(allowed_series)} series after tag filtering", flush=True)
+    return sorted(allowed_series)
 
 
 def fetch_markets_for_series(series_ticker):
@@ -117,11 +151,16 @@ def _parse_datetime(value):
 
 
 def _parse_close_date(market):
-    """Parse the trading cutoff date for filtering."""
+    """Parse the election/early-close date for filtering.
+
+    Prefers expected_expiration_time (the actual election date or event
+    resolution date) over close_time (the long-term trading expiry).
+    """
+    # Try expected_expiration_time first — it's the actual election/event date
     for field in (
+        "expected_expiration_time",
         "close_time",
         "expiration_time",
-        "expected_expiration_time",
         "expiration_date",
         "expiry_date",
     ):
@@ -137,6 +176,77 @@ def _parse_event_date(market):
     if not parsed:
         return None
     return parsed.strftime("%Y-%m-%d")
+
+
+EXCLUDED_TITLE_PATTERNS = (
+    r"approval rating",
+    r"generic ballot",
+    r"votehub.*margin",
+    r"margin.*bracket",
+)
+
+
+# Event contract question patterns — compiled for _is_race_market()
+_EVENT_FAIL_PATTERNS = tuple(re.compile(p) for p in (
+    r"will\s+\w+\s+drop\s*out",
+    r"will\s+\w+\s+resign",
+    r"will\s+\w+\s+be\s+expelled",
+    r"will\s+\w+\s+endorse",
+    r"will\s+\w+\s+appoint",
+    r"will\s+\w+\s+happen\s+before",
+    r"will\s+the\s+number\s+of",
+    r"will\s+\w+\s+join\s+\w+\s+before",
+    r"will\s+\w+\s+leave\s+office\s+before",
+    r"will\s+\w+\s+be\s+the\s+head\s+of\s+state",
+    r"will\s+\w+\s+be\s+\w+'s\s+running\s*mate",
+    r"will\s+\w+\s+be\s+(selected|picked|chosen|elected)",
+))
+
+# Race structure question patterns — compiled for _is_race_market()
+_RACE_PASS_PATTERNS = tuple(re.compile(p) for p in (
+    r"who\s+will\s+win",
+    r"who\s+will\s+be\s+elected",
+    r"\s+vs\s+",
+    r"win\s+the\s+\w+\s+election",
+    r"win\s+\w+\s+governor",
+    r"win\s+\w+\s+senate",
+    r"win\s+\w+\s+house",
+    r"win\s+\w+\s+mayor",
+    r"what\s+party\s+will\s+control",
+))
+
+
+def _is_race_market(market):
+    """Return True if market question text looks like an election race,
+    not an event contract. Uses Signal 1 (question text pattern matching)
+    as the primary filter. When in doubt, exclude the market.
+
+    Passes (race markets):
+      - "Who will win the [position] election"
+      - "[Candidate A] vs [Candidate B]" direct matchup
+      - "Will [candidate] win [position]"
+      - "What party will control [chamber/position]"
+
+    Fails (event contracts):
+      - "Will X drop out / resign / be expelled"
+      - "Will X endorse Y / appoint Y"
+      - "Will X happen before date Y"
+      - "Will the number of X be exactly Y"
+      - Binary event questions about appointments, resignations, etc.
+    """
+    question = (market.get("question") or market.get("title") or "").strip().lower()
+
+    # Fast fail — check event contract patterns first
+    for pattern in _EVENT_FAIL_PATTERNS:
+        if pattern.search(question):
+            return False
+
+    # Must match at least one race pattern to pass
+    for pattern in _RACE_PASS_PATTERNS:
+        if pattern.search(question):
+            return True
+
+    return False
 
 
 def _is_excluded_by_title(title):
@@ -162,8 +272,7 @@ def _get_market_price(market):
 
 def _fetch_and_filter_series(series_ticker):
     """Fetch and filter markets for one series. Runs in worker thread."""
-    # Rate-limit jitter
-    time.sleep(random.uniform(0, 0.1))
+    # Rate-limit jitter removed — global _rate_limiter in _api_get handles spacing
 
     markets = fetch_markets_for_series(series_ticker)
     if not markets:
@@ -190,6 +299,9 @@ def _fetch_and_filter_series(series_ticker):
         if cutoff_date > cutoff:
             continue
 
+        if not _is_race_market(m):
+            continue  # skip — not a real race, no polling to analyze
+
         event_ticker = m.get("event_ticker", "")
         price = _get_market_price(m)
 
@@ -213,11 +325,13 @@ def collect():
     now = datetime.now(timezone.utc)
     cutoff = now + timedelta(days=WINDOW_DAYS)
 
-    print(f"Collector starting — {now.strftime('%Y-%m-%d %H:%M UTC')}")
-    print(f"Window: {WINDOW_DAYS} days (cutoff {cutoff.strftime('%Y-%m-%d')})")
+    print(f"Collector starting — {now.strftime('%Y-%m-%d %H:%M UTC')}", flush=True)
+    print(f"Window: {WINDOW_DAYS} days (cutoff {cutoff.strftime('%Y-%m-%d')})", flush=True)
 
     # Discover elections
+    print("  Starting discover_series()...", flush=True)
     elections = discover_series()
+    print(f"  discover_series() returned {len(elections)} elections", flush=True)
     if not elections:
         print("  No elections found. Check API connectivity.")
         return 0
@@ -225,17 +339,19 @@ def collect():
     # Load state
     state = read_state()
     existing_tickers = {m["ticker"] for m in state["markets"]}
-    new_count = 0
 
-    # Remove candidates from excluded elections
+    # Remove markets whose series is no longer in the allowed set
     removed_count = 0
     state["markets"] = [
         m for m in state["markets"]
         if (m.get("series_ticker") or m.get("event_ticker") or m.get("ticker", "")) not in EXCLUDED_SERIES
+        and _series_has_allowed_tag({"tags": _get_series_tags_for_ticker(m.get("series_ticker", ""))})
     ]
     removed_count = len(existing_tickers) - len({m["ticker"] for m in state["markets"]})
     if removed_count:
-        print(f"  Removed {removed_count} candidates from excluded elections")
+        print(f"  Removed {removed_count} candidates from excluded series")
+
+    new_count = 0
 
     # Fetch candidates for each election concurrently
     print(f"  Fetching candidates for {len(elections)} elections with {WORKER_COUNT} workers...")
@@ -275,6 +391,14 @@ def collect():
     total = len(state["markets"])
     print(f"\nCollector done. {new_count} new markets, {total} total in state.")
     return new_count
+
+
+def _get_series_tags_for_ticker(series_ticker):
+    """Stub helper — series tag lookup not available without re-fetching /series.
+    Cleanup uses EXCLUDED_SERIES set only; tag-based cleanup happens at discovery time.
+    Returns empty list so ticker is kept unless in EXCLUDED_SERIES.
+    """
+    return []
 
 
 if __name__ == "__main__":

@@ -62,6 +62,7 @@ collector.py
   → Queries Kalshi Elections API via `/series?category=Elections` (no auth required for discovery)
   → For each election, fetches all candidate contracts via `/markets?series_ticker=`
   → Filters on `close_time` / `expiration_time` so the 60-day window uses the real trading cutoff
+  → `_is_race_market()` pattern-matches question text to exclude event contracts (dropout, endorsement, resignation, binary appointment questions) — only passes markets where polling-based math actually applies
   → Stores `event_date` (election date when present), `candidate_name`, and `event_ticker`
   → Updates state/analysis.json
     │
@@ -154,6 +155,7 @@ Each task is a self-contained 5-minute coding session. Do them in order.
 | 10 | Error handling | `collector.py`, `engine.py` | Alert on failure, don't skip steps **DONE** |
 | 11 | Race-level cards | `collector.py`, `engine.py`, `generator.py`, `state.py` | Group multi-contract races by `event_ticker`, analyze mayoral fields together, render one candidate-table card **DONE** |
 | 12 | Elections expiry filter fix | `collector.py`, `state.py`, `generator.py` | Discover via Elections events, use trading cutoff for the 60-day window, exclude approval/generic-ballot titles, persist `event_date` **DONE** |
+| 13 | Event contract filter | `collector.py` | `_is_race_market()` question-text pattern filter — exclude dropout/endorsement/resignation markets, only pass markets with polling data to analyze **DONE** |
 
 *Arbiter stays local. No Vercel, no deployment — this is a local tool on Carlos's machine, served via localhost.*
 

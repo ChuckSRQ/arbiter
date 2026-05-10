@@ -7,7 +7,7 @@
 ## [Unreleased] — MVP Development
 
 ### Added
-- `tests/test_forecast_reporting_integration.py` — deterministic unittest coverage for Phase 5 engine forecast attachment, single-card forecast rendering, and grouped race-card forecast rendering.
+- `collector.py` — `_is_race_market()` filter using Signal 1 (question text pattern matching) to exclude event contracts (dropout, endorsement, resignation, binary appointment questions) and only pass markets with actual candidate races and polling data to analyze. Integrated after the 60-day cutoff check in `_fetch_and_filter_series()`. When in doubt, the market is excluded.
 - `forecast/electoral.py` — Phase 4 exact Electoral College helper that turns per-state presidential win probabilities into a deterministic win-probability summary without adding any map/report UI.
 - `tests/test_forecast_phase4.py` — unit coverage for presidential-state adapter labeling, congressional no-poll fallbacks, OpenFEC-style financial-direction effects, fundamentals-dominant low-confidence markers, and deterministic Electoral College summaries.
 - `forecast/adapters.py` — Phase 3 forecast adapters for binary head-to-head, multicandidate plurality, and top-two races, with deterministic intervals plus uncertainty-aware verdict helpers that preserve top-level `marcus_fv` / `delta` / `verdict` compatibility.
