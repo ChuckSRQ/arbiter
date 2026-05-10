@@ -4,9 +4,9 @@
 
 ---
 
-## Status: MVP Running + Forecast Phase 5 Reporting Integrated
+## Status: MVP Running + Forecast Phase 5 Reporting Integrated + Event Contract Filter
 
-Core pipeline complete. All 10 original MVP tasks done. Daily cron fires at 1:30PM ET. Race-level grouping for multi-contract candidate markets is now implemented for mayoral races, collector discovery now comes directly from Kalshi's Elections category with trading-cutoff date filtering, and the forecast-model now runs all the way through the report path: completed market entries can carry nested forecast blocks, engine briefs now mention uncertainty when a forecast exists, and the HTML cards render median/range/confidence/data-quality summaries without changing the existing portrait-card layout.
+Core pipeline complete. Collector now filters out event contracts (dropout, endorsement, resignation questions) via `_is_race_market()` using question text pattern matching, passing only markets with actual candidate races and polling data for Marcus to analyze.
 
 ### Latest verification
 - `python3 -m unittest discover -s tests -p 'test*.py'` → `Ran 35 tests in 0.127s` / `OK`
