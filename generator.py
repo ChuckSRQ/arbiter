@@ -90,6 +90,47 @@ def _forecast_band_text(forecast):
     return f"{low.rstrip('%')}-{high}"
 
 
+def _format_dollars(value):
+    """Format a dollar amount as $X.XM, $X.XK, or $0."""
+    if value is None:
+        return "$0"
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return "$0"
+    if v >= 1_000_000:
+        return f"${v / 1_000_000:.1f}M"
+    if v >= 1_000:
+        return f"${v / 1_000:.0f}K"
+    return "$0"
+
+
+def _render_financials_block(market):
+    """Render a Finances section for a single-candidate card if FV >= 5."""
+    if not market.get("financials"):
+        return ""
+    fv = market.get("marcus_fv")
+    if fv is not None and float(fv) < 5:
+        return ""
+    fin = market["financials"]
+    receipts = _format_dollars(fin.get("receipts"))
+    cash = _format_dollars(fin.get("cash_on_hand"))
+    return f"""
+  <div class="finances-block">
+    <div class="finances-kicker">Finances</div>
+    <div class="finances-row">
+      <div class="finances-stat">
+        <div class="finances-label">Raised</div>
+        <div class="finances-value">{receipts}</div>
+      </div>
+      <div class="finances-stat">
+        <div class="finances-label">Cash on Hand</div>
+        <div class="finances-value">{cash}</div>
+      </div>
+    </div>
+  </div>"""
+
+
 def _render_forecast_block(forecast):
     if not isinstance(forecast, dict):
         return ""
@@ -183,7 +224,8 @@ def _render_card(market):
   <div class="reason-label">Analysis</div>
   <div class="reason-text">
     {escape(market.get("analysis") or "")}
-  </div>{source_block}
+  </div>
+  {_render_financials_block(market)}{source_block}
 </div>"""
 
 
@@ -255,6 +297,23 @@ def _render_race_card(race_key, markets):
         verdict_class = "verdict-trade" if verdict == "TRADE" else "verdict-pass"
         delta_style = "" if abs(delta_int) >= 5 else ' style="color:#9CA3AF"'
 
+        fv_int = int(fv) if fv is not None else 0
+        if fv_int < 5:
+            finances_html = '<span style="color:#475569">—</span>'
+        else:
+            fin = m.get("financials")
+            if fin and "error" not in fin:
+                raised = _format_dollars(fin.get("receipts"))
+                cash = _format_dollars(fin.get("cash_on_hand"))
+                finances_html = (
+                    f'<div class="candidate-finances-block">'
+                    f'<div class="candidate-finances-raised">Raised: {raised}</div>'
+                    f'<div class="candidate-finances-cash">Cash: {cash}</div>'
+                    f'</div>'
+                )
+            else:
+                finances_html = '<span style="color:#475569">N/A</span>'
+
         rows_html += f"""      <tr class="candidate-row">
         <td class="candidate-rank">{rank}</td>
         <td class="candidate-name">{escape(candidate_name)}</td>
@@ -262,6 +321,7 @@ def _render_race_card(race_key, markets):
         <td class="candidate-delta"{delta_style}>{delta_str}</td>
         <td class="candidate-fv-cell"><div class="candidate-fv">{fv_str}</div><div class="candidate-signal"><span class="verdict-tag {verdict_class} verdict-sm">{verdict}</span></div></td>
         <td class="candidate-forecast-cell">{forecast_html}</td>
+        <td class="candidate-finances-cell">{finances_html}</td>
       </tr>"""
 
     source_links = "\n    ".join(_source_anchor(src) for src in sources)
@@ -315,6 +375,7 @@ def _render_race_card(race_key, markets):
         <th>Edge</th>
         <th>Marcus</th>
         <th>Forecast</th>
+        <th>Finances</th>
       </tr>
     </thead>
     <tbody>
@@ -848,9 +909,54 @@ def generate():
     line-height: 1.4;
   }}
 
-  .verdict-sm {{
+.verdict-sm {{
     font-size: 9px;
     padding: 2px 7px;
+  }}
+
+  .finances-block {{
+    margin: 10px 0 6px 0;
+    padding: 8px 10px;
+    background: #151825;
+    border-radius: 6px;
+    border-left: 2px solid #60A5FA;
+  }}
+  .finances-kicker {{
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #60A5FA;
+    margin-bottom: 5px;
+  }}
+  .finances-row {{
+    display: flex;
+    gap: 20px;
+  }}
+  .finances-stat {{}}
+  .finances-label {{
+    font-size: 10px;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }}
+  .finances-value {{
+    font-size: 13px;
+    font-weight: 600;
+    color: #FCD34D;
+  }}
+  .candidate-finances-cell {{
+    text-align: left;
+  }}
+  .candidate-finances-block {{
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }}
+  .candidate-finances-raised,
+  .candidate-finances-cash {{
+    font-size: 10px;
+    color: #FCD34D;
   }}
 </style>
 </head>

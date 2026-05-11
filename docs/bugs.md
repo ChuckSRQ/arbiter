@@ -36,9 +36,11 @@ Phase 4 adds only forecast-layer readiness for presidential state markets. The n
 ### Wikipedia polling for non-US elections
 Wikipedia has reliable polling tables for US federal/state elections. For UK general elections, Canadian provincial races, etc. — polling tables exist but structure varies and may not cover every race Marcus needs.
 
-**Impact:** MVP is US-only. Non-US markets are still outside the approved forecast/reporting phases.
+**Status: RESOLVED** — Wikipedia polling is now wired as automatic fallback (Priority 4). When VoteHub/Ballotpedia/RaceToTheWH all return no data, Wikipedia is tried automatically for mayorals, international elections, and any race type.
 
-**Workaround:** Ballotpedia covers some international races. If neither has coverage, note "no recent polling" and Marcus estimates from fundamentals.
+**Impact:** MVP now covers US mayorals and major international elections (Armenia parliamentary Jun 7, Colombia presidential May 31) via Wikipedia.
+
+**Workaround:** If Wikipedia also misses, note "no recent polling" and Marcus estimates from fundamentals.
 
 ---
 

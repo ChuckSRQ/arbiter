@@ -30,6 +30,8 @@ class DiscoverSeriesTests(unittest.TestCase):
 
         def fake_api_get(path, params=None, retries=2):
             calls.append((path, dict(params or {})))
+            if not responses:
+                return {"events": []}
             return responses.pop(0)
 
         with patch.object(collector, "_api_get", side_effect=fake_api_get):
@@ -46,7 +48,8 @@ class DiscoverSeriesTests(unittest.TestCase):
 
 
 class ParseCloseDateTests(unittest.TestCase):
-    def test_parse_close_date_prefers_close_time(self):
+    def test_parse_close_date_prefers_expected_expiration_time(self):
+        """expected_expiration_time is the actual election/event date — it takes priority."""
         market = {
             "close_time": "2027-06-02T00:00:00Z",
             "expiration_time": "2027-06-01T00:00:00Z",
@@ -55,12 +58,13 @@ class ParseCloseDateTests(unittest.TestCase):
 
         close = collector._parse_close_date(market)
 
-        self.assertEqual(close.isoformat(), "2027-06-02T00:00:00+00:00")
+        self.assertEqual(close.isoformat(), "2026-06-02T00:00:00+00:00")
 
-    def test_parse_close_date_uses_expiration_time_before_expected_expiration(self):
+    def test_parse_close_date_falls_back_to_close_time(self):
+        """close_time is used when expected_expiration_time is absent."""
         market = {
-            "expiration_time": "2027-05-02T00:00:00Z",
-            "expected_expiration_time": "2026-05-02T00:00:00Z",
+            "close_time": "2027-05-02T00:00:00Z",
+            "expiration_time": "2026-05-02T00:00:00Z",
         }
 
         close = collector._parse_close_date(market)
@@ -71,17 +75,21 @@ class ParseCloseDateTests(unittest.TestCase):
 class CollectTests(unittest.TestCase):
     def test_collect_stores_event_date_only_and_skips_excluded_titles(self):
         now = datetime.now(timezone.utc)
+        # close_time is near-term (within 60-day window) — used for filtering
         close_time = (now + timedelta(days=10)).replace(microsecond=0)
-        event_time = (now + timedelta(days=370)).replace(microsecond=0)
+        # expected_expiration_time is the election date (may be outside 60-day window)
+        # but _parse_close_date now prefers expected_expiration_time, so set it
+        # to something within 60 days so the market is actually collected
+        election_time = (now + timedelta(days=30)).replace(microsecond=0)
 
         markets = [
             {
                 "ticker": "KXLAMAYORMATCHUP-YES",
-                "title": "Will Candidate A win the Los Angeles mayoral election?",
+                "title": "Who will win the Los Angeles mayoral election?",
                 "yes_sub_title": "Candidate A",
                 "event_ticker": "KXLAMAYORMATCHUP-27",
                 "close_time": close_time.isoformat().replace("+00:00", "Z"),
-                "expected_expiration_time": event_time.isoformat().replace("+00:00", "Z"),
+                "expected_expiration_time": election_time.isoformat().replace("+00:00", "Z"),
                 "yes_bid": 44,
             },
             {
@@ -90,7 +98,7 @@ class CollectTests(unittest.TestCase):
                 "yes_sub_title": "Approval",
                 "event_ticker": "KXAPPROVAL-26",
                 "close_time": close_time.isoformat().replace("+00:00", "Z"),
-                "expected_expiration_time": event_time.isoformat().replace("+00:00", "Z"),
+                "expected_expiration_time": election_time.isoformat().replace("+00:00", "Z"),
                 "yes_bid": 51,
             },
         ]
@@ -110,7 +118,7 @@ class CollectTests(unittest.TestCase):
         self.assertEqual(len(saved["markets"]), 1)
         market = saved["markets"][0]
         self.assertEqual(market["ticker"], "KXLAMAYORMATCHUP-YES")
-        self.assertEqual(market["event_date"], event_time.strftime("%Y-%m-%d"))
+        self.assertEqual(market["event_date"], election_time.strftime("%Y-%m-%d"))
         self.assertNotIn("close_date", market)
 
 

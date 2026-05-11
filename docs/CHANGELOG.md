@@ -4,9 +4,22 @@
 
 ---
 
-## [Unreleased] — MVP Development
+## [Unreleased] — Wikipedia Polling + ≤6% Filter + Alert System
 
 ### Added
+- `engine.py` — `WikipediaPoller` class and `_scrape_wiki_polls()` that auto-fetches Wikipedia polling for mayorals, international elections, and any unsupported race type when higher-priority sources (VoteHub/Ballotpedia/RaceToTheWH) return no data. Candidate name aliases for LA Mayor. ≤6% filter in `_filter_6pct()`.
+- `engine.py` — `_wikipedia_url()` constructs Wikipedia article URLs for LA Mayor (`2026_Los_Angeles_mayoral_election`), Armenia parliamentary, Colombia presidential. Returns `None` for unknown election types.
+- `engine.py` — `m_type == "other"` path now tries Wikipedia polling automatically before falling back to market-price FV + `_POOL_FAILED_` marker.
+- `collector.py` — `discover_series()` now uses `/events?category=Elections` pagination (not `/series`) to match actual Kalshi API taxonomy. Extracts unique `series_ticker` from each event.
+- `tests/test_wikipedia_polling.py` — unit coverage for URL construction, candidate name normalization, 6% filtering, and poll table row parsing.
+- `tests/test_6pct_filter.py` — unit coverage for ≤6% candidate exclusion from candidate tables and analysis text, plus polling failure detection via placeholder text patterns.
+- `tests/test_market_expiry_filter.py` — fixed tests to match `_parse_close_date()` priority (expected_expiration_time first), fixed `discover_series` mock for `/events` pagination, fixed `CollectTests` event dates for 60-day window.
+
+### Changed
+- `collector.py` — `discover_series()` paginates through `/events` (not `/series`), extracting `series_ticker` from each event dict. Removes `ALLOWED_TAGS` filtering since the Elections category already scopes to political races.
+- `collector.py` — `_is_race_market()` title patterns unchanged; matchup questions filtered out as designed.
+- `engine.py` — `m_type` detection changed from `if "KXMAYOR" in t` to `if "MAYOR" in t` to cover `KXLAMAYOR1R`, `KXLAMAYORMATCHUP`, etc. without matching non-mayor strings.
+- `tests/test_market_expiry_filter.py` — updated `ParseCloseDateTests` to reflect `_parse_close_date()` priority (expected_expiration_time first, close_time fallback). Updated `CollectTests` event dates and title to match new behavior.
 - `collector.py` — `_is_race_market()` filter using Signal 1 (question text pattern matching) to exclude event contracts (dropout, endorsement, resignation, binary appointment questions) and only pass markets with actual candidate races and polling data to analyze. Integrated after the 60-day cutoff check in `_fetch_and_filter_series()`. When in doubt, the market is excluded.
 - `forecast/electoral.py` — Phase 4 exact Electoral College helper that turns per-state presidential win probabilities into a deterministic win-probability summary without adding any map/report UI.
 - `tests/test_forecast_phase4.py` — unit coverage for presidential-state adapter labeling, congressional no-poll fallbacks, OpenFEC-style financial-direction effects, fundamentals-dominant low-confidence markers, and deterministic Electoral College summaries.
