@@ -20,6 +20,38 @@ OPENFEC_BASE = "https://api.open.fec.gov/v1"
 OPENFEC_KEY = "DEMO_KEY"
 OPENFEC_REQUEST_DELAY = 0.5
 
+SIX_PCT_THRESHOLD = 6.0
+
+# Wikipedia polling lookup
+_WIKIPEDIA_BASE = "https://en.wikipedia.org/wiki"
+
+
+def _wikipedia_url(race_title, event_date):
+    """Construct Wikipedia article URL from race title and event date."""
+    if not event_date:
+        return None
+    year_match = re.search(r"20\d{2}", str(event_date))
+    year = year_match.group(0) if year_match else "2026"
+    title_lower = (race_title or "").lower()
+    if "mayor" in title_lower or "los angeles" in title_lower:
+        return f"{_WIKIPEDIA_BASE}/{year}_Los_Angeles_mayoral_election"
+    if "armenia" in title_lower and "parliamentary" in title_lower:
+        return f"{_WIKIPEDIA_BASE}/{year}_Armenian_parliamentary_election"
+    if "colombia" in title_lower and "presidential" in title_lower:
+        return f"{_WIKIPEDIA_BASE}/{year}_Colombian_presidential_election"
+    if "parliamentary" in title_lower:
+        country = re.sub(r"\b20\d{2}\b", "", title_lower).strip()
+        country = re.sub(r"\s*parliamentary.*", "", country).strip()
+        if country:
+            return f"{_WIKIPEDIA_BASE}/{year}_{country}_parliamentary_election"
+    if "presidential" in title_lower or "president" in title_lower:
+        country = re.sub(r"\b20\d{2}\b", "", title_lower).strip()
+        country = re.sub(r"\s*presidential.*", "", country).strip()
+        country = re.sub(r"\s*president.*", "", country).strip()
+        if country:
+            return f"{_WIKIPEDIA_BASE}/{year}_{country}_presidential_election"
+    return None
+
 
 def _safe_float(value):
     if value is None:
@@ -190,7 +222,8 @@ def _market_type(ticker):
         return "approval"
     if "GENERICBALLOT" in t or "VOTEHUB" in t:
         return "generic"
-    if "KXMAYOR" in t:
+    # Covers KXMAYORLA, KXLAMAYOR1R, KXMAYORLA-26JUN02, etc.
+    if "MAYOR" in t:
         return "mayor"
     return "other"
 
@@ -810,7 +843,197 @@ def _national_financials_note():
     }
 
 
+# ─── Wikipedia Polling ──────────────────────────────────────────────────────────
+
+_WIKIPEDIA_CANDIDATE_ALIASES = {
+    "karen bass": "Karen Bass",
+    "bass": "Karen Bass",
+    "nithya raman": "Nithya Raman",
+    "raman": "Nithya Raman",
+    "spencer pratt": "Spencer Pratt",
+    "pratt": "Spencer Pratt",
+    "rae huang": "Rae Huang",
+    "huang": "Rae Huang",
+    "adam miller": "Adam Miller",
+    "miller": "Adam Miller",
+}
+
+
+def _normalize_candidate_name(raw_name):
+    """Map a raw candidate name to canonical form using aliases."""
+    normalized = (raw_name or "").strip().lower()
+    return _WIKIPEDIA_CANDIDATE_ALIASES.get(normalized, raw_name.strip())
+
+
+def _filter_6pct(candidates_dict):
+    """Return dict with candidates ≤6% removed."""
+    return {
+        name: pct
+        for name, pct in candidates_dict.items()
+        if float(pct) > SIX_PCT_THRESHOLD
+    }
+
+
+def _parse_wiki_poll_table_row(row_text):
+    """Extract candidate name and poll percentage from a Wikipedia table row.
+
+    Wikipedia polls use bold candidate names ('''text''') and poll numbers
+    in table cells. This parses the raw text to find candidate/pct pairs.
+    """
+    # Bold candidate names in Wikipedia wikitext: '''Name'''
+    bold_matches = re.findall(r"'''([^']+)'''", row_text)
+    if not bold_matches:
+        return None, None
+
+    candidate_raw = bold_matches[0].strip()
+    candidate = _normalize_candidate_name(candidate_raw)
+
+    # Find the most recent (rightmost) poll percentage in the row
+    # Polls appear as numbers like "23%" or "23.5%"
+    # The last number in the row is typically the most recent poll
+    pct_matches = re.findall(r"\b(\d+(?:\.\d+)?)\s*%", row_text)
+    if pct_matches:
+        return candidate, float(pct_matches[-1])
+
+    return None, None
+
+
+def _scrape_wiki_polls(url, candidates):
+    """Fetch a Wikipedia article and parse its polling table.
+
+    Args:
+        url: Wikipedia article URL
+        candidates: list of canonical candidate names to look for
+
+    Returns:
+        dict of {candidate_name: poll_pct} for candidates >6%, or empty dict on failure.
+    """
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={
+                "Accept": "text/html",
+                "User-Agent": "Mozilla/5.0 Arbiter/1.0 (political research bot)",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            html = resp.read().decode("utf-8", errors="replace")
+    except Exception:
+        return {}
+
+    # Look for polling tables — they typically appear in a "Polling" section
+    # or as part of an election infobox. Find the most recent poll block.
+    results = {}
+
+    # Strategy: find all <table> elements and look for ones with candidate names
+    # Wikipedia poll tables have candidates in bold and numbers in cells
+    candidate_lower = {c.lower() for c in candidates}
+    candidate_pattern = re.compile(
+        "|".join(re.escape(c.lower()) for c in candidates),
+        re.IGNORECASE,
+    )
+
+    # Split by table rows
+    table_sections = re.findall(
+        r"<table[^>]*>(.*?)</table>", html, re.DOTALL | re.IGNORECASE
+    )
+    for table_html in table_sections:
+        rows = re.findall(r"<tr[^>]*>(.*?)</tr>", table_html, re.DOTALL | re.IGNORECASE)
+        for row_html in rows:
+            # Strip HTML tags to get visible text
+            row_text = re.sub(r"<[^>]+>", " ", row_html)
+            row_text = re.sub(r"\s+", " ", row_text).strip()
+
+            if not row_text:
+                continue
+
+            # Try to match a candidate name in this row
+            match = candidate_pattern.search(row_text)
+            if not match:
+                continue
+
+            # Find the poll value associated with this candidate
+            # Poll values appear after the candidate name in the same row
+            # Look for percentage numbers: NN% or NN.N%
+            pct_matches = re.findall(r"\b(\d+(?:\.\d+)?)\s*%", row_text)
+            if pct_matches:
+                # Use the rightmost pct (most recent in a time-series table)
+                raw_name = match.group(0)
+                canonical = _normalize_candidate_name(raw_name)
+                pct = float(pct_matches[-1])
+                if canonical not in results or pct_matches:
+                    # Only update if this is a later/more recent entry
+                    # For simplicity, take the last match found
+                    results[canonical] = pct
+
+    return _filter_6pct(results)
+
+
+class WikipediaPoller:
+    """Poll Wikipedia for election polling data when other sources are unavailable.
+
+    Wikipedia coverage priority:
+      - LA Mayor → 2026 Los Angeles mayoral election
+      - Armenia parliamentary → 2026 Armenian parliamentary election
+      - Colombia presidential → 2026 Colombian presidential election
+
+    Candidates ≤6% are excluded from the returned dict.
+    Returns empty dict on failure (no page, no table, no match).
+    """
+
+    def __init__(self):
+        self._cache = {}
+
+    def poll(self, race_title, event_date, candidates):
+        """Fetch Wikipedia polling for the given race.
+
+        Args:
+            race_title: Title of the race (e.g. "Los Angeles Mayoral Primary")
+            event_date: Election date string (e.g. "2026-06-02")
+            candidates: list of candidate names to look for
+
+        Returns:
+            dict of {candidate_name: poll_pct} (candidates >6% only), or {} on failure.
+        """
+        cache_key = (race_title, tuple(sorted(candidates)))
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        url = _wikipedia_url(race_title, event_date)
+        if not url:
+            return {}
+
+        candidates_clean = [c.strip() for c in candidates if c.strip()]
+
+        polls = _scrape_wiki_polls(url, candidates_clean)
+        self._cache[cache_key] = polls
+        return polls
+
+    def poll_with_meta(self, race_title, event_date, candidates):
+        """Like poll() but returns (polls_dict, metadata_dict)."""
+        polls = self.poll(race_title, event_date, candidates)
+        url = _wikipedia_url(race_title, event_date)
+        meta = {
+            "source_label": "Wikipedia polling",
+            "source_url": url or "unknown",
+            "poll_date": None,
+            "pollster": None,
+            "as_of_date": datetime.now().strftime("%Y-%m-%d"),
+            "data_quality": "sparse" if polls else "no_polls",
+        }
+        return polls, meta
+
+
+def _build_wiki_sources(url, poll_date=None):
+    """Build sources list entry for a Wikipedia poll."""
+    return {
+        "label": f"Wikipedia polling" + (f" ({poll_date})" if poll_date else ""),
+        "url": url,
+    }
+
+
 def _extract_candidate_id(market):
+    """Extract FEC candidate ID from market data."""
     for key in ("candidate_id", "fec_candidate_id"):
         candidate_id = market.get(key)
         if isinstance(candidate_id, str):
@@ -942,19 +1165,82 @@ def run():
         m_type = _market_type(ticker)
 
         if m_type == "other":
-            price = market.get("market_price")
-            if price is None:
-                price = 50
-            context = (
-                "This market is not yet mapped to a polling feed in the current engine configuration. "
-                "Arbiter still completes the brief to keep state continuity and track coverage gaps."
-            )
-            analysis = (
-                "Because no polling source is implemented for this contract type, Marcus sets fair value "
-                "equal to current market price and marks the verdict as PASS. polling source not yet implemented."
-            )
-            sources = [{"label": "Arbiter engine note", "url": "local://engine.py"}]
-            _finalize_market(market, price, context, analysis, sources)
+            # Try Wikipedia polling for international/unsupported races
+            wiki = WikipediaPoller()
+            race_title = market.get("race_title") or market.get("title") or ""
+            event_date = market.get("event_date") or market.get("election_date")
+            candidates = [
+                (market.get("candidate_name") or "").strip(),
+            ]
+            if not candidates or not candidates[0]:
+                # For multi-candidate races, derive from title
+                title = market.get("title", "")
+                candidates = []
+
+            wiki_polls, wiki_meta = wiki.poll_with_meta(race_title, event_date, candidates)
+
+            if wiki_polls:
+                # Wikipedia has polling — compute FV from poll percentages
+                price = market.get("market_price")
+                poll_values = list(wiki_polls.values())
+                if poll_values:
+                    avg_poll = sum(poll_values) / len(poll_values)
+                    fv = int(round(min(avg_poll * 2.0, 95)))  # rough heuristic
+                    if price is not None:
+                        delta = fv - int(price)
+                    else:
+                        delta = 0
+                    market["_wiki_polls"] = wiki_polls  # store for reference
+
+                    context = (
+                        f"Wikipedia polling for {race_title} shows: "
+                        + ", ".join(f"{k}: {v}%" for k, v in wiki_polls.items())
+                    )
+                    analysis = (
+                        f"Marcus uses Wikipedia polling data to set fair value at {fv}¢ "
+                        f"for this market. "
+                        f"{'The market price is ' + str(price) + '¢, giving an edge of ' + str(delta) + '¢.' if price is not None else ''}"
+                        f"Candidates polling ≤6% are excluded from analysis."
+                    )
+                    sources = [_build_wiki_sources(wiki_meta["source_url"])]
+                    _finalize_market(market, fv, context, analysis, sources)
+                else:
+                    # Wikipedia found but no usable polls
+                    price = market.get("market_price")
+                    if price is None:
+                        price = 50
+                    context = (
+                        f"Wikipedia article for {race_title} was found but contained no "
+                        f"extractable polling data for the candidates in this market."
+                    )
+                    analysis = (
+                        "With no usable polling data available, Marcus sets fair value "
+                        "equal to current market price and marks the verdict as PASS. "
+                        "_POOL_FAILED_"
+                    )
+                    sources = [_build_wiki_sources(_wikipedia_url(race_title, event_date) or "https://en.wikipedia.org/")]
+                    _finalize_market(market, price, context, analysis, sources)
+                    market["_poll_failed"] = True
+            else:
+                # No Wikipedia polling — fall back to market price
+                url = _wikipedia_url(race_title, event_date)
+                price = market.get("market_price")
+                if price is None:
+                    price = 50
+                context = (
+                    "This market is not yet mapped to a polling feed in the current engine configuration. "
+                    "Arbiter still completes the brief to keep state continuity and track coverage gaps."
+                )
+                analysis = (
+                    "Because no polling source is implemented for this contract type, Marcus sets fair value "
+                    "equal to current market price and marks the verdict as PASS. polling source not yet implemented."
+                    + (" _POOL_FAILED_" if url else "")
+                )
+                wiki_url = url or "local://engine.py"
+                sources = [{"label": "Arbiter engine note", "url": wiki_url}]
+                _finalize_market(market, price, context, analysis, sources)
+                if url:
+                    market["_poll_failed"] = True
         else:
             polls = client.fetch_recent(m_type)
             if polls is None:

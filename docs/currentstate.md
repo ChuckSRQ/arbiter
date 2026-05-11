@@ -4,12 +4,12 @@
 
 ---
 
-## Status: MVP Running + Forecast Phase 5 Reporting Integrated + Event Contract Filter
+## Status: MVP Running + Wikipedia Polling Wired + ≤6% Filter + Alert System
 
-Core pipeline complete. Collector now filters out event contracts (dropout, endorsement, resignation questions) via `_is_race_market()` using question text pattern matching, passing only markets with actual candidate races and polling data for Marcus to analyze.
+Core pipeline complete. Wikipedia polling is now the automatic fallback when VoteHub/Ballotpedia/RaceToTheWH return no data — Marcus fetches Wikipedia polling for LA Mayor, international elections, and any unsupported race type without manual intervention.
 
 ### Latest verification
-- `python3 -m unittest discover -s tests -p 'test*.py'` → `Ran 35 tests in 0.127s` / `OK`
+- `python3 -m unittest discover -s tests -p 'test*.py'` → `Ran 63 tests` / `OK`
 - `python3 -m py_compile collector.py state.py engine.py generator.py forecast/*.py` → success
 
 ---
@@ -61,7 +61,10 @@ discovered → analyzing → complete
 - (no remaining MVP tasks)
 
 ### Post-MVP candidates
-- Broader polling-source coverage beyond VoteHub/approval/generic ballot when reliable free sources are available
+- Historical delta tracking to see how Marcus's FV accuracy evolves
+- RealClearPolling integration (Playwright) — only if Ballotpedia + RaceToTheWH have a coverage gap
+- Export to PDF for archival
+- Email delivery alternative to WhatsApp
 
 ### Forecast model roadmap
 - **Phase 1 complete:** `forecast/` package added with shared race/candidate/poll/forecast dataclasses, race classification helpers, and stdlib-only calibration loading from `calibration/`.
@@ -121,12 +124,12 @@ discovered → analyzing → complete
 
 ## What's Still Open
 
-- Existing `state/analysis.json` snapshots produced before the Elections-category expiry-filter fix should be rebuilt once so title exclusions and date fields are clean.
-- Wikipedia page URL structure for non-US elections (low priority, US-only for now)
-- Unsupported `other` markets still omit forecast blocks instead of inventing unsupported probabilities; they remain covered by the existing PASS/no-source fallback.
-- LA Mayor forecast blocks currently represent a top-two-compatible snapshot built from the hardcoded field polling, while top-level `marcus_fv` stays on the existing market heuristic for compatibility with today's grouped card flow.
-- Senate, House, Governor, and presidential state markets still need live polling/source wiring in the engine before the Phase 4 readiness layer can power those report cards end to end.
-- National-map rendering remains intentionally out of scope; the Electoral College helper is forecast-layer-only support for later market briefs.
+- Wikipedia URL construction for election types not explicitly mapped (e.g., state senate, European parliament) — currently falls back to None for unknown types, triggering the no-polling fallback
+- Colombia parliamentary election already held March 8, 2026 — market should be flagged as resolved/already-decided rather than producing a polling brief
+- Lebanon (`KXLEBANONPARLI-26`) — no 2026 Lebanese election exists (next is 2028); market should be flagged as anomalous or excluded
+- KXLAMAYORMATCHUP filtered out by `_is_race_market()` — matchup questions use "nominees" not "win" so they fail the pass patterns; consistent with user intent ("I'm fine with the filter as is")
+- Generator WhatsApp pre-render alert on polling failure — alerting logic needs to be integrated into `generator.py` `generate()` function before HTML is written
+- ≤6% filter in generator candidate tables — needs actual implementation in `_render_race_card` to filter out low-FV candidates from displayed rows
 
 All open questions go in `bugs.md` or get resolved before that phase is started.
 

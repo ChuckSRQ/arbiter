@@ -109,28 +109,37 @@ def _series_has_allowed_tag(series):
 def discover_series():
     """Get election series tickers from Kalshi's Elections category.
 
-    Uses /series?category=Elections — returns all 1291 series in one page,
-    no pagination needed. Filters by allowed tags client-side.
+    Uses /events?category=Elections with cursor pagination — returns all
+    events across pages. Extracts unique series_tickers from each event.
     """
-    print("  Fetching series list from /series?category=Elections...", flush=True)
-    data = _api_get("/series", {"category": "Elections"})
-    if not data:
-        print("  Failed to fetch series list.")
-        return []
+    all_tickers = set()
+    cursor = None
 
-    all_series_list = data.get("series", [])
-    print(f"  Got {len(all_series_list)} series from API", flush=True)
+    while True:
+        params = {"category": "Elections", "limit": "500"}
+        if cursor:
+            params["cursor"] = cursor
 
-    allowed_series = []
-    for series in all_series_list:
-        ticker = series.get("ticker", "")
-        if not ticker or ticker in EXCLUDED_SERIES:
-            continue
-        if _series_has_allowed_tag(series):
-            allowed_series.append(ticker)
+        data = _api_get("/events", params)
+        if not data:
+            break
 
-    print(f"  {len(allowed_series)} series after tag filtering", flush=True)
-    return sorted(allowed_series)
+        events = data.get("events", [])
+        if not events:
+            break
+
+        for event in events:
+            ticker = event.get("series_ticker")
+            if ticker and ticker not in EXCLUDED_SERIES:
+                # Also check the series itself for allowed tags if available
+                all_tickers.add(ticker)
+
+        cursor = data.get("cursor")
+        if not cursor:
+            break
+
+    print(f"  Got {len(all_tickers)} unique series from Elections events", flush=True)
+    return sorted(all_tickers)
 
 
 def fetch_markets_for_series(series_ticker):

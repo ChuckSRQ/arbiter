@@ -45,7 +45,7 @@ Carlos makes the final call. Marcus is the analyst, not the trader.
 - Vercel, GitHub Pages, or any cloud deployment — this stays local on Carlos's machine
 - Trading, order placement, portfolio sync
 - Portfolio dashboards, filters, or non-briefing sections
-- Non-US elections (until Ballotpedia/Wikipedia have reliable polling for them)
+- Non-US elections — Wikipedia provides polling for major international elections (Armenia parliamentary, Colombia presidential, etc.); Ballotpedia covers some others
 - Any market without polling data (admin/government-action markets excluded)
 
 **MVP is the ceiling until explicitly expanded.** Do not add features that aren't in the spec. If something seems important, surface it in `docs/bugs.md` or `docs/currentstate.md` as a proposed addition.
