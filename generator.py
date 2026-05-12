@@ -9,6 +9,16 @@ from state import get_complete, read_state
 OUTPUT_FILE = Path(__file__).parent / "output" / "index.html"
 
 
+def get_complete_markets(state):
+    """Return complete markets, excluding those where polling failed.
+
+    Skips any market marked with _poll_failed=True so placeholder cards
+    are never rendered.
+    """
+    complete = get_complete(state)
+    return [m for m in complete if not m.get("_poll_failed")]
+
+
 def _header_date(dt):
     return f"{dt.strftime('%A, %B')} {dt.day}, {dt.year}"
 
@@ -396,7 +406,7 @@ def _chunked(items, size):
 
 def generate():
     state = read_state()
-    markets = get_complete(state)
+    markets = get_complete_markets(state)
     groups = _group_by_race(markets)
     today = datetime.now()
 

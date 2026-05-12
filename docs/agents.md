@@ -59,12 +59,12 @@ For supported multi-contract races, Marcus analyzes the full candidate field tog
 | Priority | Source | Coverage | Method |
 |---|---|---|---|
 | 1 | **VoteHub API** | Presidential approval, generic ballot | REST (free, no key) |
-| 2 | **Ballotpedia** | Senate, House, Governor, mayoral races | browser_navigate |
-| 3 | **RaceToTheWH.com** | Senate, House, Governor averages | browser_navigate |
-| 4 | **Wikipedia** | Mayorals, local races, international elections — automatic fallback when sources 1-3 return no data | browser_navigate |
-| 5 | **Quinnipiac / Siena** | State-specific high-quality polls | web_extract |
-| 6 | **MIT Election Lab** | Historical results / fundamentals baseline | Download CSV |
-| 7 | **Dave Leip's Atlas** | Historical county/state results | browser_navigate |
+| 2 | **Ballotpedia** | Senate, House, Governor, mayoral races | urllib (stdlib, subprocess-safe) |
+| 3 | **RaceToTheWH.com** | Senate, House, Governor averages | urllib + DuckDuckGo HTML search (stdlib) |
+| 4 | **Wikipedia** | Mayorals, local races, international elections — automatic fallback when sources 1-3 return no data | urllib (stdlib) |
+| 5 | **Quinnipiac / Siena** | State-specific high-quality polls | urllib (stdlib) — not yet wired |
+| 6 | **MIT Election Lab** | Historical results / fundamentals baseline | Download CSV — not yet wired |
+| 7 | **Dave Leip's Atlas** | Historical county/state results | urllib (stdlib) — not yet wired |
 
 **Financial data:**
 | Source | Coverage | Method |
