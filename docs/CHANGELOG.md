@@ -4,10 +4,32 @@
 
 ---
 
-## [Unreleased] — Wikipedia Polling + ≤6% Filter + Alert System
+## [Unreleased] — Polling Pipeline Phase 2: Ballotpedia + RaceToTheWH + OpenFEC Name Search + No Placeholder Cards
 
 ### Added
-- `engine.py` — `WikipediaPoller` class and `_scrape_wiki_polls()` that auto-fetches Wikipedia polling for mayorals, international elections, and any unsupported race type when higher-priority sources (VoteHub/Ballotpedia/RaceToTheWH) return no data. Candidate name aliases for LA Mayor. ≤6% filter in `_filter_6pct()`.
+- `engine.py` — `_market_type_race()` replaces `_market_type()` for new code, returns race-type strings: approval, generic, mayor, senate, house, governor, international, other. `_market_type()` kept as deprecated backward-compatible wrapper.
+- `engine.py` — `_extract_state_from_ticker()` extracts two-letter state code from ticker strings (e.g. KXSENCAL-26 → CA).
+- `engine.py` — `BallotpediaPoller` class using urllib (subprocess-safe): fetches Ballotpedia overview pages (2026 Senate/House/Governor elections) and race-specific pages (e.g. California_Senate_election,_2026) via standard urllib. Parses bold candidate names ('''Name''') and percentages from HTML polling tables. Filters candidates ≤6%.
+- `engine.py` — `RaceToTheWHPoller` class using urllib (subprocess-safe): fetches racetothewh.com race pages directly, and falls back to DuckDuckGo HTML search for racetothewh.com URLs when direct URL fetch fails. Parses candidate names and percentages from page content. Filters candidates ≤6%.
+- `engine.py` — `_fundamentals_fv()` estimates fair value from incumbency (+8c for federal incumbents) and national environment adjustment (half-weight generic ballot lean). Returns (fv, analysis, confidence). Used as last resort before skipping a market.
+- `engine.py` — `_search_fec_candidate_by_name()` searches OpenFEC candidate search API by name and returns the first valid FEC candidate ID (H/S/P prefix + 5-8 digits).
+- `engine.py` — `_wikipedia_url()` expanded with UK General Election, France Presidential, Germany Federal detection.
+- `generator.py` — `get_complete_markets(state)` filters out markets with `_poll_failed=True`. Generator now never renders placeholder cards.
+
+### Changed
+- `engine.py` — `run()` polling priority chain for senate/house/governor: Ballotpedia → RaceToTheWH → Wikipedia → Fundamentals → (skip if all fail). Never renders `_POOL_FAILED_` or `polling source not yet implemented` placeholder text.
+- `engine.py` — `_attach_financials()` now uses `_market_type_race()` and handles `international` race type gracefully. Falls back to FEC name search when no candidate_id is embedded in ticker/title.
+- `engine.py` — Run loop no longer calls `_finalize_market()` for senate/house/governor races when all polling sources fail — instead marks `_poll_failed=True` and continues without rendering.
+- `generator.py` — `generate()` uses `get_complete_markets(state)` instead of `get_complete(state)` to filter out poll-failed markets.
+- `engine.py` — Removed `_POOL_FAILED_` and `polling source not yet implemented` placeholder text from all analysis outputs.
+
+### Deprecated
+- `_market_type()` — use `_market_type_race()` for new code. Maps senate/house/governor/international → "other".
+
+### Added
+- `engine.py` — `WikipediaFederalPolls` class: fetches Wikipedia's 2026 Senate overview page and parses the national generic ballot polling average (D+6.3% as of May 2026). Cached at class level, fetched once per run. Fed into `_fundamentals_fv()` so federal races (senate/house/governor) get a directional estimate instead of being skipped when all polling sources fail.
+- `engine.py` — `WikipediaFederalPolls._parse_generic_ballot()` extracts the "Average" row from Wikipedia's Senate/House polling table and returns the Democratic margin in points.
+- `engine.py` — `run()` now calls `WikipediaFederalPolls.get_generic_ballot_lean()` once per run at startup and passes the result to `_fundamentals_fv(market, generic_ballot_lean)` for all federal races. This lifts federal races from "confidence=low (skip)" to "confidence=medium (use fundamentals)" when no live state-level polling exists.
 - `engine.py` — `_wikipedia_url()` constructs Wikipedia article URLs for LA Mayor (`2026_Los_Angeles_mayoral_election`), Armenia parliamentary, Colombia presidential. Returns `None` for unknown election types.
 - `engine.py` — `m_type == "other"` path now tries Wikipedia polling automatically before falling back to market-price FV + `_POOL_FAILED_` marker.
 - `collector.py` — `discover_series()` now uses `/events?category=Elections` pagination (not `/series`) to match actual Kalshi API taxonomy. Extracts unique `series_ticker` from each event.

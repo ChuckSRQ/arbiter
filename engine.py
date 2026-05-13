@@ -39,6 +39,16 @@ def _wikipedia_url(race_title, event_date):
         return f"{_WIKIPEDIA_BASE}/{year}_Armenian_parliamentary_election"
     if "colombia" in title_lower and "presidential" in title_lower:
         return f"{_WIKIPEDIA_BASE}/{year}_Colombian_presidential_election"
+    # UK General Election
+    if any(kw in title_lower for kw in ["uk", "united kingdom", "british", "britain"]):
+        if "parliament" in title_lower or "general" in title_lower:
+            return f"{_WIKIPEDIA_BASE}/{year}_United_Kingdom_general_election"
+    # France Presidential
+    if "france" in title_lower and "president" in title_lower:
+        return f"{_WIKIPEDIA_BASE}/{year}_French_presidential_election"
+    # Germany Federal
+    if "germany" in title_lower and ("bundestag" in title_lower or "federal" in title_lower):
+        return f"{_WIKIPEDIA_BASE}/{year}_German_federal_election"
     if "parliamentary" in title_lower:
         country = re.sub(r"\b20\d{2}\b", "", title_lower).strip()
         country = re.sub(r"\s*parliamentary.*", "", country).strip()
@@ -216,7 +226,39 @@ def _estimate_fv(avg_value, condition, spread):
     return 50
 
 
+def _market_type_race(ticker, series_ticker=None):
+    """Return race-type string for a market ticker.
+
+    Covers: approval, generic, mayor, senate, house, governor, international, other.
+    """
+    t = (ticker or "").upper()
+    s = (series_ticker or "").upper()
+
+    if "APRPOTUS" in t or "APPROVAL" in t:
+        return "approval"
+    if "GENERICBALLOT" in t or "VOTEHUB" in t:
+        return "generic"
+    if "MAYOR" in t:
+        return "mayor"
+    # Senate: series_ticker is KXSE, or contains SENATE, or ticker has KXSE + state code pattern
+    if s == "KXSE" or "SENATE" in s or "SENATE" in t or re.search(r"KXSE[A-Z]{2}", t):
+        return "senate"
+    # House: series_ticker is KXHOU, or contains HOUSE, or ticker has KXHOU pattern
+    if s == "KXHOU" or "HOUSE" in s or "HOUSE" in t or re.search(r"KXHOU", t):
+        return "house"
+    # Governor: series_ticker contains KXGOV, or ticker has KXGOV pattern
+    if s == "KXGOV" or "GOV" in s or re.search(r"KXGOV", t):
+        return "governor"
+    if any(tag in (t + s) for tag in ("ARMENIA", "COLOMBIA", "LEBANON", "BRAZIL", "FRANCE", "GERMANY", "UK", "INTERNATIONAL")):
+        return "international"
+    return "other"
+
+
 def _market_type(ticker):
+    """Deprecated: use _market_type_race() for new code.
+
+    Maps senate/house/governor/international → 'other' for backward compatibility.
+    """
     t = (ticker or "").upper()
     if "KXAPRPOTUS" in t:
         return "approval"
@@ -539,15 +581,16 @@ def _analyze_generic_market(market, polls):
 
 
 # LA Mayor 2026 race data — hardcoded from public polling
-# Poll average from racetothewh.com and UCLA Luskin (April 2026)
+# May 1-4, 2026 — Tavern Research / Growth Machine Fund poll (n=531 LV, +/-6.1%)
+# Before debate and Pratt's post-poll media surge (NBC interview, Joe Rogan, etc.)
+# Memo notes: Bass ceiling ~20-25%, Raman beats Bass head-to-head, Pratt does not win any matchup
 LA_MAYOR_POLLS = {
-    "Karen Bass":      23,   # incumbent, avg of UCLA/Berkeley/Emerson
-    "Nithya Raman":    13,   # city councilmember
-    "Spencer Pratt":   12,   # reality TV / conservative
-    "Rae Huang":        5,   # housing advocate
-    "Adam Miller":      5,   # tech executive
-    # remaining candidates: low single digits, treat as 1%
-    "Other":           42,  # includes undecided + <1% candidates
+    "Karen Bass":      16,   # incumbent, May 1-4 poll
+    "Nithya Raman":    12,   # city councilmember, May 1-4 poll
+    "Spencer Pratt":   15,   # reality TV / conservative — RISING post-poll
+    "Rae Huang":        4,   # housing advocate, May 1-4 poll
+    "Adam Miller":      2,   # tech executive, May 1-4 poll
+    "Other":           46,  # undecided / no first choice
 }
 LA_MAYOR_FUNDRAISING = {
     "Karen Bass":      28.5,
@@ -651,22 +694,30 @@ def _analyze_mayor_race(market, all_markets_in_race):
     candidates_text = " | ".join(rows)
 
     context = (
-        f"LA Mayor race polling (Race to the WH average, April 2026) shows Karen Bass leading "
-        f"at {candidate_polls.get('Karen Bass', '?')}%, followed by Nithya Raman ({candidate_polls.get('Nithya Raman', '?')}%) "
-        f"and Spencer Pratt ({candidate_polls.get('Spencer Pratt', '?')}%). "
-        f"{round(candidate_polls.get('Other', 0))}% of voters remain undecided. "
+        f"LA Mayor race polling (Tavern Research / Growth Machine Fund, May 1-4 2026, n=531 LV) "
+        f"shows Karen Bass at {candidate_polls.get('Karen Bass', '?')}%, "
+        f"Spencer Pratt at {candidate_polls.get('Spencer Pratt', '?')}%, "
+        f"Nithya Raman at {candidate_polls.get('Nithya Raman', '?')}%, "
+        f"with {round(candidate_polls.get('Other', 0))}% undecided. "
+        f"Bass's ceiling is ~20-25% per the pollster. "
+        f"Raman beats Bass in head-to-head matchups. "
+        f"Pratt has done significant media (NBC interview, Joe Rogan, debates) since this poll — "
+        f"his position has likely improved. "
         f"The primary is {LA_MAYOR_ELECTION_DATE} — {n_candidates} candidate contracts active. "
         f"Fundraising: Bass ${LA_MAYOR_FUNDRAISING.get('Karen Bass', '?')}M, Miller ${LA_MAYOR_FUNDRAISING.get('Adam Miller', '?')}M."
     )
     analysis = (
-        f"Marcus evaluates the full race field. Leading candidate {leading_name} (FV {leading_fv}¢) "
-        f"is still below majority support, so the model treats this as a volatile top-two/runoff race rather than a clean incumbent lock. "
-        f"Contracts with large poll-to-price gaps represent edge. "
-        f"Note: {round(candidate_polls.get('Other', 0))}% undecided/other voters make this race volatile — a runoff is likely (top two vote-getters advance to November)."
+        f"May 1-4 poll (Tavern Research, n=531) shows Bass at her floor (~16-20%), "
+        f"a dangerous position for an incumbent with near-universal name ID. "
+        f"Raman leads Bass head-to-head 53-47, the only candidate who does. "
+        f"Pratt is rising post-debate and post-interviews but the poll predates that surge — "
+        f"his true position is likely stronger than 15%. "
+        f"46% of voters are still undecided with 4 weeks to go. "
+        f"Top-two runoff is the likely outcome — the race remains highly volatile."
     )
     sources = [
+        {"label": "Tavern Research / Growth Machine Fund — LA Mayor Poll (May 1-4 2026)", "url": None},
         {"label": "Race to the WH — LA Mayor polling", "url": LA_MAYOR_SOURCE_URL},
-        {"label": "UCLA Luskin Poll (March 2026)", "url": "https://luskin.ucla.edu/volatility-ahead-in-la-mayors-race-ucla-luskin-poll-finds-40-of-voters-undecided"},
     ]
     poll_results = [
         PollResult(candidate_name=name, support_pct=float(candidate_polls.get(name, 1.0)))
@@ -901,6 +952,11 @@ def _parse_wiki_poll_table_row(row_text):
 def _scrape_wiki_polls(url, candidates):
     """Fetch a Wikipedia article and parse its polling table.
 
+    Wikipedia polls have candidate names in the TABLE HEADER row and
+    percentages in subsequent DATA rows. This function handles both formats:
+    1. Header-row names + data-row percentages (Wikipedia style)
+    2. Same-row names + percentages (wikitext bold style)
+
     Args:
         url: Wikipedia article URL
         candidates: list of canonical candidate names to look for
@@ -921,50 +977,113 @@ def _scrape_wiki_polls(url, candidates):
     except Exception:
         return {}
 
-    # Look for polling tables — they typically appear in a "Polling" section
-    # or as part of an election infobox. Find the most recent poll block.
     results = {}
 
-    # Strategy: find all <table> elements and look for ones with candidate names
-    # Wikipedia poll tables have candidates in bold and numbers in cells
+    # Build candidate search patterns
     candidate_lower = {c.lower() for c in candidates}
     candidate_pattern = re.compile(
         "|".join(re.escape(c.lower()) for c in candidates),
         re.IGNORECASE,
     )
 
-    # Split by table rows
+    # Find all tables
     table_sections = re.findall(
         r"<table[^>]*>(.*?)</table>", html, re.DOTALL | re.IGNORECASE
     )
+
     for table_html in table_sections:
         rows = re.findall(r"<tr[^>]*>(.*?)</tr>", table_html, re.DOTALL | re.IGNORECASE)
+        if not rows:
+            continue
+
+        # Parse all rows: each row -> list of (raw_html, clean_text) cells
+        parsed_rows = []
         for row_html in rows:
-            # Strip HTML tags to get visible text
-            row_text = re.sub(r"<[^>]+>", " ", row_html)
-            row_text = re.sub(r"\s+", " ", row_text).strip()
+            cells = re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", row_html, re.DOTALL | re.IGNORECASE)
+            parsed = []
+            for cell in cells:
+                clean = re.sub(r"<[^>]+>", " ", cell)
+                clean = re.sub(r"\s+", " ", clean).strip()
+                parsed.append(clean)
+            parsed_rows.append(parsed)
 
-            if not row_text:
+        if not parsed_rows:
+            continue
+
+        # ── Strategy 1: Wikipedia header-row format ─────────────────────────────
+        # Header is the first row with candidate names; data rows follow
+        header_row = parsed_rows[0]
+        data_rows = parsed_rows[1:]
+
+        # Find candidate column indices from header
+        candidate_col_indices = {}
+        for i, cell_text in enumerate(header_row):
+            cell_lower = cell_text.lower().strip()
+            # Skip non-candidate header cells
+            skip_terms = {
+                "", "poll", "firm", "source", "date", "dates", "sample",
+                "sample size", "updates", "last poll", "electoral", "margin",
+                "others", "don't know", "undecided", "lead", "allied parties",
+                "first candidate in list", "seats in national assembly",
+                "name of party or alliance",
+            }
+            if cell_lower in skip_terms:
                 continue
-
-            # Try to match a candidate name in this row
-            match = candidate_pattern.search(row_text)
-            if not match:
+            # Skip if it's just a year or percentage
+            if re.match(r"^\d{4}$", cell_lower) or re.match(r"^\d+(?:\.\d+)?\s*%$", cell_lower):
                 continue
+            # Check if any candidate matches this header cell
+            for c in candidates:
+                if c.lower() in cell_lower or cell_lower in c.lower():
+                    if c not in candidate_col_indices:
+                        candidate_col_indices[c] = i
 
-            # Find the poll value associated with this candidate
-            # Poll values appear after the candidate name in the same row
-            # Look for percentage numbers: NN% or NN.N%
-            pct_matches = re.findall(r"\b(\d+(?:\.\d+)?)\s*%", row_text)
-            if pct_matches:
-                # Use the rightmost pct (most recent in a time-series table)
-                raw_name = match.group(0)
-                canonical = _normalize_candidate_name(raw_name)
-                pct = float(pct_matches[-1])
-                if canonical not in results or pct_matches:
-                    # Only update if this is a later/more recent entry
-                    # For simplicity, take the last match found
-                    results[canonical] = pct
+        # If we found candidate columns, find the last real poll row (skip election results)
+        if candidate_col_indices and data_rows:
+            poll_rows = [
+                row for row in data_rows
+                if row and row[0].strip()  # skip empty rows; keep pollster-name rows
+                and "election" not in row[0].lower()  # skip "Parl. election" rows
+                and "election" not in " ".join(row).lower()  # skip rows with "election" in any cell
+            ]
+            last_row = poll_rows[-1] if poll_rows else data_rows[-1]  # most recent poll
+            for cand, col_idx in candidate_col_indices.items():
+                if col_idx < len(last_row):
+                    cell_text = last_row[col_idx]
+                    # Extract percentage (skip '–' dash for no result)
+                    # Some Wikipedia tables store numbers without '%' symbol
+                    cell_stripped = cell_text.strip()
+                    if cell_stripped in ("–", "-", ""):
+                        continue
+                    # Try to find a percentage (with or without % symbol)
+                    pct_match = re.search(r"(\d+(?:\.\d+)?)\s*%?", cell_stripped)
+                    if not pct_match:
+                        continue
+                    pct_str = pct_match.group(1)
+                    pct = float(pct_str)
+                    if pct > SIX_PCT_THRESHOLD:
+                            results[cand] = pct
+
+        # ── Strategy 2: Same-row bold wikitext pattern ────────────────────────
+        # Look for candidate names and percentages in the same row text
+        if not results:
+            for row_html in rows:
+                row_text = re.sub(r"<[^>]+>", " ", row_html)
+                row_text = re.sub(r"\s+", " ", row_text).strip()
+                if not row_text:
+                    continue
+                match = candidate_pattern.search(row_text)
+                if not match:
+                    continue
+                pct_match = re.search(r"\b(\d+(?:\.\d+)?)\s*%\s*$", row_text)
+                if not pct_match:
+                    continue
+                pct = float(pct_match.group(1))
+                # Find which candidate matched
+                for c in candidates:
+                    if c.lower() in row_text.lower():
+                        if c not in results or pct > results[c]:
+                            results[c] = pct
 
     return _filter_6pct(results)
 
@@ -1024,6 +1143,396 @@ class WikipediaPoller:
         return polls, meta
 
 
+# ─── Ballotpedia Polling ───────────────────────────────────────────────────────
+
+
+class BallotpediaPoller:
+    """Fetch polling data from Ballotpedia via web_extract.
+
+    Ballotpedia pages are structured and scrapeable:
+      - https://ballotpedia.org/2026_United_States_Senate_elections — Senate overview
+      - https://ballotpedia.org/2026_United_States_House_of_Representatives_elections — House
+      - https://ballotpedia.org/2026_gubernatorial_elections — Governor overview
+      - Specific race: https://ballotpedia.org/{state}_Senate_election,_2026
+
+    Candidates ≤6% are excluded from returned dict.
+    Returns empty dict on failure.
+    """
+
+    BASE_URL = "https://ballotpedia.org"
+
+    # Overview page URL templates by race type
+    OVERVIEW_URLS = {
+        "senate": "https://ballotpedia.org/2026_United_States_Senate_elections",
+        "house": "https://ballotpedia.org/2026_United_States_House_of_Representatives_elections",
+        "governor": "https://ballotpedia.org/2026_gubernatorial_elections",
+    }
+
+    # State name to Ballotpedia URL slug mapping
+    STATE_SLUGS = {
+        "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
+        "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware",
+        "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho",
+        "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas",
+        "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MD": "Maryland",
+        "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi",
+        "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada",
+        "NH": "New_Hampshire", "NJ": "New_Jersey", "NM": "New_Mexico", "NY": "New_York",
+        "NC": "North_Carolina", "ND": "North_Dakota", "OH": "Ohio", "OK": "Oklahoma",
+        "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode_Island", "SC": "South_Carolina",
+        "SD": "South_Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah",
+        "VT": "Vermont", "VA": "Virginia", "WA": "Washington", "WV": "West_Virginia",
+        "WI": "Wisconsin", "WY": "Wyoming",
+    }
+
+    def __init__(self):
+        self._cache = {}
+
+    def _race_url(self, state, race_type):
+        """Build the specific race page URL."""
+        state_name = self.STATE_SLUGS.get(state.upper())
+        if not state_name:
+            return None
+        if race_type == "senate":
+            return f"{self.BASE_URL}/{state_name}_Senate_election,_2026"
+        if race_type == "house":
+            # House races use district notation
+            return f"{self.BASE_URL}/{state_name}_House_election,_2026"
+        if race_type == "governor":
+            return f"{self.BASE_URL}/{state_name}_gubernatorial_election,_2026"
+        return None
+
+    def poll(self, race_title, state, race_type):
+        """Fetch polling for a specific race.
+
+        Args:
+            race_title: e.g. "California Senate 2026"
+            state: two-letter state code, e.g. "CA"
+            race_type: "senate", "house", or "governor"
+
+        Returns:
+            dict of {candidate_name: poll_pct}, or {} on failure.
+        """
+        cache_key = (race_title, state.upper(), race_type)
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        results = {}
+
+        # 1. Try race-specific page first
+        race_url = self._race_url(state, race_type)
+        if race_url:
+            results = self._fetch_and_parse(race_url)
+
+        # 2. Fall back to overview page
+        if not results:
+            overview_url = self.OVERVIEW_URLS.get(race_type)
+            if overview_url:
+                results = self._fetch_and_parse(overview_url)
+
+        # Filter candidates ≤6%
+        results = _filter_6pct(results)
+        self._cache[cache_key] = results
+        return results
+
+    def _fetch_and_parse(self, url):
+        """Fetch a Ballotpedia URL via urllib and parse polling data.
+
+        Uses standard library only — works in subprocess/cron context.
+        Ballotpedia pages are static HTML server-side rendered.
+        Ballotpedia uses '''bold''' wikitext for candidate names.
+
+        Falls back to plain HTML table parsing for Wikipedia-style articles
+        that use <th>/<td> cells instead of wikitext bold.
+        """
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "Accept": "text/html",
+                    "User-Agent": "Mozilla/5.0 Arbiter/1.0 (political research bot)",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                html = resp.read().decode("utf-8", errors="replace")
+        except Exception:
+            return {}
+
+        results = {}
+
+        # Strategy 1: Ballotpedia-style wikitext parsing ('''bold''' names)
+        results = self._parse_ballotpedia_wikitext(html)
+        if results:
+            return results
+
+        # Strategy 2: Wikipedia-style HTML table parsing (<th>/<td> cells)
+        results = self._parse_html_table(html)
+        return results
+
+    def _parse_ballotpedia_wikitext(self, html):
+        """Parse bold candidate names and percentages from wikitext HTML."""
+        # Strip HTML tags to get visible text
+        text = re.sub(r"<[^>]+>", " ", html)
+        text = re.sub(r"\s+", " ", text).strip()
+
+        rows = text.split("\n")
+        current_candidate = None
+        results = {}
+        for row in rows:
+            row = row.strip()
+            if not row:
+                continue
+            # Check for bold candidate name pattern
+            bold_in_row = re.findall(r"'''([^']+)'''", row)
+            if bold_in_row:
+                current_candidate = bold_in_row[0].strip()
+            # Look for percentage in this row
+            if current_candidate:
+                pcts_in_row = re.findall(r"\b(\d+(?:\.\d+)?)\s*%", row)
+                if pcts_in_row:
+                    pct = float(pcts_in_row[-1])  # rightmost = most recent
+                    results[current_candidate] = pct
+                    current_candidate = None
+
+        # Fallback: simple bold+pct association
+        if not results:
+            bold_matches = re.findall(r"'''([^']+)'''", text)
+            pct_matches = re.findall(r"\b(\d+(?:\.\d+)?)\s*%", text)
+            if bold_matches and pct_matches:
+                for name in bold_matches[:len(pct_matches)]:
+                    name = name.strip()
+                    if name and len(name) > 1:
+                        try:
+                            results[name] = float(pct_matches.pop(0))
+                        except (ValueError, IndexError):
+                            pass
+        return results
+
+    def _parse_html_table(self, html):
+        """Parse polling data from Wikipedia-style HTML tables with <th>/<td> cells.
+
+        Looks for table rows where the first cell is a pollster/firm name and
+        subsequent cells contain candidate percentages.
+        """
+        tables = re.findall(r"<table[^>]*>(.*?)</table>", html, re.DOTALL | re.IGNORECASE)
+        results = {}
+        for table_html in tables:
+            rows = re.findall(r"<tr[^>]*>(.*?)</tr>", table_html, re.DOTALL | re.IGNORECASE)
+
+            # Identify header row to get candidate column indices
+            header_cells = []
+            for row in rows[:2]:  # Check first 2 rows for header
+                cells = re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", row, re.DOTALL | re.IGNORECASE)
+                if cells:
+                    clean_cells = []
+                    for cell in cells:
+                        cell_text = re.sub(r"<[^>]+>", " ", cell)
+                        cell_text = re.sub(r"\s+", " ", cell_text).strip()
+                        clean_cells.append(cell_text)
+                    header_cells = clean_cells
+                    break
+
+            # Find candidate column indices (skip pollster, dates, sample size)
+            candidate_cols = []
+            for i, cell in enumerate(header_cells):
+                cell_lower = cell.lower().strip()
+                # Skip non-candidate columns
+                if cell_lower in ("", "poll", "firm", "source", "dates", "date", "sample", "sample size",
+                                  "updates", "last poll", "electoral", "margin", "others",
+                                  "don't know", "undecided", "lead"):
+                    continue
+                # Skip if cell is just a year or percentage
+                if re.match(r"^\d{4}$", cell.strip()) or re.match(r"^\d+(?:\.\d+)?\s*%$", cell.strip()):
+                    continue
+                candidate_cols.append(i)
+
+            if not candidate_cols:
+                continue
+
+            # Parse data rows
+            for row in rows:
+                cells = re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", row, re.DOTALL | re.IGNORECASE)
+                if len(cells) < 2:
+                    continue
+
+                # Get candidate values from their columns
+                row_results = {}
+                for col_idx in candidate_cols:
+                    if col_idx < len(cells):
+                        cell = cells[col_idx]
+                        cell_text = re.sub(r"<[^>]+>", " ", cell)
+                        cell_text = re.sub(r"\s+", " ", cell_text).strip()
+                        # Check if this cell contains a percentage
+                        pct_match = re.search(r"(\d+(?:\.\d+)?)\s*%", cell_text)
+                        if pct_match:
+                            pct = float(pct_match.group(1))
+                            # Get candidate name from header
+                            if col_idx < len(header_cells):
+                                name = header_cells[col_idx].strip()
+                                if name and len(name) > 1:
+                                    row_results[name] = pct
+
+                # If we found candidate values, take the last (most recent) row's values
+                if row_results and not results:
+                    results = row_results
+
+        return results
+
+
+class RaceToTheWHPoller:
+    """Fetch polling averages from RaceToTheWH via web search.
+
+    Uses web_search as the primary method (works in subprocess/cron context).
+    Browser automation (browser_navigate + browser_snapshot) is available as
+    a future enhancement when engine.py runs in an agent context with MCP tools.
+
+    RaceToTheWH pages:
+      - https://racetothewh.com/senate/{state} — Senate race
+      - https://racetothewh.com/house/{state} — House race
+      - https://racetothewh.com/governor/{state} — Governor race
+
+    Candidates ≤6% are excluded from returned dict.
+    Returns empty dict on failure.
+    """
+
+    BASE_URL = "https://racetothewh.com"
+
+    RACE_TYPE_PATHS = {
+        "senate": "senate",
+        "house": "house",
+        "governor": "governor",
+    }
+
+    def __init__(self):
+        self._cache = {}
+
+    def _race_url(self, state, race_type):
+        """Build the specific race page URL."""
+        path = self.RACE_TYPE_PATHS.get(race_type)
+        if not path:
+            return None
+        return f"{self.BASE_URL}/{path}/{state.lower()}"
+
+    def poll(self, race_title, state, race_type):
+        """Fetch polling for a specific race via web search.
+
+        Args:
+            race_title: e.g. "Texas Senate 2026"
+            state: two-letter state code
+            race_type: "senate", "house", or "governor"
+
+        Returns:
+            dict of {candidate_name: poll_pct}, or {} on failure.
+        """
+        cache_key = (race_title, state.upper(), race_type)
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        results = {}
+
+        # Method 1: Try web_search for the race page
+        search_url = self._race_url(state, race_type)
+        if search_url:
+            results = self._search_polls(race_title, search_url)
+
+        # Method 2: Try direct web_search for the state race
+        if not results:
+            search_query = f"{state} {race_type} 2026 polling {race_title} site:racetothewh.com"
+            results = self._search_polls(race_title, search_query)
+
+        # Filter candidates ≤6%
+        results = _filter_6pct(results)
+        self._cache[cache_key] = results
+        return results
+
+    def _search_polls(self, race_title, url_or_query):
+        """Fetch polling data. url_or_query can be a URL or a search query.
+
+        Uses urllib for direct URL fetching (subprocess-safe).
+        For search queries, uses DuckDuckGo HTML endpoint (no API key needed).
+        """
+        try:
+            if url_or_query.startswith("http"):
+                return self._fetch_url(url_or_query)
+            else:
+                # Search query → try DuckDuckGo HTML
+                return self._search_duckduckgo(url_or_query)
+        except Exception:
+            return {}
+
+    def _fetch_url(self, url):
+        """Fetch a URL directly via urllib and parse polling data."""
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "Accept": "text/html",
+                    "User-Agent": "Mozilla/5.0 Arbiter/1.0 (political research bot)",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                html = resp.read().decode("utf-8", errors="replace")
+            return self._parse_content(html)
+        except Exception:
+            return {}
+
+    def _search_duckduckgo(self, query):
+        """Search via DuckDuckGo HTML and extract racetothewh.com results."""
+        try:
+            search_url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
+            req = urllib.request.Request(
+                search_url,
+                headers={
+                    "Accept": "text/html",
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                html = resp.read().decode("utf-8", errors="replace")
+            # Extract racetothewh.com URLs from search results
+            urls = re.findall(r'href="(https://racetothewh\.com[^"]+)"', html)
+            for url in urls[:3]:  # Try up to 3 results
+                result = self._fetch_url(url)
+                if result:
+                    return result
+        except Exception:
+            pass
+        return {}
+
+    def _parse_content(self, content):
+        """Parse candidate + percentage pairs from page content.
+
+        RaceToTheWH shows polling data with candidate names and percentages.
+        Pattern: "Candidate Name  52%" or "Candidate Name — 52%"
+        """
+        if not content:
+            return {}
+
+        results = {}
+        text = str(content)
+
+        # Pattern: Title Case name followed by NN% or NN.N%
+        # Examples: "Karen Bass  42%", "John Smith  —  38%"
+        lines = text.split("\n")
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            # Find percentage at end of candidate info
+            pct_match = re.search(r"\b(\d+(?:\.\d+)?)\s*%\s*$", line)
+            if not pct_match:
+                continue
+            pct = float(pct_match.group(1))
+            # Remove the percentage from line to isolate candidate name
+            name_part = re.sub(r"\b(\d+(?:\.\d+)?)\s*%\s*$", "", line).strip()
+            # Clean up separators
+            name_part = re.sub(r"\s*[—–\-:]\s*$", "", name_part).strip()
+            if name_part and 1 < len(name_part) < 50:
+                results[name_part] = pct
+
+        return results
+
+
 def _build_wiki_sources(url, poll_date=None):
     """Build sources list entry for a Wikipedia poll."""
     return {
@@ -1052,11 +1561,91 @@ def _extract_candidate_id(market):
     return None
 
 
+def _extract_state_from_ticker(ticker):
+    """Extract two-letter state code from a ticker string.
+
+    Examples:
+        KXSEN-TX-26 → TX
+        KXSENCA-26 → CA
+        KXGOV-TX-26 → TX
+        KXGOVTX-26 → TX
+        KXMAYORLA-26 → LA
+        KXHOU-26 → None (House generic - no state)
+    """
+    if not ticker:
+        return None
+    t = ticker.upper()
+
+    # House generic: no state to extract (KXHOU is House generic, not KXHOU + state)
+    if re.match(r"KXHOU$", t):
+        return None
+
+    # Senate: KXSEN followed by 2-letter state code (may have intervening chars)
+    # e.g. KXSEN-TX, KXSENCA (KXSE + N + CA), KXSEN-TX-26
+    sen_match = re.search(r"KXSE[A-Z]*([A-Z]{2})(?:-\d+)?$", t)
+    if sen_match:
+        return sen_match.group(1)
+
+    # Governor: KXGOV followed by 2-letter state code
+    # e.g. KXGOVTX, KXGOV-TX
+    gov_match = re.search(r"KXGOV[A-Z]*([A-Z]{2})(?:-\d+)?$", t)
+    if gov_match:
+        return gov_match.group(1)
+
+    # Mayor: KXMAYOR followed by 2-letter state code
+    # e.g. KXMAYORLA
+    mayor_match = re.search(r"KXMAYOR[A-Z]*([A-Z]{2})(?:-\d+)?$", t)
+    if mayor_match:
+        return mayor_match.group(1)
+
+    # Generic pattern: 2 letters before dash-digit (e.g. TX-26, CA-26)
+    # Only match if it's clearly a state code pattern (not just any 2 letters)
+    generic_match = re.search(r"([A-Z]{2})-\d", t)
+    if generic_match:
+        state = generic_match.group(1)
+        # Only return if the 2-letter code looks like a known US state
+        known_states = {"AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+                        "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+                        "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+                        "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+                        "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"}
+        if state in known_states:
+            return state
+
+    return None
+
+
+def _search_fec_candidate_by_name(name, state=None):
+    """Search OpenFEC for a candidate by name, return candidate_id or None."""
+    if not name:
+        return None
+
+    fec_client = OpenFECClient()
+    params = {
+        "api_key": OPENFEC_KEY,
+        "q": name,
+        "per_page": 10,
+    }
+    if state:
+        params["state"] = state.upper()
+    payload = fec_client._get("/candidate/search", params)
+    if not isinstance(payload, dict):
+        return None
+    results = payload.get("results", [])
+    if results and isinstance(results, list):
+        # Return first match with a valid FEC ID
+        for r in results:
+            cid = r.get("candidate_id")
+            if cid and re.match(r"^[HPS]\d{5,8}$", str(cid)):
+                return cid
+    return None
+
+
 def _attach_financials(market, fec_client):
-    m_type = _market_type(market.get("ticker"))
-    if m_type in ("approval", "generic"):
+    m_type = _market_type_race(market.get("ticker"), market.get("series_ticker"))
+    if m_type in ("approval", "generic", "international"):
         market["financials"] = {
-            "note": "National-level market — no candidate-specific financials",
+            "note": "No US FEC data for this race type",
             "source": "OpenFEC",
             "url": OPENFEC_BASE,
         }
@@ -1065,7 +1654,14 @@ def _attach_financials(market, fec_client):
 
     candidate_id = _extract_candidate_id(market)
     if not candidate_id:
-        market["financials"] = {"error": "OpenFEC fetch failed", "source": "OpenFEC"}
+        # Try FEC name search
+        candidate_name = (market.get("candidate_name") or "").strip()
+        if candidate_name:
+            state = _extract_state_from_ticker(market.get("ticker") or "")
+            candidate_id = _search_fec_candidate_by_name(candidate_name, state)
+
+    if not candidate_id:
+        market["financials"] = {"note": "Could not find FEC candidate ID", "source": "OpenFEC"}
         market["sources"] = _append_source(market.get("sources"), _openfec_source())
         return
 
@@ -1077,6 +1673,139 @@ def _attach_financials(market, fec_client):
     market["sources"] = _append_source(market.get("sources"), _openfec_source())
 
 
+class WikipediaFederalPolls:
+    """Fetch national generic ballot data from Wikipedia's Senate/House overview pages.
+
+    Wikipedia's 2026 Senate overview page (2026_United_States_Senate_elections) contains
+    a table of national generic ballot polling averages. This is the most reliable
+    publicly available signal for the national political environment heading into the midterms.
+
+    Parses the "Average" row in the polling table to extract the Democratic margin.
+
+    Cached at class level — fetched once per pipeline run.
+    """
+
+    SENATE_URL = "https://en.wikipedia.org/wiki/2026_United_States_Senate_elections"
+    HOUSE_URL = "https://en.wikipedia.org/wiki/2026_United_States_House_of_Representatives_elections"
+
+    # Class-level cache: {url: (lean_float, source_label, date)}
+    _cache = {}
+
+    def get_generic_ballot_lean(self):
+        """Return the national generic ballot Democratic margin, or None on failure.
+
+        Returns:
+            float: Democratic margin in points (positive = D leads), or None
+        """
+        for url, label in [(self.SENATE_URL, "2026 Senate overview"), (self.HOUSE_URL, "2026 House overview")]:
+            if url in self._cache:
+                cached = self._cache[url]
+                if cached is not None:
+                    print(f"  Wikipedia generic ballot: D+{cached[0]:.1f} (cached from {label})")
+                    return cached[0]
+
+            try:
+                req = urllib.request.Request(
+                    url,
+                    headers={
+                        "Accept": "text/html",
+                        "User-Agent": "Mozilla/5.0 Arbiter/1.0 (political research bot)",
+                    },
+                )
+                with urllib.request.urlopen(req, timeout=20) as resp:
+                    html = resp.read().decode("utf-8", errors="replace")
+
+                lean = self._parse_generic_ballot(html)
+                if lean is not None:
+                    self._cache[url] = (lean, label, datetime.now().strftime("%Y-%m-%d"))
+                    print(f"  Wikipedia generic ballot: D+{lean:.1f} from {label}")
+                    return lean
+                else:
+                    self._cache[url] = None
+            except Exception as e:
+                print(f"  Wikipedia generic ballot fetch failed for {label}: {e}")
+                self._cache[url] = None
+
+        return None
+
+    def _parse_generic_ballot(self, html):
+        """Parse the generic ballot average from Wikipedia Senate/House overview HTML.
+
+        The polling table has an 'Average' row with columns:
+        Source | Dates | Updated | Republicans | Democrats | Other | Margin
+
+        We look for the 'Average' row and extract the Margin column (e.g., "Democrats +6.3%")
+        """
+        tables = re.findall(r"<table[^>]*>(.*?)</table>", html, re.DOTALL | re.IGNORECASE)
+        for table_html in tables:
+            rows = re.findall(r"<tr[^>]*>(.*?)</tr>", table_html, re.DOTALL | re.IGNORECASE)
+            for row in rows:
+                # Clean the row text
+                row_text = re.sub(r"<[^>]+>", " ", row)
+                row_text = re.sub(r"\s+", " ", row_text).strip()
+
+                # Look for the Average row with a Margin column
+                if row_text.lower().startswith("average"):
+                    # Extract the margin value
+                    # Format: "Average ... Democrats +6.3%" or "Democrats +6.3%"
+                    margin_match = re.search(r"Democrats\s*\+?(-?\d+(?:\.\d+)?)\s*%", row_text, re.IGNORECASE)
+                    if margin_match:
+                        return float(margin_match.group(1))
+
+                    # Try Republican margin
+                    margin_match = re.search(r"Republicans\s*\+?(-?\d+(?:\.\d+)?)\s*%", row_text, re.IGNORECASE)
+                    if margin_match:
+                        return -float(margin_match.group(1))
+
+                    # Try generic "Margin" field
+                    margin_match = re.search(r"Margin\s+[Dd]emocrats?\s+\+?(-?\d+(?:\.\d+)?)\s*%", row_text)
+                    if margin_match:
+                        return float(margin_match.group(1))
+
+        return None
+
+
+def _fundamentals_fv(market, generic_ballot_lean=None):
+    """Estimate FV from structural/fundamental factors when no polling is available.
+
+    Args:
+        market: market dict
+        generic_ballot_lean: Democratic margin on generic ballot (positive = D lean)
+
+    Returns:
+        (fv_cents, analysis_text, confidence)
+    """
+    ticker = market.get("ticker", "")
+    m_type = _market_type_race(ticker, market.get("series_ticker"))
+
+    # Incumbency: federal incumbents get +8c baseline advantage
+    incumbent_bonus = 0
+    if m_type in ("senate", "house", "governor"):
+        title = (market.get("title") or "").lower()
+        if "incumbent" in title or "inc" in title:
+            incumbent_bonus = 8
+
+    # National environment adjustment
+    env_adjustment = 0
+    if generic_ballot_lean is not None:
+        # Generic ballot lean: each point D lean → +1c for D candidates
+        # This is a directional signal only
+        env_adjustment = int(generic_ballot_lean * 0.5)  # half-weight
+
+    base_fv = 50 + incumbent_bonus + env_adjustment
+    base_fv = max(5, min(95, base_fv))  # clamp
+
+    confidence = "low" if (not incumbent_bonus and not env_adjustment) else "medium"
+
+    analysis = (
+        f"No live polling is available for this race. "
+        f"Fundamentals-based estimate is {base_fv}¢ using incumbency ({incumbent_bonus:+d}) "
+        f"and national environment adjustment ({env_adjustment:+d}). "
+        f"Confidence is {confidence} — this estimate should be treated as a directional placeholder."
+    )
+    return base_fv, analysis, confidence
+
+
 def run():
     state = read_state()
     pending = get_pending(state)
@@ -1086,6 +1815,11 @@ def run():
 
     client = VoteHubClient()
     fec_client = OpenFECClient()
+
+    # Fetch national generic ballot environment signal once (for federal race fundamentals)
+    wikipedia_federal = WikipediaFederalPolls()
+    generic_ballot_lean = wikipedia_federal.get_generic_ballot_lean()
+
     completed = 0
 
     # Group mayor markets by event_ticker so we process the full race at once
@@ -1155,93 +1889,17 @@ def run():
             completed += 1
             print(f"Completed {ticker}: {market.get('verdict')} (FV {fv}¢)")
 
-    # Process non-mayor markets (approval, generic, other) one at a time
+    # Process non-mayor markets (approval, generic, senate, house, governor, international) one at a time
     for market in other_pending:
         ticker = market.get("ticker")
         if market.get("status") == "discovered":
             transition(state, ticker, "analyzing")
             write_state(state)
 
-        m_type = _market_type(ticker)
+        m_type = _market_type_race(ticker, market.get("series_ticker"))
 
-        if m_type == "other":
-            # Try Wikipedia polling for international/unsupported races
-            wiki = WikipediaPoller()
-            race_title = market.get("race_title") or market.get("title") or ""
-            event_date = market.get("event_date") or market.get("election_date")
-            candidates = [
-                (market.get("candidate_name") or "").strip(),
-            ]
-            if not candidates or not candidates[0]:
-                # For multi-candidate races, derive from title
-                title = market.get("title", "")
-                candidates = []
-
-            wiki_polls, wiki_meta = wiki.poll_with_meta(race_title, event_date, candidates)
-
-            if wiki_polls:
-                # Wikipedia has polling — compute FV from poll percentages
-                price = market.get("market_price")
-                poll_values = list(wiki_polls.values())
-                if poll_values:
-                    avg_poll = sum(poll_values) / len(poll_values)
-                    fv = int(round(min(avg_poll * 2.0, 95)))  # rough heuristic
-                    if price is not None:
-                        delta = fv - int(price)
-                    else:
-                        delta = 0
-                    market["_wiki_polls"] = wiki_polls  # store for reference
-
-                    context = (
-                        f"Wikipedia polling for {race_title} shows: "
-                        + ", ".join(f"{k}: {v}%" for k, v in wiki_polls.items())
-                    )
-                    analysis = (
-                        f"Marcus uses Wikipedia polling data to set fair value at {fv}¢ "
-                        f"for this market. "
-                        f"{'The market price is ' + str(price) + '¢, giving an edge of ' + str(delta) + '¢.' if price is not None else ''}"
-                        f"Candidates polling ≤6% are excluded from analysis."
-                    )
-                    sources = [_build_wiki_sources(wiki_meta["source_url"])]
-                    _finalize_market(market, fv, context, analysis, sources)
-                else:
-                    # Wikipedia found but no usable polls
-                    price = market.get("market_price")
-                    if price is None:
-                        price = 50
-                    context = (
-                        f"Wikipedia article for {race_title} was found but contained no "
-                        f"extractable polling data for the candidates in this market."
-                    )
-                    analysis = (
-                        "With no usable polling data available, Marcus sets fair value "
-                        "equal to current market price and marks the verdict as PASS. "
-                        "_POOL_FAILED_"
-                    )
-                    sources = [_build_wiki_sources(_wikipedia_url(race_title, event_date) or "https://en.wikipedia.org/")]
-                    _finalize_market(market, price, context, analysis, sources)
-                    market["_poll_failed"] = True
-            else:
-                # No Wikipedia polling — fall back to market price
-                url = _wikipedia_url(race_title, event_date)
-                price = market.get("market_price")
-                if price is None:
-                    price = 50
-                context = (
-                    "This market is not yet mapped to a polling feed in the current engine configuration. "
-                    "Arbiter still completes the brief to keep state continuity and track coverage gaps."
-                )
-                analysis = (
-                    "Because no polling source is implemented for this contract type, Marcus sets fair value "
-                    "equal to current market price and marks the verdict as PASS. polling source not yet implemented."
-                    + (" _POOL_FAILED_" if url else "")
-                )
-                wiki_url = url or "local://engine.py"
-                sources = [{"label": "Arbiter engine note", "url": wiki_url}]
-                _finalize_market(market, price, context, analysis, sources)
-                if url:
-                    market["_poll_failed"] = True
-        else:
+        # ── Approval / Generic: VoteHub ─────────────────────────────────────
+        if m_type in ("approval", "generic"):
             polls = client.fetch_recent(m_type)
             if polls is None:
                 price = market.get("market_price")
@@ -1253,7 +1911,7 @@ def run():
                 )
                 analysis = (
                     "With polling data unavailable, Marcus uses market price as provisional fair value and "
-                    "does not claim an edge. polling data unavailable."
+                    "does not claim an edge."
                 )
                 source_url = APPROVAL_URL if m_type == "approval" else GENERIC_URL
                 sources = [{"label": "VoteHub endpoint", "url": source_url}]
@@ -1264,6 +1922,220 @@ def run():
             else:
                 fv, context, analysis, sources, forecast = _analyze_generic_market(market, polls)
                 _finalize_market(market, fv, context, analysis, sources, forecast=forecast)
+
+            _attach_financials(market, fec_client)
+            transition(state, ticker, "complete")
+            write_state(state)
+            completed += 1
+            print(f"Completed {ticker}: {market.get('verdict')} (FV {market.get('marcus_fv')}¢)")
+            continue
+
+        # ── Senate / House / Governor: Ballotpedia → RaceToTheWH → Wikipedia → Fundamentals ──
+        if m_type in ("senate", "house", "governor"):
+            race_title = market.get("race_title") or market.get("title") or ""
+            event_date = market.get("event_date") or market.get("election_date")
+            state_abbr = _extract_state_from_ticker(ticker)
+            candidates = [(market.get("candidate_name") or "").strip()]
+            if not candidates or not candidates[0]:
+                title = market.get("title", "")
+                candidates = []
+
+            # Priority 1: Ballotpedia
+            bp = BallotpediaPoller()
+            bp_polls = bp.poll(race_title, state_abbr, m_type) if state_abbr else {}
+
+            if bp_polls:
+                # Use Ballotpedia polling
+                poll_values = list(bp_polls.values())
+                avg_poll = sum(poll_values) / len(poll_values)
+                price = market.get("market_price")
+                fv = int(round(min(avg_poll * 2.0, 95))) if price is not None else 50
+                delta = fv - int(price) if price is not None else 0
+                context = (
+                    f"Ballotpedia polling for {race_title} shows: "
+                    + ", ".join(f"{k}: {v}%" for k, v in bp_polls.items())
+                )
+                analysis = (
+                    f"Marcus uses Ballotpedia polling data to set fair value at {fv}¢ "
+                    f"for this market. "
+                    f"{'The market price is ' + str(price) + '¢, giving an edge of ' + str(delta) + '¢.' if price is not None else ''}"
+                    f"Candidates polling ≤6% are excluded from analysis."
+                )
+                sources = [{"label": "Ballotpedia polling", "url": bp.BASE_URL}]
+                _finalize_market(market, fv, context, analysis, sources)
+            else:
+                # Priority 2: RaceToTheWH
+                rtwh = RaceToTheWHPoller()
+                rtwh_polls = rtwh.poll(race_title, state_abbr, m_type) if state_abbr else {}
+
+                if rtwh_polls:
+                    poll_values = list(rtwh_polls.values())
+                    avg_poll = sum(poll_values) / len(poll_values)
+                    price = market.get("market_price")
+                    fv = int(round(min(avg_poll * 2.0, 95))) if price is not None else 50
+                    delta = fv - int(price) if price is not None else 0
+                    context = (
+                        f"RaceToTheWH polling averages for {race_title} show: "
+                        + ", ".join(f"{k}: {v}%" for k, v in rtwh_polls.items())
+                    )
+                    analysis = (
+                        f"Marcus uses RaceToTheWH polling averages to set fair value at {fv}¢ "
+                        f"for this market. "
+                        f"{'The market price is ' + str(price) + '¢, giving an edge of ' + str(delta) + '¢.' if price is not None else ''}"
+                        f"Candidates polling ≤6% are excluded from analysis."
+                    )
+                    sources = [{"label": "RaceToTheWH", "url": rtwh.BASE_URL}]
+                    _finalize_market(market, fv, context, analysis, sources)
+                else:
+                    # Priority 3: Wikipedia fallback
+                    wiki = WikipediaPoller()
+                    wiki_polls, wiki_meta = wiki.poll_with_meta(race_title, event_date, candidates)
+
+                    if wiki_polls:
+                        poll_values = list(wiki_polls.values())
+                        avg_poll = sum(poll_values) / len(poll_values)
+                        price = market.get("market_price")
+                        fv = int(round(min(avg_poll * 2.0, 95))) if price is not None else 50
+                        delta = fv - int(price) if price is not None else 0
+                        market["_wiki_polls"] = wiki_polls
+                        context = (
+                            f"Wikipedia polling for {race_title} shows: "
+                            + ", ".join(f"{k}: {v}%" for k, v in wiki_polls.items())
+                        )
+                        analysis = (
+                            f"Marcus uses Wikipedia polling data to set fair value at {fv}¢ "
+                            f"for this market. "
+                            f"{'The market price is ' + str(price) + '¢, giving an edge of ' + str(delta) + '¢.' if price is not None else ''}"
+                            f"Candidates polling ≤6% are excluded from analysis."
+                        )
+                        sources = [_build_wiki_sources(wiki_meta["source_url"])]
+                        _finalize_market(market, fv, context, analysis, sources)
+                    else:
+                        # Priority 4: Fundamentals as last resort
+                        # Check if this is a multicandidate race — if so, skip rather than
+                        # assigning the same FV to every candidate (misleading for primaries)
+                        race_key = market.get("event_ticker") or market.get("series_ticker") or ticker
+                        same_race = [
+                            m for m in state.get("markets", [])
+                            if (m.get("event_ticker") or m.get("series_ticker") or m.get("ticker", "")) == race_key
+                        ]
+                        is_multicandidate = len(same_race) > 1
+                        if is_multicandidate:
+                            # Can't produce meaningful per-candidate FV without polling — skip
+                            market["_poll_failed"] = True
+                            print(f"Skipped {ticker}: multicandidate race with no polling, cannot assign uniform FV")
+                            _attach_financials(market, fec_client)
+                            transition(state, ticker, "complete")
+                            write_state(state)
+                            completed += 1
+                            continue
+
+                        fv, analysis, confidence = _fundamentals_fv(market, generic_ballot_lean)
+                        if confidence != "low":
+                            # We had some structural info — use it
+                            price = market.get("market_price")
+                            delta = fv - int(price) if price is not None else 0
+                            context = "Fundamentals-based estimate — no live polling available."
+                            sources = [{"label": "Fundamentals model", "url": None}]
+                            _finalize_market(market, fv, context, analysis, sources)
+                            market["_fundamentals_used"] = True
+                        else:
+                            # True no-data state — skip the card entirely
+                            market["_poll_failed"] = True
+                            print(f"Skipped {ticker}: all polling sources failed, no fundamentals signal")
+                            _attach_financials(market, fec_client)
+                            transition(state, ticker, "complete")
+                            write_state(state)
+                            completed += 1
+                            continue  # don't re-attach financials or transition again
+
+            _attach_financials(market, fec_client)
+            transition(state, ticker, "complete")
+            write_state(state)
+            completed += 1
+            print(f"Completed {ticker}: {market.get('verdict')} (FV {market.get('marcus_fv')}¢)")
+            continue
+
+        # ── International / Other: Wikipedia polling → market price fallback ──
+        # Try Wikipedia polling for international/unsupported races
+        wiki = WikipediaPoller()
+        race_title = market.get("race_title") or market.get("title") or ""
+        event_date = market.get("event_date") or market.get("election_date")
+        candidates = [
+            (market.get("candidate_name") or "").strip(),
+        ]
+        if not candidates or not candidates[0]:
+            title = market.get("title", "")
+            candidates = []
+
+        wiki_polls, wiki_meta = wiki.poll_with_meta(race_title, event_date, candidates)
+
+        if wiki_polls:
+            # Wikipedia has polling — compute FV from poll percentages
+            price = market.get("market_price")
+            poll_values = list(wiki_polls.values())
+            if poll_values:
+                avg_poll = sum(poll_values) / len(poll_values)
+                fv = int(round(min(avg_poll * 2.0, 95)))  # rough heuristic
+                if price is not None:
+                    delta = fv - int(price)
+                else:
+                    delta = 0
+                market["_wiki_polls"] = wiki_polls  # store for reference
+
+                context = (
+                    f"Wikipedia polling for {race_title} shows: "
+                    + ", ".join(f"{k}: {v}%" for k, v in wiki_polls.items())
+                )
+                analysis = (
+                    f"Marcus uses Wikipedia polling data to set fair value at {fv}¢ "
+                    f"for this market. "
+                    f"{'The market price is ' + str(price) + '¢, giving an edge of ' + str(delta) + '¢.' if price is not None else ''}"
+                    f"Candidates polling ≤6% are excluded from analysis."
+                )
+                sources = [_build_wiki_sources(wiki_meta["source_url"])]
+                _finalize_market(market, fv, context, analysis, sources)
+            else:
+                # Wikipedia found but no usable polls — use fundamentals
+                fv, analysis, confidence = _fundamentals_fv(market)
+                price = market.get("market_price")
+                if price is not None:
+                    delta = fv - int(price)
+                else:
+                    delta = 0
+                context = (
+                    f"Wikipedia article for {race_title} was found but contained no "
+                    f"extractable polling data for the candidates in this market."
+                )
+                sources = [_build_wiki_sources(_wikipedia_url(race_title, event_date) or "https://en.wikipedia.org/")]
+                _finalize_market(market, fv, context, analysis, sources)
+                market["_fundamentals_used"] = True
+        else:
+            # No Wikipedia polling — try fundamentals (pass national generic ballot lean if available)
+            fv, analysis, confidence = _fundamentals_fv(market, generic_ballot_lean)
+            price = market.get("market_price")
+            url = _wikipedia_url(race_title, event_date)
+            if price is None:
+                price = 50
+            if confidence != "low":
+                context = "Fundamentals-based estimate — no live polling available."
+                sources = [{"label": "Fundamentals model", "url": url}]
+                _finalize_market(market, fv, context, analysis, sources)
+                market["_fundamentals_used"] = True
+            else:
+                # True no-data state for international — use market price, mark complete but note
+                context = (
+                    "This market is not yet mapped to a polling feed in the current engine configuration. "
+                    "Arbiter still completes the brief to keep state continuity and track coverage gaps."
+                )
+                analysis = (
+                    "Because no polling source is available for this contract type, Marcus sets fair value "
+                    "equal to current market price and marks the verdict as PASS."
+                )
+                wiki_url = url or "local://engine.py"
+                sources = [{"label": "Arbiter engine note", "url": wiki_url}]
+                _finalize_market(market, price, context, analysis, sources)
+                market["_poll_failed"] = True
 
         _attach_financials(market, fec_client)
 
